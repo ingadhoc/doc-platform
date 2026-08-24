@@ -1,0 +1,25 @@
+{
+  "name": "@ingadhoc/docs-platform",
+  "version": "0.1.0",
+  "description": "Plataforma de documentación de Adhoc: motor de búsqueda, MCP, guard de fuga, gate de audiencia y middleware — consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": "github:ingadhoc/doc-platform",
+  "exports": {
+    "./indice": "./lib/mcp/indice.mjs",
+    "./gate": "./lib/mcp/gate.mjs",
+    "./auth": "./lib/mcp/auth.mjs",
+    "./tokens": "./lib/mcp/tokens.mjs",
+    "./feedback": "./lib/mcp/feedback.mjs",
+    "./mcp-handler": "./lib/mcp/mcp-handler.mjs",
+    "./middleware": "./lib/middleware.js",
+    "./config": "./lib/config.mjs"
+  },
+  "bin": {
+    "docs-guard-fuga": "bin/guard-fuga.mjs",
+    "docs-drift-check": "bin/drift-check.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}
