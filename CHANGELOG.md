@@ -14,6 +14,45 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.1.1 — 2026-08-24
+
+Tres fixes del guard de fuga, **medidos contra el deploy público de Finanzas**
+(`oba-docs`, commit `37269f7`). Ese build quedó rojo con 5 "fugas" y ninguna era
+una fuga: cada falso positivo destapó un problema distinto del guard. Los tres
+quedaron fuera del snapshot con el que se unificó la plataforma y entran acá.
+
+Un falso positivo del guard no es gratis: se paga reescribiendo prosa correcta
+o —peor— aprendiendo a ignorar el guard, que es exactamente la forma en que un
+gate de seguridad deja de proteger.
+
+- [seguridad] guard: los límites de BLOQUE cortan el n-grama y los INLINE no.
+  `normalizar()` reemplazaba TODO tag por un espacio, así que el final de un
+  bloque quedaba pegado al principio del siguiente y nacían trigramas que nadie
+  escribió (`<h2>Qué agrega el módulo</h2><p>En la sección…` → "el módulo en";
+  dos entradas del search-index → "a cobrar pago"). Eran 4 de los 5 falsos
+  positivos. Ahora los tags de bloque pasan a `\n` y el escaneo va segmento por
+  segmento, para que ningún match cruce dos bloques. Los inline siguen siendo un
+  espacio: `<strong>timeout</strong> del webservice` tiene que seguir matcheando
+  o el guard queda ciego justo donde una frase interna lleva una negrita adentro.
+- [seguridad] guard: los escapes `\n\r\t…` del fallback de JSON roto se decodifican
+  a `\n`, no a espacio. Mismo principio: eran un salto de línea en el fuente, y
+  las palabras de un lado y del otro nunca fueron contiguas.
+- [seguridad] guard: el manifiesto tiene que ser **del contenido que se publica**.
+  Si `.guard/removido.json` declara un árbol (`contenido`, o `content` en el
+  emisor viejo) distinto del que se está escaneando, el guard falla. Esto es lo
+  que explica por qué la verificación local de Finanzas daba 0 hits y Vercel
+  encontraba 5: la suite de bloques corre el preprocesador contra un fixture y
+  deja SU manifiesto ahí —20 sondas en vez de 853—, y el guard corrido después
+  medía el sitio real contra las sondas de un fixture, saliendo verde POR VACÍO.
+  Un manifiesto que no declara el árbol no se rechaza: el chequeo entra a medida
+  que los repos emiten el campo. El nombre esperado se pasa con `--contenido=`
+  (default `content`).
+
+Lo que NO viaja en este bump: las sondas que discriminan (descartar trigramas de
+puras palabras funcionales o números, como `la 19 0`, y fallar si una línea
+interna se queda sin sonda). Es del emisor —el preprocesador de cada repo—, no
+del guard, y sigue en cada repo hasta que el preprocesador se unifique.
+
 ## v0.1.0 — 2026-08-23
 
 Primer paquete. Unifica en un solo lugar el motor de búsqueda, el núcleo del

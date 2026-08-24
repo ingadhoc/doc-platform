@@ -30,6 +30,8 @@ if (ayuda) {
   --extra=<dirs>          dirs extra a escanear, coma      (api/_generated)
   --indice=<archivo>      índice del MCP                   (api/_generated/index.json)
   --config=<archivo>      contrato de la plataforma        (docs.config.json)
+  --contenido=<nombre>    árbol fuente que el manifiesto
+                          tiene que declarar              (content)
 `,
   );
   process.exit(0);

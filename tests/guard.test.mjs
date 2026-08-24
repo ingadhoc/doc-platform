@@ -229,6 +229,43 @@ describe('el manifiesto es el contrato con el preprocesador', () => {
     assert.match(r.salida, /no tiene contenido interno/);
   });
 
+  it('manifiesto de OTRO árbol → bloquea (el manifiesto del fixture)', () => {
+    // El hallazgo que explica por qué la verificación local del deploy de
+    // Finanzas decía verde: la suite de bloques corre el preprocesador contra
+    // `tests/fixtures-bloques` y deja SU manifiesto en `.guard/removido.json`.
+    // El guard corrido después mide el sitio real con las sondas del fixture y
+    // aprueba POR VACÍO. Acá la sonda del fixture ni siquiera está en el output
+    // —el camino feliz de la trampa— y el guard igual bloquea, porque el árbol
+    // declarado no es el que se está escaneando.
+    const r = correr({
+      manifiesto: { ...MANIFIESTO_OK, contenido: 'tests/fixtures-bloques', sondas: ['sonda del fixture'] },
+    });
+    bloqueado(r, /el manifiesto es del árbol "tests\/fixtures-bloques"/);
+    assert.match(r.salida, /las sondas no corresponden/);
+  });
+
+  it('`content` (la clave vieja) también se mira', () => {
+    // Mismo criterio que `audience`/`audiencia`: el manifiesto es el tercer
+    // contrato y todavía lo emite cada repo.
+    bloqueado(
+      correr({ manifiesto: { ...MANIFIESTO_OK, content: 'tests/fixtures-bloques' } }),
+      /el manifiesto es del árbol "tests\/fixtures-bloques"/,
+    );
+  });
+
+  it('el árbol declarado que coincide con --contenido → aprueba', () => {
+    aprobado(correr({
+      args: ['--esperada=publico', '--contenido=docs-fuente'],
+      manifiesto: { ...MANIFIESTO_OK, contenido: 'docs-fuente' },
+    }));
+  });
+
+  it('un manifiesto sin árbol declarado NO se rechaza (emisor viejo)', () => {
+    // El chequeo entra a medida que los repos empiezan a emitir el campo: si
+    // rechazara al emisor viejo, el bump del pin rompería los tres consumidores.
+    aprobado(correr({ manifiesto: MANIFIESTO_OK }));
+  });
+
   it('falta el índice del MCP con target docusaurus → bloquea', () => {
     bloqueado(correr({ indiceAgente: null }), /falta api\/_generated\/index\.json/);
   });
@@ -359,6 +396,85 @@ describe('falsos positivos: cada uno bloqueó (o habría bloqueado) un deploy re
         archivos: {
           'site/build/index.html': '<p>ok</p>',
           'site/build/d.json': JSON.stringify({ ruta: 'C:\\temp', txt: `${SONDA} nadie` }),
+        },
+      }),
+      /FUGA/,
+    );
+  });
+});
+
+describe('los límites de bloque cortan, los inline no (deploy de Finanzas, 37269f7)', () => {
+  // Las 5 "fugas" que frenaron el build público de Finanzas y ninguna era una
+  // fuga: 4 nacían de pegar el final de un bloque con el principio del
+  // siguiente. El guard no podía descartarlas solo, porque el `publicado` que
+  // las filtraría se calcula sobre el FUENTE, donde esos n-gramas no existen.
+
+  it('un trigrama que nace de </h2><p> NO matchea', () => {
+    aprobado(correr({
+      manifiesto: { ...MANIFIESTO_OK, sondas: ['algo dias corridos'] },
+      archivos: { 'site/build/x.html': '<h2>otra cosa algo dias</h2><p>corridos y sigue</p>' },
+    }));
+  });
+
+  it('el caso medido: "el modulo en" de un <h2> pegado al <p> que sigue', () => {
+    aprobado(correr({
+      manifiesto: { ...MANIFIESTO_OK, sondas: ['el modulo en'] },
+      archivos: { 'site/build/x.html': '<h2>Que agrega el modulo</h2><p>En la seccion de configuracion</p>' },
+    }));
+  });
+
+  it('un trigrama inline SÍ matchea: <strong> no corta la frase', () => {
+    // La contracara, y lo que este fix tenía que NO romper: si el corte fuera
+    // en todo tag, el guard quedaría ciego justo donde una frase interna lleva
+    // una negrita o un link adentro.
+    bloqueado(
+      correr({ archivos: { 'site/build/x.html': '<p>a los 30 dias <strong>corridos</strong> si nadie reclama</p>' } }),
+      /FUGA/,
+    );
+  });
+
+  it('la sonda partida por un <a> con atributos sigue siendo fuga', () => {
+    bloqueado(
+      correr({ archivos: { 'site/build/x.html': '<p>dias <a href="/x" class="y">corridos</a> si nadie</p>' } }),
+      /FUGA/,
+    );
+  });
+
+  it('el caso medido: "a cobrar pago" entre dos entradas del search-index', () => {
+    // Dos strings distintas del índice de búsqueda, `…tarjetas a cobrar` y
+    // `pago del servicio`, se juntaban en un solo texto plano y parían un
+    // trigrama que nadie escribió.
+    aprobado(correr({
+      manifiesto: { ...MANIFIESTO_OK, sondas: ['a cobrar pago'] },
+      archivos: {
+        'site/build/index.html': '<p>ok</p>',
+        'site/build/search-index.json': JSON.stringify([
+          { t: 'tarjetas a cobrar' },
+          { t: 'pago del servicio' },
+        ]),
+      },
+    }));
+  });
+
+  it('los escapes decodificados cortan (JSON roto: el camino del fallback)', () => {
+    // El fallback por regex sobre el crudo pasaba `\\n` a espacio, y con eso
+    // volvía a pegar dos líneas que en el fuente nunca fueron contiguas.
+    aprobado(correr({
+      archivos: {
+        'site/build/index.html': '<p>ok</p>',
+        'site/build/roto.json': '{ esto no es json valido: "tarjetas a cobrar\\npago del servicio" ',
+      },
+      manifiesto: { ...MANIFIESTO_OK, sondas: ['a cobrar pago'] },
+    }));
+  });
+
+  it('y el JSON roto sigue delatando la fuga real', () => {
+    // Que el corte no ciegue al guard es lo que estos tests protegen de verdad.
+    bloqueado(
+      correr({
+        archivos: {
+          'site/build/index.html': '<p>ok</p>',
+          'site/build/roto.json': `{ esto no es json valido: "texto\\n${SONDA} nadie" `,
         },
       }),
       /FUGA/,
