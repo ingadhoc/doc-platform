@@ -50,17 +50,24 @@ import { crearMcp } from '@ingadhoc/docs-platform/mcp-handler';
 import { crearFeedback } from '@ingadhoc/docs-platform/feedback';
 import * as indice from '@ingadhoc/docs-platform/indice';
 import { config } from '../docs.mcp.config.mjs';
-export const { handler, default: fetchHandler } = crearMcp({
+const { handler } = crearMcp({
   config,
   indice,
   crearIssue: crearFeedback(config.feedback),
 });
+export default handler; // sin default export Vercel no encuentra el handler
 ```
 
 ```js
 // middleware.js — en la RAÍZ del repo (Vercel lo exige ahí)
 import { next } from '@vercel/functions';
-import { decidir } from '@ingadhoc/docs-platform/gate';
+// Por RUTA RELATIVA, no por especificador de paquete: el bundler del edge
+// rechaza `@ingadhoc/docs-platform/gate` cuando el repo consumidor no es
+// `"type": "module"` (Docusaurus lo impide) — "unsupported modules".
+// Y ojo con renombrar a middleware.mjs: el deploy queda VERDE y SIN
+// middleware (la ausencia silenciosa del gate). Hallazgo del piloto
+// odumbo-docs, deployment 3mXWLwPHPgcwasEji49pGEg7Lyuv.
+import { decidir } from './node_modules/@ingadhoc/docs-platform/lib/mcp/gate.mjs';
 const AUDIENCIAS = ['publico', 'interno']; // adhoc-docs: ['interno']
 export default function middleware(request) {
   return decidir(request, process.env, { audiencias: AUDIENCIAS }) ?? next();
