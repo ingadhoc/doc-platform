@@ -14,6 +14,10 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.1.2 — 2026-08-24
+
+- guard/tests: la suite `bloques` le declara al guard su árbol de fixtures (`--contenido=`) — el chequeo de procedencia de v0.1.1 la detectaba, correctamente, como manifiesto ajeno.
+
 ## v0.1.1 — 2026-08-24
 
 Tres fixes del guard de fuga, **medidos contra el deploy público de Finanzas**
