@@ -256,7 +256,7 @@ describe('bloques internos y manifiesto de sondas', { skip: MOTIVO_SKIP }, () =>
       assert.ok(sondaSub, 'el fixture substring.md no dejó la sonda esperada');
       fs.writeFileSync(path.join(FP, 'pag.html'), `<p>a los 30 ${sondaSub}n rechazo</p>`);
       try {
-        const r = spawnSync(process.execPath, [GUARD, '--esperada=publico', `--salida=${FP}`], {
+        const r = spawnSync(process.execPath, [GUARD, '--esperada=publico', `--salida=${FP}`, `--contenido=${REL}`], {
           cwd: REPO, env: ENV(), encoding: 'utf8',
         });
         assert.equal(r.status, 0, `el guard bloqueó un deploy limpio:\n${r.stdout}${r.stderr}`);
