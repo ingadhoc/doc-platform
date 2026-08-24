@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 2,
+  "_nota": "FIXTURE del modo de falla: el emisor es más nuevo que el lector. El lector TIRA y dice qué actualizar (contrato-indice.md §4); un emisor más VIEJO del mismo major se acepta.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-08-20T09:30:00.000Z",
+    "articulos": 1,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "none"
+    },
+    "metadata": {}
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "sla",
+      "count": 2
+    },
+    {
+      "seccion": "manual",
+      "categoria": "tickets",
+      "count": 1
+    }
+  ],
+  "articulos": [
+    {
+      "id": "*::manual/sla/que-es-un-sla",
+      "slug": "manual/sla/que-es-un-sla",
+      "eje": null,
+      "title": "Qué es un SLA",
+      "description": "El acuerdo de nivel de servicio y sus plazos.",
+      "seccion": "manual",
+      "url": "/manual/sla/que-es-un-sla",
+      "keywords": [
+        "sla",
+        "plazos"
+      ],
+      "headings": [
+        {
+          "id": "definicion",
+          "text": "Definición",
+          "level": 2
+        }
+      ],
+      "body": "# Qué es un SLA\n\n## Definición\n\nEl SLA fija los plazos de respuesta comprometidos.\n"
+    }
+  ]
+}

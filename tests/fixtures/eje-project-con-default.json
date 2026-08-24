@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE de eje=project CON eje.default declarado: la otra mitad de la regla única de desambiguación (diseno-eje.md §3). El mismo eje que no elegía pasa a elegir —y a anunciarlo— por declarar un default, sin ningún if por tipo de eje en el motor.",
+  "build": {
+    "audiencia": "interno",
+    "generatedAt": "2026-08-19T21:00:00.000Z",
+    "articulos": 7,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "project",
+      "valores": [
+        {
+          "id": "adhoc-way",
+          "label": "Adhoc Way"
+        },
+        {
+          "id": "oba",
+          "label": "Odoo by Adhoc"
+        },
+        {
+          "id": "odumbo",
+          "label": "Odumbo"
+        }
+      ],
+      "default": "oba"
+    },
+    "metadata": {
+      "types": [
+        "concepto",
+        "referencia",
+        "procedimiento",
+        "troubleshooting",
+        "guia",
+        "indice"
+      ]
+    }
+  },
+  "mapa": [
+    {
+      "seccion": "",
+      "categoria": "",
+      "label": "Adhoc Way",
+      "count": 1,
+      "ejeValores": [
+        "adhoc-way"
+      ]
+    },
+    {
+      "seccion": "flujo",
+      "categoria": "",
+      "label": "Flujo de trabajo",
+      "count": 1,
+      "ejeValores": [
+        "adhoc-way"
+      ]
+    },
+    {
+      "seccion": "specs",
+      "categoria": "",
+      "label": "Specs",
+      "count": 1,
+      "ejeValores": [
+        "adhoc-way"
+      ]
+    },
+    {
+      "seccion": "",
+      "categoria": "",
+      "label": "Odoo by Adhoc",
+      "count": 1,
+      "ejeValores": [
+        "oba"
+      ]
+    },
+    {
+      "seccion": "instalacion",
+      "categoria": "",
+      "label": "Instalación",
+      "count": 1,
+      "ejeValores": [
+        "oba"
+      ]
+    },
+    {
+      "seccion": "",
+      "categoria": "",
+      "label": "Odumbo",
+      "count": 1,
+      "ejeValores": [
+        "odumbo"
+      ]
+    },
+    {
+      "seccion": "arquitectura",
+      "categoria": "",
+      "label": "Arquitectura",
+      "count": 1,
+      "ejeValores": [
+        "odumbo"
+      ]
+    }
+  ],
+  "articulos": [
+    {
+      "id": "adhoc-way::index",
+      "slug": "index",
+      "eje": "adhoc-way",
+      "title": "Adhoc Way — portada",
+      "description": "Qué es el patrón adhoc-way y qué aspectos lo componen.",
+      "type": "indice",
+      "seccion": "",
+      "url": "/adhoc-way/index",
+      "keywords": [
+        "patrón",
+        "aspectos",
+        "portada"
+      ],
+      "headings": [
+        {
+          "id": "que-es",
+          "text": "Qué es",
+          "level": 2
+        },
+        {
+          "id": "aspectos",
+          "text": "Aspectos",
+          "level": 2
+        }
+      ],
+      "body": "# Adhoc Way — portada\n\n## Qué es\n\nEl patrón que usan los projects de Adhoc para organizar specs, decisions y memoria.\n\n## Aspectos\n\nspecs, decisions, docs, digest, project-memory.\n"
+    },
+    {
+      "id": "adhoc-way::flujo/pr-flow",
+      "slug": "flujo/pr-flow",
+      "eje": "adhoc-way",
+      "title": "PR flow — modo y destino",
+      "description": "Cómo se publica un cambio: commit directo o PR, y a qué remoto.",
+      "type": "procedimiento",
+      "seccion": "flujo",
+      "url": "/adhoc-way/flujo/pr-flow",
+      "keywords": [
+        "pull request",
+        "publicación",
+        "mergebot"
+      ],
+      "headings": [
+        {
+          "id": "los-dos-ejes",
+          "text": "Los dos ejes",
+          "level": 2
+        },
+        {
+          "id": "declaracion",
+          "text": "Declaración en project.json",
+          "level": 2
+        }
+      ],
+      "body": "# PR flow — modo y destino\n\n## Los dos ejes\n\nModo (directo o PR) y destino (adhoc-dev u origin).\n\n## Declaración en project.json\n\nLa clave `publish` declara modo y motivo. Sin declaración, va PR.\n"
+    },
+    {
+      "id": "adhoc-way::specs/ciclo-de-vida",
+      "slug": "specs/ciclo-de-vida",
+      "eje": "adhoc-way",
+      "title": "Ciclo de vida de una spec",
+      "description": "Estados 10_draft, 20_ready y 30_done.",
+      "type": "referencia",
+      "seccion": "specs",
+      "url": "/adhoc-way/specs/ciclo-de-vida",
+      "keywords": [
+        "draft",
+        "ready",
+        "done",
+        "promoción"
+      ],
+      "headings": [
+        {
+          "id": "estados",
+          "text": "Estados",
+          "level": 2
+        }
+      ],
+      "body": "# Ciclo de vida de una spec\n\n## Estados\n\n10_draft → 20_ready → 30_done/NNNN-slug. La promoción tiene gate humano.\n"
+    },
+    {
+      "id": "oba::index",
+      "slug": "index",
+      "eje": "oba",
+      "title": "Odoo by Adhoc — portada",
+      "description": "El producto OBA y cómo se trabaja sobre él.",
+      "type": "indice",
+      "seccion": "",
+      "url": "/oba/index",
+      "keywords": [
+        "producto",
+        "portada"
+      ],
+      "headings": [
+        {
+          "id": "versiones",
+          "text": "Versiones vivas",
+          "level": 2
+        }
+      ],
+      "body": "# Odoo by Adhoc — portada\n\n## Versiones vivas\n\nOBA 19 y OBA 20 conviven; cada una tiene su devcontainer.\n"
+    },
+    {
+      "id": "oba::instalacion/entorno-de-desarrollo",
+      "slug": "instalacion/entorno-de-desarrollo",
+      "eje": "oba",
+      "title": "Entorno de desarrollo",
+      "description": "Levantar OBA localmente con el devcontainer.",
+      "type": "procedimiento",
+      "seccion": "instalacion",
+      "url": "/oba/instalacion/entorno-de-desarrollo",
+      "keywords": [
+        "devcontainer",
+        "docker",
+        "init.sh"
+      ],
+      "headings": [
+        {
+          "id": "requisitos",
+          "text": "Requisitos",
+          "level": 2
+        },
+        {
+          "id": "errores-conocidos",
+          "text": "Errores conocidos",
+          "level": 2
+        }
+      ],
+      "body": "# Entorno de desarrollo\n\n## Requisitos\n\nDocker y el script init.sh del repo docker-compose-odoo.\n\n## Errores conocidos\n\nSi al levantar aparece `no se pudo montar el volumen de filestore`, el mount quedó de un container viejo: bajá todo y volvé a correr init.sh.\n"
+    },
+    {
+      "id": "odumbo::index",
+      "slug": "index",
+      "eje": "odumbo",
+      "title": "Odumbo — portada",
+      "description": "El producto Odumbo y su arquitectura de agentes.",
+      "type": "indice",
+      "seccion": "",
+      "url": "/odumbo/index",
+      "keywords": [
+        "portada",
+        "agentes"
+      ],
+      "headings": [
+        {
+          "id": "que-es",
+          "text": "Qué es",
+          "level": 2
+        }
+      ],
+      "body": "# Odumbo — portada\n\n## Qué es\n\nProducto de I+D de Adhoc. Documenta su propio entorno de desarrollo, distinto del de OBA.\n"
+    },
+    {
+      "id": "odumbo::arquitectura/entorno-de-desarrollo",
+      "slug": "arquitectura/entorno-de-desarrollo",
+      "eje": "odumbo",
+      "title": "Entorno de desarrollo de Odumbo",
+      "description": "Cómo se levanta Odumbo en local. NO es el devcontainer de OBA.",
+      "type": "procedimiento",
+      "seccion": "arquitectura",
+      "url": "/odumbo/arquitectura/entorno-de-desarrollo",
+      "keywords": [
+        "devcontainer",
+        "docker",
+        "agentes"
+      ],
+      "headings": [
+        {
+          "id": "requisitos",
+          "text": "Requisitos",
+          "level": 2
+        }
+      ],
+      "body": "# Entorno de desarrollo de Odumbo\n\n## Requisitos\n\nDocker y el compose propio de Odumbo. El init.sh de OBA no aplica acá.\n"
+    }
+  ]
+}

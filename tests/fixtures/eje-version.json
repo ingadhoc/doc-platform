@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE de eje=version (el corpus de oba-docs), audiencia publico, en el contrato unificado (schemaVersion 1, build.eje, articulos[].eje, id emitido por el build). Corpus mínimo escrito para los casos que test-buscar.mjs corría contra el índice REAL del repo: frases conversacionales de cliente, fallback OR, filtros duros, hints y artículos FUERA DEL EJE (eje: null, el cross-version de relacion/). Nada acá es contenido real: son las mínimas palabras que hacen verificable cada comportamiento.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-08-20T09:00:00.000Z",
+    "articulos": 9,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "version",
+      "default": "19",
+      "valores": [
+        {
+          "id": "19",
+          "label": "19.0"
+        },
+        {
+          "id": "18",
+          "label": "18.0"
+        }
+      ]
+    },
+    "metadata": {
+      "modules": true
+    }
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "finanzas/facturacion",
+      "modules": [
+        "l10n_ar",
+        "account"
+      ],
+      "count": 4,
+      "ejeValores": [
+        "18",
+        "19"
+      ]
+    },
+    {
+      "seccion": "manual",
+      "categoria": "finanzas/cobros-y-pagos",
+      "modules": [
+        "account"
+      ],
+      "count": 4,
+      "ejeValores": [
+        "18",
+        "19"
+      ]
+    },
+    {
+      "seccion": "relacion",
+      "categoria": "como-te-acompanamos",
+      "modules": [],
+      "count": 1,
+      "ejeValores": []
+    }
+  ],
+  "articulos": [
+    {
+      "id": "19::manual/finanzas/facturacion/notas-de-credito",
+      "slug": "manual/finanzas/facturacion/notas-de-credito",
+      "eje": "19",
+      "title": "Notas de crédito",
+      "description": "Cómo anular o corregir una factura ya emitida con una nota de crédito.",
+      "seccion": "manual",
+      "modules": [
+        "l10n_ar",
+        "account"
+      ],
+      "url": "/19/manual/finanzas/facturacion/notas-de-credito",
+      "keywords": [
+        "nota de crédito",
+        "rectificativa",
+        "anular factura"
+      ],
+      "headings": [
+        {
+          "id": "cuando-usarla",
+          "text": "Cuándo usarla",
+          "level": 2
+        },
+        {
+          "id": "paso-a-paso",
+          "text": "Paso a paso",
+          "level": 2
+        }
+      ],
+      "body": "# Notas de crédito\n\n## Cuándo usarla\n\nCuando hay que anular una factura ya emitida al cliente.\n\n## Paso a paso\n\nDesde la factura emitida, generá la nota de crédito rectificativa.\n"
+    },
+    {
+      "id": "18::manual/finanzas/facturacion/notas-de-credito",
+      "slug": "manual/finanzas/facturacion/notas-de-credito",
+      "eje": "18",
+      "title": "Notas de crédito",
+      "description": "Cómo anular o corregir una factura ya emitida con una nota de crédito.",
+      "seccion": "manual",
+      "modules": [
+        "l10n_ar",
+        "account"
+      ],
+      "url": "/18/manual/finanzas/facturacion/notas-de-credito",
+      "keywords": [
+        "nota de crédito",
+        "rectificativa",
+        "anular factura"
+      ],
+      "headings": [
+        {
+          "id": "cuando-usarla",
+          "text": "Cuándo usarla",
+          "level": 2
+        }
+      ],
+      "body": "# Notas de crédito\n\n## Cuándo usarla\n\nCuando hay que anular una factura ya emitida al cliente.\n"
+    },
+    {
+      "id": "19::manual/finanzas/cobros-y-pagos/registrar-un-cobro",
+      "slug": "manual/finanzas/cobros-y-pagos/registrar-un-cobro",
+      "eje": "19",
+      "title": "Registrar un cobro",
+      "description": "Registrar el cobro de una factura para que quede pagada.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/finanzas/cobros-y-pagos/registrar-un-cobro",
+      "keywords": [
+        "cobro",
+        "pagada",
+        "dar por pagada"
+      ],
+      "headings": [
+        {
+          "id": "registrar",
+          "text": "Registrar el cobro",
+          "level": 2
+        }
+      ],
+      "body": "# Registrar un cobro\n\n## Registrar el cobro\n\nPara dar por pagada una factura registrás el cobro desde el asiento.\n"
+    },
+    {
+      "id": "19::manual/finanzas/cobros-y-pagos/conciliacion-bancaria",
+      "slug": "manual/finanzas/cobros-y-pagos/conciliacion-bancaria",
+      "eje": "19",
+      "title": "Conciliación bancaria",
+      "description": "Conciliar el extracto que manda el banco con los asientos.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/finanzas/cobros-y-pagos/conciliacion-bancaria",
+      "keywords": [
+        "extracto bancario",
+        "conciliación",
+        "banco"
+      ],
+      "headings": [
+        {
+          "id": "importar",
+          "text": "Importar el extracto",
+          "level": 2
+        }
+      ],
+      "body": "# Conciliación bancaria\n\n## Importar el extracto\n\nPara conciliar el extracto que manda el banco, importá el archivo y emparejá las líneas.\n"
+    },
+    {
+      "id": "18::manual/finanzas/cobros-y-pagos/conciliacion-bancaria",
+      "slug": "manual/finanzas/cobros-y-pagos/conciliacion-bancaria",
+      "eje": "18",
+      "title": "Conciliación bancaria",
+      "description": "Conciliar el extracto que manda el banco con los asientos.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/18/manual/finanzas/cobros-y-pagos/conciliacion-bancaria",
+      "keywords": [
+        "extracto bancario",
+        "conciliación",
+        "banco"
+      ],
+      "headings": [
+        {
+          "id": "importar",
+          "text": "Importar el extracto",
+          "level": 2
+        }
+      ],
+      "body": "# Conciliación bancaria\n\n## Importar el extracto\n\nPara conciliar el extracto que manda el banco, importá el archivo.\n"
+    },
+    {
+      "id": "19::manual/finanzas/cobros-y-pagos/debito-automatico",
+      "slug": "manual/finanzas/cobros-y-pagos/debito-automatico",
+      "eje": "19",
+      "title": "Débito automático",
+      "description": "Cobrar por débito automático las cuotas del cliente.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/finanzas/cobros-y-pagos/debito-automatico",
+      "keywords": [
+        "débito automático",
+        "cuotas"
+      ],
+      "headings": [
+        {
+          "id": "adherir",
+          "text": "Adherir al débito",
+          "level": 2
+        }
+      ],
+      "body": "# Débito automático\n\n## Adherir al débito\n\nEl débito automático cobra la cuota sin intervención.\n"
+    },
+    {
+      "id": "19::manual/finanzas/facturacion/comprobantes-electronicos",
+      "slug": "manual/finanzas/facturacion/comprobantes-electronicos",
+      "eje": "19",
+      "title": "Comprobantes electrónicos",
+      "description": "Emitir comprobantes electrónicos y obtener el CAE del webservice de AFIP.",
+      "seccion": "manual",
+      "modules": [
+        "l10n_ar_afipws"
+      ],
+      "url": "/19/manual/finanzas/facturacion/comprobantes-electronicos",
+      "keywords": [
+        "cae",
+        "afip",
+        "webservice",
+        "no sale el cae"
+      ],
+      "headings": [
+        {
+          "id": "obtener-cae",
+          "text": "Obtener el CAE",
+          "level": 2
+        }
+      ],
+      "body": "# Comprobantes electrónicos\n\n## Obtener el CAE\n\nEl comprobante electrónico pide el CAE al webservice de AFIP.\n"
+    },
+    {
+      "id": "18::manual/finanzas/facturacion/comprobantes-electronicos",
+      "slug": "manual/finanzas/facturacion/comprobantes-electronicos",
+      "eje": "18",
+      "title": "Comprobantes electrónicos",
+      "description": "Emitir comprobantes electrónicos y obtener el CAE del webservice de AFIP.",
+      "seccion": "manual",
+      "modules": [
+        "l10n_ar_afipws"
+      ],
+      "url": "/18/manual/finanzas/facturacion/comprobantes-electronicos",
+      "keywords": [
+        "cae",
+        "afip",
+        "webservice",
+        "no sale el cae"
+      ],
+      "headings": [
+        {
+          "id": "obtener-cae",
+          "text": "Obtener el CAE",
+          "level": 2
+        }
+      ],
+      "body": "# Comprobantes electrónicos\n\n## Obtener el CAE\n\nEl comprobante electrónico pide el CAE al webservice de AFIP.\n"
+    },
+    {
+      "id": "*::relacion/como-te-acompanamos/actualizacion-de-version",
+      "slug": "relacion/como-te-acompanamos/actualizacion-de-version",
+      "eje": null,
+      "title": "Actualización de versión",
+      "description": "Cómo acompañamos el pasaje de una versión de Odoo a la siguiente.",
+      "seccion": "relacion",
+      "modules": [],
+      "url": "/relacion/como-te-acompanamos/actualizacion-de-version",
+      "keywords": [
+        "actualización de versión",
+        "upgrade"
+      ],
+      "headings": [
+        {
+          "id": "el-proceso",
+          "text": "El proceso",
+          "level": 2
+        }
+      ],
+      "body": "# Actualización de versión\n\n## El proceso\n\nLa actualización de versión se planifica con el equipo y aplica a cualquier versión vigente.\n"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE del modo de falla que motivó build.conCuerpo: la copia estática de site/static/agente/ es el mismo objeto sin body, indistinguible por contenido. Si la función MCP la lee, leer() devolvía body vacío con encontrado:true.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-08-20T09:30:00.000Z",
+    "articulos": 1,
+    "conCuerpo": false,
+    "eje": {
+      "tipo": "none"
+    },
+    "metadata": {}
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "sla",
+      "count": 2
+    },
+    {
+      "seccion": "manual",
+      "categoria": "tickets",
+      "count": 1
+    }
+  ],
+  "articulos": [
+    {
+      "id": "*::manual/sla/que-es-un-sla",
+      "slug": "manual/sla/que-es-un-sla",
+      "eje": null,
+      "title": "Qué es un SLA",
+      "description": "El acuerdo de nivel de servicio y sus plazos.",
+      "seccion": "manual",
+      "url": "/manual/sla/que-es-un-sla",
+      "keywords": [
+        "sla",
+        "plazos"
+      ],
+      "headings": [
+        {
+          "id": "definicion",
+          "text": "Definición",
+          "level": 2
+        }
+      ]
+    }
+  ]
+}

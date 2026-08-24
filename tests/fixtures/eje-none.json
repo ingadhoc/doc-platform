@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE de eje=none (el corpus de odumbo-docs: su docs.config.json declaraba versionado: false). Sin eje: los slugs son únicos, el id del artículo lleva el prefijo * (aplica a todos), y mapa() no emite valores ni default.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-08-20T09:30:00.000Z",
+    "articulos": 3,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "none"
+    },
+    "metadata": {}
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "sla",
+      "count": 2
+    },
+    {
+      "seccion": "manual",
+      "categoria": "tickets",
+      "count": 1
+    }
+  ],
+  "articulos": [
+    {
+      "id": "*::manual/sla/que-es-un-sla",
+      "slug": "manual/sla/que-es-un-sla",
+      "eje": null,
+      "title": "Qué es un SLA",
+      "description": "El acuerdo de nivel de servicio y sus plazos.",
+      "seccion": "manual",
+      "url": "/manual/sla/que-es-un-sla",
+      "keywords": [
+        "sla",
+        "plazos"
+      ],
+      "headings": [
+        {
+          "id": "definicion",
+          "text": "Definición",
+          "level": 2
+        }
+      ],
+      "body": "# Qué es un SLA\n\n## Definición\n\nEl SLA fija los plazos de respuesta comprometidos.\n"
+    },
+    {
+      "id": "*::manual/sla/plazos-de-respuesta",
+      "slug": "manual/sla/plazos-de-respuesta",
+      "eje": null,
+      "title": "Plazos de respuesta",
+      "description": "Cuánto tarda la primera respuesta según la prioridad.",
+      "seccion": "manual",
+      "url": "/manual/sla/plazos-de-respuesta",
+      "keywords": [
+        "plazos",
+        "prioridad",
+        "respuesta"
+      ],
+      "headings": [
+        {
+          "id": "tabla",
+          "text": "Tabla de plazos",
+          "level": 2
+        }
+      ],
+      "body": "# Plazos de respuesta\n\n## Tabla de plazos\n\nLa prioridad alta compromete la primera respuesta en dos horas.\n"
+    },
+    {
+      "id": "*::manual/tickets/como-abrir-un-ticket",
+      "slug": "manual/tickets/como-abrir-un-ticket",
+      "eje": null,
+      "title": "Cómo abrir un ticket",
+      "description": "Abrir un ticket con la información mínima.",
+      "seccion": "guias",
+      "url": "/manual/tickets/como-abrir-un-ticket",
+      "keywords": [
+        "ticket",
+        "mesa de ayuda"
+      ],
+      "headings": [
+        {
+          "id": "que-informar",
+          "text": "Qué informar",
+          "level": 2
+        }
+      ],
+      "body": "# Cómo abrir un ticket\n\n## Qué informar\n\nContá qué esperabas y qué pasó, con la captura del error.\n"
+    }
+  ]
+}

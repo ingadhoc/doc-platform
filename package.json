@@ -13,7 +13,8 @@
     "./feedback": "./lib/mcp/feedback.mjs",
     "./mcp-handler": "./lib/mcp/mcp-handler.mjs",
     "./middleware": "./lib/middleware.js",
-    "./config": "./lib/config.mjs"
+    "./config": "./lib/config.mjs",
+    "./guard-fuga": "./lib/guard-fuga.mjs"
   },
   "bin": {
     "docs-guard-fuga": "bin/guard-fuga.mjs",
@@ -21,5 +22,15 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs"
-  }
+  },
+  "dependencies": {
+    "minisearch": "^7.2.0"
+  },
+  "files": [
+    "lib/",
+    "bin/",
+    "schema/",
+    "CHANGELOG.md",
+    "README.md"
+  ]
 }
