@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ingadhoc/adhoc-doc-platform/schemas/docs.config.schema.json",
+  "title": "docs.config.json — contrato config ↔ plataforma de documentación",
+  "description": "Etapa A de la spec arquitectura-plataforma-docs. Un solo vocabulario de ejes para los tres corpus (oba-docs, odumbo-docs, adhoc-docs). El diseño y la evidencia de cada campo están en diseno-eje.md. REGLA DEL LECTOR: si `schemaVersion` es mayor que la versión que la plataforma sabe leer, el lector TIRA (no ignora campos desconocidos). Un config sin `schemaVersion` es pre-unificación y también falla: las tres formas anteriores son incompatibles entre sí y adivinar cuál es sería el bug que este campo previene.",
+  "type": "object",
+  "required": ["schemaVersion", "eje", "audiences", "deploy"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "description": "Versión del contrato. Entero, arranca en 1. Se sube cuando cambia la forma de un campo existente o entra uno obligatorio.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "eje": {
+      "description": "El eje por el que se discrimina el contenido del corpus. Uno solo por corpus en schemaVersion 1.",
+      "type": "object",
+      "required": ["tipo"],
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "description": "`version`: valores ordenados (la más nueva primero), segmento de versión en la URL, `versions:` obligatorio en el frontmatter de las secciones dentro del eje. `project`: valores sin orden intrínseco (alfabético), segmento de project en la URL. `none`: árbol plano, el MCP no expone el filtro del eje.",
+          "enum": ["version", "project", "none"]
+        },
+        "default": {
+          "description": "Id del valor que gana cuando nadie lo pide. Su PRESENCIA es la política de desambiguación de leer(): declarado ⇒ leer({slug}) elige ese candidato y lo declara en la respuesta; ausente ⇒ leer({slug}) devuelve ambigüedad estructurada. Obligatorio con tipo `version` (el build lo usa para decidir qué versión va a site/docs y cuáles a versioned_docs).",
+          "$ref": "#/$defs/idDeEje"
+        },
+        "valores": {
+          "description": "Los valores del eje, en el orden en que se declaran (para `version`, de la más nueva a la más vieja).",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/valorDeEje" }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "tipo": { "const": "version" } }, "required": ["tipo"] },
+          "then": {
+            "required": ["default", "valores"],
+            "properties": {
+              "valores": {
+                "items": {
+                  "not": { "required": ["fuente"] },
+                  "$comment": "El eje versión no trae contenido de otro repo: el árbol es local (un repo por cuerpo de contenido, ADR 0006)."
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "project" } }, "required": ["tipo"] },
+          "then": { "required": ["valores"] }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "none" } }, "required": ["tipo"] },
+          "then": {
+            "not": { "anyOf": [{ "required": ["default"] }, { "required": ["valores"] }] },
+            "$comment": "Sin eje no hay valores ni default. Es el `versionado: false` de odumbo-docs, sin el `versions: []` y el `latest: null` que invitan a preguntarse qué falta."
+          }
+        }
+      ]
+    },
+    "audiences": {
+      "description": "Las audiencias que este corpus sabe emitir. La audiencia NO es el eje: es un build entero distinto (ADR 0005). Cada valor es un build, un proyecto de Vercel y un corte del índice.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+    },
+    "secciones": {
+      "description": "Excepciones de ruteo por sección (primer segmento del árbol fuente). Las secciones DENTRO del eje no se declaran: se derivan del árbol (ADR 0004 §6, la nav se deriva).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fueraDelEje": {
+          "description": "Secciones que viven al lado del eje, sin su segmento en la URL, y cuyos archivos no declaran valor de eje en el frontmatter (el `crossVersionSections` de hoy: `relacion` en oba-docs). Sus artículos aplican a TODOS los valores del eje: pasan cualquier filtro y ganan cualquier desambiguación.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+        }
+      }
+    },
+    "metadata": {
+      "description": "Facetas de dominio por artículo. NO son ejes: un artículo pertenece a un solo valor del eje y a N valores de una faceta. Lo que se declara acá decide qué filtros expone el MCP — una tool que ofrece un filtro sin contenido detrás miente.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "modules": {
+          "description": "true si el contenido usa `modules:` en el frontmatter (módulos de Odoo). Con false, el índice no lleva el campo y el MCP no expone el filtro.",
+          "type": "boolean",
+          "default": false
+        },
+        "types": {
+          "description": "Vocabulario cerrado de `type:` en el frontmatter. Vacío o ausente ⇒ no se valida y `type` no viaja al índice.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+        }
+      }
+    },
+    "deploy": {
+      "description": "Cómo se publica este corpus. No describe el contenido: describe el despliegue y sus guardas.",
+      "type": "object",
+      "required": ["guardDeFuga"],
+      "additionalProperties": false,
+      "properties": {
+        "proyectos": {
+          "description": "Mapa VERCEL_PROJECT_ID → audiencia. Es la fuente INDEPENDIENTE de DOCS_AUDIENCE que usa el guard de fuga: hace falta equivocarse en dos lugares distintos para publicar contenido interno en el sitio público. Un proyecto no mapeado hace fallar el guard (fail-closed), no lo deja pasar.",
+          "type": "object",
+          "propertyNames": { "pattern": "^prj_[A-Za-z0-9]+$" },
+          "additionalProperties": { "type": "string" }
+        },
+        "guardDeFuga": {
+          "description": "Obligatorio: la ausencia del guard deja de poder ser silenciosa (spec, Fase 0 punto 4). O está activo, o se declara apagado con motivo escrito.",
+          "type": "object",
+          "required": ["activo"],
+          "additionalProperties": false,
+          "properties": {
+            "activo": { "type": "boolean" },
+            "motivo": { "type": "string", "minLength": 20 }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "activo": { "const": false } }, "required": ["activo"] },
+              "then": { "required": ["motivo"] }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "idDeEje": {
+      "description": "Id de un valor del eje. Es el primer segmento de la URL y el prefijo del id de documento, así que es un slug y no puede chocar con una ruta del sitio.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]*$",
+      "not": { "enum": ["api", "agente", "search", "img", "assets", "static"] }
+    },
+    "valorDeEje": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/idDeEje" },
+        "label": {
+          "description": "Cómo se muestra. Default: el id. Reemplaza a los templates versionLabel/versionPath, que existían sólo porque `versions` era una lista de strings pelados.",
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "description": "Segmento de URL. Default: el id.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]*$"
+        },
+        "activo": {
+          "description": "false no publica. Exige `motivo`: un valor apagado sin explicación es indistinguible de un olvido.",
+          "type": "boolean",
+          "default": true
+        },
+        "motivo": {
+          "description": "Por qué no publica. Obligatorio con `activo: false`.",
+          "type": "string",
+          "minLength": 20
+        },
+        "fuente": {
+          "description": "Transporte: de dónde se trae el contenido de este valor. Sólo para corpus agregadores (el `docs/` de N repos de terceros). Ausente ⇒ el contenido es local al repo.",
+          "type": "object",
+          "required": ["repo", "path", "ref"],
+          "additionalProperties": false,
+          "properties": {
+            "repo": { "type": "string", "pattern": "^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$" },
+            "path": { "type": "string", "minLength": 1 },
+            "ref": { "type": "string", "minLength": 1 },
+            "include": {
+              "description": "Globs a incluir. Si no matchea nada, el fetch falla: el patrón está mal o el contenido se movió.",
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "exclude": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "activo": { "const": false } }, "required": ["activo"] },
+          "then": { "required": ["motivo"] }
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "schemaVersion": 1,
+      "eje": {
+        "tipo": "version",
+        "default": "19",
+        "valores": [
+          { "id": "19", "label": "19.0" },
+          { "id": "18", "label": "18.0" }
+        ]
+      },
+      "audiences": ["publico", "interno"],
+      "secciones": { "fueraDelEje": ["relacion"] },
+      "metadata": { "modules": true },
+      "deploy": {
+        "proyectos": {
+          "prj_TKfHZIDS1PZoy85bduKO89gugXBb": "publico",
+          "prj_ig447DB9ZQXbfhCWjXg9JCUYHQzy": "interno"
+        },
+        "guardDeFuga": { "activo": true }
+      }
+    }
+  ]
+}
