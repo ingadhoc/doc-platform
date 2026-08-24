@@ -1,0 +1,156 @@
+# CHANGELOG — @ingadhoc/docs-platform
+
+Los repos de contenido consumen este paquete **pineado por tag**, así que este
+archivo es el que dice qué se están perdiendo mientras no suben el pin.
+
+**Convención (la parsea `bin/drift-check.mjs`, no la rompas):**
+
+- una sección por versión: `## vX.Y.Z — AAAA-MM-DD` (la fecha es obligatoria:
+  es la que permite medir el lag de adopción);
+- un ítem por cambio, con el módulo adelante: `- indice: …`;
+- los cambios de seguridad arrancan con la etiqueta **`[seguridad]`**;
+- un ítem `[seguridad]` que nombra `guard` o `gate` **bloquea el CI** de los
+  consumidores rezagados. Los demás se reportan y no bloquean.
+
+---
+
+## v0.1.0 — 2026-08-23
+
+Primer paquete. Unifica en un solo lugar el motor de búsqueda, el núcleo del
+MCP, el gate del edge y el guard de fuga que vivían forkeados en `oba-docs`,
+`odumbo-docs` y `adhoc-docs` (ADR 0006 y 0007 de `knowledge-management`,
+Etapa A de la spec `arquitectura-plataforma-docs`). No es un merge: cada
+diferencia se clasificó como fix, dialecto del eje, dominio del corpus o ruido,
+y **los fixes se conservan todos**. La evidencia, archivo por archivo y con
+`archivo:línea`, está en `docs/unificacion/`.
+
+### El contrato, que antes no existía
+
+- config: `docs.config.json` tiene schema publicado (`schema/docs.config.schema.json`),
+  `schemaVersion` y validador propio sin dependencias (`lib/config.mjs`). Antes
+  eran tres esquemas distintos y ningún validador: "ahí empezó el fork".
+- config: el eje del corpus es UN objeto (`{ tipo: version|project|none,
+  default?, valores[] }`) y reemplaza a `versions`/`latest`/`versionado`/
+  `projects`/`versionLabel`/`versionPath`. `versionedSections` se borra (era
+  código muerto: cero lecturas en los tres repos).
+- config: `deploy.guardDeFuga` es obligatorio — la ausencia del guard de fuga
+  deja de poder ser silenciosa (se declara con `motivo`).
+- índice: `schemaVersion`, `build.audiencia` (una sola clave, en castellano),
+  `build.eje`, `build.metadata`, `build.conCuerpo`, `articulos[].eje` y
+  `articulos[].id` emitido por el build (`${eje ?? '*'}::${slug}`).
+- los dos lectores TIRAN si el emisor declara un `schemaVersion` más nuevo del
+  que saben leer, y si no lo declara. Nada de degradar en silencio.
+
+### Del motor de búsqueda — rescatado de `oba-docs` (los fixes que nunca se propagaron)
+
+- indice: STOPWORDS del español + `processTerm` compartido entre indexado y
+  query (fix #11). Sin esto, "quiero saber cómo hago para dar por pagada una
+  factura" devolvía cero: cada palabra de relleno era un filtro más.
+- indice: fallback automático a OR cuando el AND da 0, con `modo:
+  "or-fallback"` y una `nota` que le pide al agente verificar pertinencia antes
+  de citar (fix #12). Los filtros por metadata siguen exactos y duros en los
+  dos modos.
+- indice: los artículos fuera del eje (`eje: null`, el cross-version de
+  `relacion/`) pasan cualquier filtro del eje y `leer()` los devuelve para
+  cualquier valor pedido. Sin esto, TODO el contenido cross-version era
+  invisible en la práctica: la skill del consumidor filtra siempre por versión.
+- indice: hint de "tu query es toda palabras vacías", y el texto del hint de
+  filtros consciente del fallback OR.
+- mcp-handler: la prosa de `buscar()` que describe el or-fallback y los
+  artículos cross-eje. Estaba sólo en `oba-docs` y era la mejor descripción de
+  tool de las tres — al unificar se perdía.
+
+### Del motor de búsqueda — rescatado de `adhoc-docs`
+
+- indice: `motivo` machine-readable en los soft-fail de `leer()`
+  (`slug-inexistente`, `slug-fuera-del-valor-pedido`, `ambiguo-en-eje`): el
+  agente ramifica sin parsear castellano.
+- indice: URLs absolutas también en las sugerencias de los soft-fail (antes la
+  mitad de las URLs de una misma respuesta eran pegables en un ticket y la otra
+  mitad no).
+- indice: `leer()` devuelve ambigüedad estructurada en vez de elegir cuando el
+  corpus no declara `eje.default`; `buscar()` sin filtro del eje avisa que los
+  resultados vienen mezclados de varios valores — ahora para los dos ejes, no
+  sólo para `project`.
+- indice: el label del valor del eje viaja a la respuesta, y `mapa()` expone los
+  valores DECLARADOS además de los presentes (un valor declarado que no aparece
+  no tiene docu o su fetch falló, y eso se ve).
+
+### Del motor de búsqueda — rescatado de `odumbo-docs`
+
+- indice / mcp-handler: el eje es configurable y **no se ofrece lo que no
+  existe**: con `eje.tipo: "none"` el MCP no expone el filtro del eje, y sin
+  `metadata.modules` no expone `modules`. Una tool que ofrece un filtro sin
+  contenido detrás miente y manda al agente a reintentar contra una pared.
+- indice: `mapa()` no emite listas vacías del eje: un `valores: []` con un
+  `default: null` al lado invita al agente a preguntarse qué falta.
+
+### Seguridad
+
+- [seguridad] gate: fail-closed sobre la VARIABLE y no sólo sobre su valor.
+  `DOCS_AUDIENCE` ausente o desconocida es 503 y corta todo — HTML, índice de
+  búsqueda, assets y el MCP incluso con Bearer válido. En `oba-docs` la línea
+  era `if (env.DOCS_AUDIENCE !== 'interno') return null` y el sitio quedaba
+  público POR DESCARTE; las env vars de Vercel se hornean en el build, así que
+  un deployment buildeado antes de que la variable existiera se quedaba sin
+  gate para siempre (le pasó).
+- [seguridad] gate: el default de `audiencias` es `['interno']`, el estricto.
+  Un consumidor que se olvida de declarar la lista obtiene gate incondicional,
+  no sitio abierto. Si el olvido cuesta algo, que cueste disponibilidad.
+- [seguridad] gate: fail-closed también en la capa función (`mcp-handler`), no
+  sólo en el edge: audiencia ausente o no servible es 503 para todo, incluido
+  el GET informativo. Cubre el modo de falla de la función invocada sin pasar
+  por el middleware.
+- [seguridad] gate: el 503 no delata que detrás hay un sitio interno, no se
+  indexa (`X-Robots-Tag`) y no se cachea.
+- [seguridad] guard: el guard de fuga entra al paquete como bin
+  (`docs-guard-fuga`) y por lo tanto entra a `adhoc-docs`, que no lo tenía.
+- [seguridad] guard: la audiencia esperada sale de `VERCEL_PROJECT_ID` contra
+  `deploy.proyectos`, no de `DOCS_AUDIENCE` — la versión vieja comparaba la env
+  var contra un archivo escrito DESDE esa env var: una tautología que aprobaba
+  el modo de falla que decía atacar.
+- [seguridad] guard: cuatro refuerzos de estrictez — contrato ilegible o
+  inválido falla con nombre (antes era un `TypeError`), `--esperada` se rechaza
+  corriendo en Vercel (antes se ignoraba en silencio, y era el camino corto
+  para neutralizar la fuente independiente desde el buildCommand), y el chequeo
+  de `.guard/` dentro de la salida ya no depende de que haya sondas.
+- [seguridad] guard: el índice del MCP (`api/_generated/index.json`) se escanea
+  aunque viva fuera de la salida del sitio: es el artefacto con el cuerpo
+  entero de cada artículo, el más caro de fugar.
+- [seguridad] guard: falsos positivos que bloquearon deploys limpios, cerrados
+  — sondas por trigramas (no palabras sueltas del bundle de React), tags HTML
+  removidos antes de normalizar, JSON decodificado con `JSON.parse` y no con
+  regex sobre los escapes, y límites de palabra con lookaround en vez de `\b`
+  (que es ASCII y se rompe con acentos).
+- auth: `igual()` documenta lo que hace de verdad. El comentario de `oba-docs`
+  ("hasheamos primero, dos digests de 32 bytes") describía un código que no
+  existe — un comentario que miente sobre una comparación en tiempo constante
+  es una trampa para el próximo que la toque.
+- tokens: la gramática de `DOCS_MCP_TOKENS` vive una sola vez, compartida entre
+  el edge (que compara con su `equal()` propio) y la función (que usa
+  `node:crypto`). Dos parsers del mismo formato divergen, y cuando divergen el
+  gate y el `withMcpAuth` dejan de estar de acuerdo sobre qué token vale.
+
+### Herramientas nuevas del paquete
+
+- `docs-guard-fuga`: el guard, como bin, con paths por argumento.
+- `docs-drift-check`: mide el rezago del pin de un consumidor contra el último
+  tag, falla si hay `[seguridad]` de guard o gate sin adoptar, y siempre
+  reporta el lag en días (el insumo de la alarma de la Etapa B). Sin red, exit
+  0 con warning: GitHub caído no puede volverse un build caído.
+- suites del paquete: `buscar`, `mcp`, `middleware`, `guard`, `config` y
+  `bloques` (esta última necesita un repo de contenido y se skipea con motivo
+  si no hay).
+
+### Cambios de comportamiento observables para los consumidores
+
+- el GET informativo del MCP devuelve **503** si el deployment no declara una
+  audiencia servible (antes devolvía el cartel).
+- `leer()` sin valor del eje ya no cae a `candidatos[0]`: o elige el `default`
+  declarado **y lo dice** (`elegidoPor: "default"`), o devuelve ambigüedad.
+- `otrasVersiones` / `mismoSlugEnOtrosProjects` → **`otrosDelEje`**
+  (`[{ valor, url }]`).
+- `mapa()` devuelve el eje como objeto (`eje: { tipo, param, valores, default?,
+  declarados? }`) y ya no `versionado` / `latest` / `versiones` / `projects`.
+- los builds tienen que emitir `schemaVersion`, `build.audiencia`, `build.eje`,
+  `build.conCuerpo` y `articulos[].id`; los índices viejos no se leen.
