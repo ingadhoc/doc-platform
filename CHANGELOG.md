@@ -14,6 +14,12 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.4.1 — 2026-08-25
+
+- docusaurus-plugin: el import de `@docusaurus/plugin-content-docs/client` del badge de países no resolvía con `npm ci` (el paquete vive en el node_modules de la raíz del consumidor y Docusaurus en `site/node_modules`); el plugin ahora lo alias-ea resolviéndolo desde el siteDir. Localmente el hoisting lo tapaba — en CI rompía el bundle entero.
+
+---
+
 ## v0.4.0 — 2026-08-25
 
 El widget de chat de Tuqui deja de ser una implementación inline de un sitio y
