@@ -97,6 +97,7 @@ No lo cambies por `;`.
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
 | `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
 | `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
+| `@ingadhoc/docs-platform/tuqui-embed` | `tuquiEmbedScripts(env)`: el campo `scripts` que embebe el widget de chat de Tuqui, activado por `TUQUI_EMBED_ID` (ver *Widget de Tuqui*) |
 | bin `docs-guard-fuga` | el guard de fuga, para el `buildCommand` |
 | bin `docs-drift-check` | el drift-check, para el CI del consumidor |
 
@@ -212,6 +213,84 @@ asimétrica a propósito: **el tag excluye, la ausencia nunca oculta**.
   "ciclo": dice `Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
   y `Cannot read properties of undefined (reading 'jsx')` en cada página.
 
+## Widget de Tuqui
+
+Cualquier sitio de la plataforma puede embeber el **widget de chat de Tuqui** —el
+agente que responde sobre la docu— declarando **una** variable de entorno en su
+proyecto de Vercel:
+
+```bash
+TUQUI_EMBED_ID=<el embed id del agente>
+```
+
+**Si está, el widget se agrega; si no está, no existe.** No hay default y no lo
+va a haber: prender el chat es una decisión del proyecto de Vercel donde se
+setea la variable, no algo que arrastre un `npm run build` local, el build
+interno o un fork del repo. Y **quién contesta lo decide el embed id**: el
+agente, su corpus y sus permisos se configuran del lado de Tuqui, no acá.
+
+**No hay `data-color`.** El estilo del widget se gobierna del lado de Tuqui, que
+es el único lugar donde se cambia sin redeployar tres sitios. Un color por sitio
+era el ADR 0007 otra vez —la copia forkeada— y además un data-attribute de un
+`<script>` no puede leer la custom property de CSS que pretendía replicar.
+
+**El id se valida contra la forma UUID, y si no matchea el build aborta.** Esto
+corre en el `buildCommand` de sitios **públicos** y el valor termina interpolado
+dentro de un tag `<script>` de todas las páginas: un id con un espacio, una
+comilla o un `"><script` es inyección de markup con la variable de entorno como
+vector. Un widget que no carga se ve; un `<script>` ajeno en el `<head>` no. Una
+variable ausente, vacía o con solo espacios **no** es un error: es el caso "sin
+widget".
+
+### El consumo, en dos líneas
+
+Los `docusaurus.config.js` de los tres sitios son **CJS** (`require` +
+`module.exports`: Docusaurus impide que el repo del sitio sea `"type": "module"`).
+El paquete es ESM, así que la línea que hay que escribir es un `require` del
+subpath — que funciona porque Node resuelve ESM desde `require` (probado en
+Node 22; el piso real es Node ≥20.19 / ≥22.12):
+
+```js
+// site/docusaurus.config.js
+const { tuquiEmbedScripts } = require('@ingadhoc/docs-platform/tuqui-embed');
+
+const config = {
+  // ...
+  scripts: tuquiEmbedScripts(),
+};
+```
+
+Dos alternativas, si el sitio corre en un Node más viejo que ese piso:
+
+```js
+// por ruta relativa a node_modules — el mismo patrón que middleware.js, y
+// funciona en cualquier Node porque no pasa por el resolver de exports
+const { tuquiEmbedScripts } = require(
+  './node_modules/@ingadhoc/docs-platform/lib/tuqui-embed.mjs',
+);
+```
+
+…o `await import('@ingadhoc/docs-platform/tuqui-embed')`, que obliga a convertir
+la config entera en una función `async` (Docusaurus lo soporta) y es la opción
+más invasiva de las tres. Las tres se probaron; la recomendada es la primera.
+
+### Verificar un build
+
+```bash
+TUQUI_EMBED_ID=3f2a9c14-8b7e-4d61-9a02-5e6c7d8f1234 npm run build:publico
+grep -rlo 'tuqui.com/embed.js' site/build --include='*.html' | wc -l   # con la var: todas las páginas
+npm run build:publico
+grep -rlo 'tuqui.com/embed.js' site/build --include='*.html' | wc -l   # sin la var: 0
+```
+
+### Lo que queda afuera
+
+**Un embed por `project` dentro de un sitio multi-doc** (el caso de
+`adhoc-docs`) queda explícitamente fuera de esta versión. Hoy el widget es del
+sitio: uno por deploy, el mismo en todas las páginas. Si un corpus necesita un
+agente distinto por sección, es una v2 — y probablemente no sea el campo
+`scripts` de Docusaurus lo que la resuelva.
+
 ## Los dos contratos
 
 Los dos llevan `schemaVersion`, y los dos lectores **tiran** si el emisor
@@ -248,7 +327,7 @@ un `default` a un corpus con eje `project`.
 ## Correr los tests
 
 ```bash
-npm install && npm test        # 227 casos
+npm install && npm test        # 288 casos
 ```
 
 `bloques` necesita un repo de contenido (corre su `tools/build.mjs` de verdad

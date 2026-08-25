@@ -14,6 +14,19 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.4.0 — 2026-08-25
+
+El widget de chat de Tuqui deja de ser una implementación inline de un sitio y
+pasa a ser una función del paquete. La convención queda cerrada: **cualquier
+sitio de la plataforma lo embebe declarando `TUQUI_EMBED_ID` en su proyecto de
+Vercel** — si está, se agrega; si no está, no existe.
+
+- tuqui-embed: nace `@ingadhoc/docs-platform/tuqui-embed` con `tuquiEmbedScripts(env = process.env)`, que devuelve el array para el campo `scripts` de `docusaurus.config.js`: `[]` sin la variable, y un solo `{ src: 'https://tuqui.com/embed.js', defer: true, 'data-embed-id': <id> }` con ella. Sin default: prender el chat es una decisión del proyecto de Vercel, no algo que arrastre un build local, el build interno o un fork.
+- tuqui-embed: **sin `data-color`**. El estilo lo gobierna Tuqui, que es el único lugar donde se cambia sin redeployar tres sitios; un data-attribute por sitio era la copia forkeada del ADR 0007 otra vez. El sitio que ya lo tenía inline lo pierde en el mismo movimiento.
+- tuqui-embed: el id se **valida contra la forma UUID** y el build **aborta** con mensaje explícito si viene malformado. No es paranoia de más: esto corre en el `buildCommand` de sitios públicos y el valor se interpola dentro de un tag `<script>` de todas las páginas — un espacio, una comilla o un `"><script` en la variable de entorno es inyección de markup. Una variable ausente, vacía o con solo espacios no es un error: es el caso "sin widget".
+- README: sección *Widget de Tuqui* con el import **que funciona de verdad** desde un `docusaurus.config.js` CJS (`require('@ingadhoc/docs-platform/tuqui-embed')`, piso Node ≥20.19 / ≥22.12), más las dos alternativas probadas para Nodes más viejos (ruta relativa a `node_modules`, o `await import()` con la config `async`).
+- Fuera de alcance declarado: **un embed por `project`** dentro de un sitio multi-doc. Hoy el widget es del sitio, uno por deploy; el caso por sección es una v2.
+
 ## v0.3.0 — 2026-08-25
 
 Nace la faceta `paises`. **No es un eje**: no multiplica el build, no bifurca
