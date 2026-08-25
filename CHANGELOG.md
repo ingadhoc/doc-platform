@@ -14,6 +14,13 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.2.0 — 2026-08-25
+
+- docusaurus-theme: nace la capa de theme del paquete — `lib/docusaurus-plugin.cjs` + `lib/docusaurus-theme/`. El consumidor agrega `require.resolve('@ingadhoc/docs-platform/docusaurus-plugin')` a sus `plugins:` y obtiene el scope MDX y los estilos, sin swizzle.
+- docusaurus-theme: componente `<Video url title/>` global en MDX — YouTube embebido con miniatura derivada del ID y sin iframe hasta el click (patrón lite-youtube); cualquier otra URL rinde un botón "Ver video". Laudo del 24/08 (estándar § Videos y gifs).
+- docusaurus-theme: los títulos del contenido suben un escalón — h2 2.25rem, h3 1.7rem, h4 1.15rem (el h1 ya estaba en 3rem y no se toca). Pedido de los POs del 24/08.
+- video-url: parseo puro exportado (`parsearUrlVideo`, `idDeYoutube`) en `@ingadhoc/docs-platform/video-url`, con sus 14 casos de test.
+
 ## v0.1.2 — 2026-08-24
 
 - guard/tests: la suite `bloques` le declara al guard su árbol de fixtures (`--contenido=`) — el chequeo de procedencia de v0.1.1 la detectaba, correctamente, como manifiesto ajeno.
