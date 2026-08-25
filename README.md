@@ -168,6 +168,36 @@ no la del título, y "subirlo a 2.5rem" lo habría achicado. El h4 pasa de 1rem 
 1.15rem porque a 1rem es exactamente el tamaño del cuerpo. Navbar y sidebar
 quedan afuera del scope.
 
+### El badge de país
+
+`paises:` en el frontmatter de un artículo es una **faceta**, no un eje: no
+multiplica el build, no bifurca la URL y no oculta bloques (**no existe
+`:::solo-pais`**). Lo único que agrega en el sitio son dos marcas:
+
+- **Arriba del h1**, un badge "Solo Argentina" / "Solo Chile y Uruguay"
+  (`lib/docusaurus-theme/DocItem/Content.js`, wrapper de
+  `@theme-init/DocItem/Content`). Los nombres salen de un mapa AR/CL/UY: el
+  manual lo lee un contador, no el build. **Una página sin `paises:` no lleva
+  badge**: la ausencia significa "todos los países" y un cartel en el 95% de las
+  páginas es ruido.
+- **En el árbol**, el código ISO en chico al final de la fila, vía `::after`
+  sobre las clases `pais-AR` / `pais-CL` / `pais-UY`. Las estampa el build del
+  repo de contenido con `sidebar_class_name` cuando la página tiene **un solo**
+  país; el paquete sólo pone el CSS. Con dos países no se estampa nada: la
+  sigla no entra y el badge de arriba ya lo dice. Ojo con el selector:
+  Docusaurus pone `sidebar_class_name` en el `<li>`, no en el `<a>`, así que el
+  `::after` va sobre `.menu__list-item.pais-XX > .menu__link`.
+
+Las páginas de `localizaciones/<país>/` **no llevan badge**: ahí el país lo
+deriva el build del path y no está en el frontmatter del fuente, así que el
+componente no lo ve — que es lo correcto, la página ya vive bajo
+*Localizaciones › Chile*. El país derivado sí viaja al índice del agente, donde
+nadie ve la ruta.
+
+El filtro del MCP lo enciende `metadata.paises` del `docs.config.json` (el
+vocabulario del corpus, ISO alpha-2 en mayúsculas). Su semántica es dura y
+asimétrica a propósito: **el tag excluye, la ausencia nunca oculta**.
+
 ### Dos cosas que no se pueden cambiar sin romper los tres sitios
 
 - **La carpeta se llama `lib/docusaurus-theme/`.** El webpack de Docusaurus no
@@ -175,7 +205,8 @@ quedan afuera del scope.
   `/docusaurus(?:(?!node_modules).)*\.jsx?$/` (`lib/webpack/base.js`,
   `excludeJS`). Sin la palabra `docusaurus` en la ruta, el JSX llega crudo al
   bundler y el build revienta.
-- **`MDXComponents.js` envuelve con `@theme-init`, no con `@theme-original`.**
+- **Los wrappers del theme (`MDXComponents.js`, `DocItem/Content.js`) envuelven
+  con `@theme-init`, no con `@theme-original`.**
   Los dos alias existen; `@theme-original` lo reescribe *cada* theme que se
   registra, así que desde un plugin apunta a sí mismo. El síntoma no dice
   "ciclo": dice `Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`

@@ -14,6 +14,21 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.3.0 — 2026-08-25
+
+Nace la faceta `paises`. **No es un eje**: no multiplica el build, no bifurca
+URLs y `TIPOS_DE_EJE` no se toca. Es un campo que viaja al índice y se filtra
+duro, como `modules` — con una diferencia que es todo el diseño: el tag
+**excluye**, y la **ausencia del tag nunca oculta**.
+
+- indice: `politicaDeEje()` suma `paises` a `filtrosDominio` y `camposDominio` cuando el índice declara `build.metadata.paises` con vocabulario. Sin vocabulario no hay faceta: ni filtro, ni campo, ni comodín.
+- indice: `pasaFiltros()` gana el **comodín por faceta** (`politica.dominiosComodin`): en un dominio con comodín, la lista propia vacía o ausente **pasa siempre**. Es el Fix #12 una faceta más abajo — sin esto, filtrar por UY borra todo el contenido universal, que es la mayor parte del manual. `modules` conserva la semántica opuesta: sin módulos declarados, no matchea ningún filtro de módulo.
+- indice: `paises` viaja en el hit de `buscar()` y en la salida de `leer()`, con `null` —no `[]`— cuando el artículo es universal: un array vacío se lee como "ningún país" y es justo lo contrario.
+- mcp-handler: `buscar()` expone el filtro `paises` cuando **el índice** declara el vocabulario (mismo criterio que el eje: el config declara prosa, el índice declara qué hay). El prompt dice las tres cosas que el LLM no puede deducir del nombre del parámetro: el filtro es duro, excluye, y un artículo sin país se devuelve siempre.
+- config: `metadata.paises` entra al schema del `docs.config.json` — vocabulario cerrado, ISO alpha-2 en MAYÚSCULAS.
+- docusaurus-theme: badge de país arriba del h1 (`DocItem/Content.js`, wrapper de `@theme-init/DocItem/Content`) — "Solo Argentina" / "Solo Chile y Uruguay", con los nombres de un mapa AR/CL/UY y no el código pelado. Una página sin `paises:` **no** lleva badge.
+- docusaurus-theme: indicador discreto en el árbol para las clases `pais-AR` / `pais-CL` / `pais-UY` que el build del consumidor estampa vía `sidebar_class_name`. Los dos estilos van en `styles.css`, con su variante de modo oscuro.
+
 ## v0.2.0 — 2026-08-25
 
 - docusaurus-theme: nace la capa de theme del paquete — `lib/docusaurus-plugin.cjs` + `lib/docusaurus-theme/`. El consumidor agrega `require.resolve('@ingadhoc/docs-platform/docusaurus-plugin')` a sus `plugins:` y obtiene el scope MDX y los estilos, sin swizzle.

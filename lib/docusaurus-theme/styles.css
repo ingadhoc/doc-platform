@@ -140,3 +140,103 @@
     --ifm-h3-font-size: 1.4rem;
   }
 }
+
+/* ── 3. La faceta `paises` ──────────────────────────────────────────────────
+ *
+ * `paises` NO es un eje: no multiplica el build, no bifurca la URL y no oculta
+ * bloques. Un solo árbol y una sola página; lo único que se ve en el sitio son
+ * estas dos marcas, y las dos son discretas a propósito.
+ *
+ * 3.1 EL BADGE DE LA PÁGINA (`<DocItem/Content>`). Va arriba del h1 —antes de
+ * que el lector empiece a seguir el procedimiento, no después— y sólo aparece
+ * cuando el artículo DECLARA países. Una página universal no lleva cartel: un
+ * "aplica a todos" arriba del 95% del manual es ruido.
+ *
+ * No se usa `.badge` de infima: ese pill es para versiones y estados de API, y
+ * en el ancho de un artículo queda como un botón. Esto es una nota, y se lee
+ * como una nota.
+ *
+ * Los colores salen del ADVERTENCIA de infima (`--ifm-color-warning-*`), que
+ * cada sitio ya tiene resuelto en sus dos temas: el badge hereda la identidad
+ * del repo consumidor en vez de traer una paleta propia. */
+
+.theme-doc-markdown .docs-paises {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.theme-doc-markdown .docs-paises-etiqueta {
+  display: inline-block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  padding: 0.25rem 0.7rem;
+  border-radius: 2rem;
+  border: 1px solid var(--ifm-color-warning-dark);
+  color: var(--ifm-color-warning-darkest);
+  background-color: var(--ifm-color-warning-contrast-background);
+}
+
+/* En oscuro el `contrast-background` de infima ya es el tono apagado correcto;
+ * lo que hay que subir es el texto, que en `darkest` queda ilegible sobre él. */
+[data-theme='dark'] .theme-doc-markdown .docs-paises-etiqueta {
+  color: var(--ifm-color-warning-lightest);
+  border-color: var(--ifm-color-warning);
+}
+
+/* 3.2 EL INDICADOR DEL ÁRBOL. Lo estampa el build del repo consumidor como
+ * `sidebar_class_name: "pais-XX"` en la página emitida, y sólo cuando la página
+ * tiene UN país (con dos, la sigla no entra y el badge de arriba ya lo dice).
+ *
+ * Es el código ISO en chico al final de la fila, no un ícono ni una bandera:
+ * una bandera a 12px es una mancha de color, y `AR` se lee. Va con `::after`
+ * para no tocar el markup del sidebar de theme-classic — que es autogenerado y
+ * no queremos swizzlear.
+ *
+ * DÓNDE CAE LA CLASE. Docusaurus pone `sidebar_class_name` en el `<li>`
+ * (`li.theme-doc-sidebar-item-link.menu__list-item.pais-UY`), NO en el `<a>`.
+ * Verificado en el HTML de un build real: un selector `.menu__link.pais-UY`
+ * no matchea nunca y la sigla no aparece — falla en silencio, que es la peor
+ * forma de fallar para algo decorativo. El `::after` va sobre el `<a>` hijo
+ * directo, que es el que tiene el texto y el layout flex.
+ *
+ * El segundo selector (la clase sobre el propio `<a>`) queda por las dudas: es
+ * dónde caería si alguna versión de Docusaurus cambiara de opinión, y cuesta
+ * una línea.
+ *
+ * `opacity` en vez de un color propio: la sigla sigue el color de la fila (que
+ * cambia con el activo y con el tema) y se mantiene un escalón por detrás del
+ * título, que es lo que se lee. */
+
+.menu__list-item.pais-AR > .menu__link::after,
+.menu__list-item.pais-CL > .menu__link::after,
+.menu__list-item.pais-UY > .menu__link::after,
+.menu__link.pais-AR::after,
+.menu__link.pais-CL::after,
+.menu__link.pais-UY::after {
+  margin-left: 0.4em;
+  font-size: 0.7em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+  /* Que la sigla no se lleve el espacio del título cuando la fila es angosta. */
+  flex: 0 0 auto;
+}
+
+.menu__list-item.pais-AR > .menu__link::after,
+.menu__link.pais-AR::after {
+  content: 'AR';
+}
+
+.menu__list-item.pais-CL > .menu__link::after,
+.menu__link.pais-CL::after {
+  content: 'CL';
+}
+
+.menu__list-item.pais-UY > .menu__link::after,
+.menu__link.pais-UY::after {
+  content: 'UY';
+}
