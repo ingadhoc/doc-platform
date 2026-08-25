@@ -95,8 +95,91 @@ No lo cambies por `;`.
 | `@ingadhoc/docs-platform/config` | `cargarConfig()` / `validarConfig()`: el validador del `docs.config.json` |
 | `@ingadhoc/docs-platform/guard-fuga` | `correrGuard()`, si querés llamarlo desde tu build en vez del bin |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
+| `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
+| `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
 | bin `docs-guard-fuga` | el guard de fuga, para el `buildCommand` |
 | bin `docs-drift-check` | el drift-check, para el CI del consumidor |
+
+## La capa de theme
+
+Hasta acá el paquete era todo backend: motor de búsqueda, MCP, gate, guard. La
+capa de theme es lo que le permite además **poner componentes y estilos en el
+sitio de los tres repos** — el mismo argumento del ADR 0007 aplicado al front:
+un componente que cada repo reimplementa es un componente que en algún repo
+está roto (y hay precedente: los `<video>` del contenido migrado, que
+escribían `autoplay` en minúscula y React descartaba en silencio).
+
+Se activa con **una línea** en el `docusaurus.config.js` del consumidor:
+
+```js
+// site/docusaurus.config.js
+plugins: [
+  require.resolve('@ingadhoc/docs-platform/docusaurus-plugin'),
+  // … los plugins que el repo ya tenía
+],
+```
+
+`require.resolve` y no el string pelado: el config vive en `site/` y el paquete
+se instala en la raíz del repo. Y el plugin es `.cjs` a propósito — este paquete
+es `"type": "module"` y el config de los tres repos es CommonJS.
+
+Con eso el consumidor gana:
+
+- **Los componentes MDX en el scope global**, sin `import` en el markdown. Un
+  import arriba de un `.md` no es una opción para este contenido: el cuerpo
+  entero de cada artículo viaja al índice para agentes (`emitAgente()`), y esa
+  línea le llega al MCP como ruido.
+- **El CSS del theme** (`getClientModules`), que entra después de infima y antes
+  del `custom.css` de cada repo: la identidad de cada sitio sigue ganando.
+
+### `<Video url title/>`
+
+```markdown
+<Video url="https://youtu.be/9YpzkZ8Q5Ns" title="Procesar transferencias en lote"/>
+<Video url="https://drive.google.com/file/d/1AbC/view" title="Grabación de la demo"/>
+```
+
+| atributo | | |
+|---|---|---|
+| `url` | requerido | YouTube (`watch?v=`, `youtu.be/`, `/embed/`, `/live/`, `/shorts/`) o cualquier otra URL. Sin URL utilizable el componente no pinta nada |
+| `title` | opcional, **recomendado** | es el nombre accesible: `aria-label` del botón y `title` del iframe. Sin él, "Ver video" |
+
+- **YouTube**: en el load se pinta la miniatura real (`img.youtube.com/vi/<id>/hqdefault.jpg`)
+  con un botón de play encima, en una caja 16:9, `loading="lazy"` y **cero
+  iframes**. Un embed de YouTube trae ~1 MB de JS que se paga aunque nadie mire
+  el video. Al click, el `<iframe>` reemplaza la miniatura con `autoplay=1` —
+  legítimo porque hubo gesto del usuario, y el video arranca solo.
+- **Cualquier otra URL** (Drive, Loom, un `.mp4`): un botón de infima
+  (`button button--primary`) que abre la URL en otra pestaña. No se intenta un
+  embed: Drive lo rompe cuando el archivo no es público y el modo de falla es
+  una caja gris sin explicación.
+
+El parseo de la URL es una función pura y exportada
+(`@ingadhoc/docs-platform/video-url`), aparte del componente, para poder
+testearlo con `node --test` sin meterle React ni un transpilador al paquete:
+`tests/video-url.test.mjs`.
+
+### La escala de títulos del artículo
+
+El CSS del theme sube el h2 a `2.25rem` y el h3 a `1.7rem` (infima da 2 y 1.5),
+scopeado a `.theme-doc-markdown.markdown`. **El h1 no se toca**: infima ya le da
+3rem al título del artículo — `--ifm-h1-font-size: 2rem` es la del h1 genérico,
+no la del título, y "subirlo a 2.5rem" lo habría achicado. El h4 pasa de 1rem a
+1.15rem porque a 1rem es exactamente el tamaño del cuerpo. Navbar y sidebar
+quedan afuera del scope.
+
+### Dos cosas que no se pueden cambiar sin romper los tres sitios
+
+- **La carpeta se llama `lib/docusaurus-theme/`.** El webpack de Docusaurus no
+  transpila nada de `node_modules` salvo lo que matchee
+  `/docusaurus(?:(?!node_modules).)*\.jsx?$/` (`lib/webpack/base.js`,
+  `excludeJS`). Sin la palabra `docusaurus` en la ruta, el JSX llega crudo al
+  bundler y el build revienta.
+- **`MDXComponents.js` envuelve con `@theme-init`, no con `@theme-original`.**
+  Los dos alias existen; `@theme-original` lo reescribe *cada* theme que se
+  registra, así que desde un plugin apunta a sí mismo. El síntoma no dice
+  "ciclo": dice `Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization`
+  y `Cannot read properties of undefined (reading 'jsx')` en cada página.
 
 ## Los dos contratos
 

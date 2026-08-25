@@ -1,0 +1,142 @@
+/* ══ Estilos de la plataforma de docs ═══════════════════════════════════════
+ *
+ * Los carga el plugin (`lib/docusaurus-plugin.cjs`, vía `getClientModules`),
+ * así que entran DESPUÉS de infima y ANTES del `custom.css` de cada repo: la
+ * identidad de cada sitio (colores, portada) sigue teniendo la última palabra.
+ *
+ * Todo lo de acá está scopeado al cuerpo del artículo (`.theme-doc-markdown`).
+ * Ni el navbar ni el sidebar se tocan.
+ */
+
+/* ── 1. El <Video> ──────────────────────────────────────────────────────── */
+
+/* La caja es la misma para los tres estados (miniatura, iframe) para que el
+ * click no mueva el layout ni un pixel. `aspect-ratio` en vez del truco del
+ * padding-top: lo soportan todos los navegadores del browserslist de los
+ * sitios, y no necesita un wrapper con position absolute. */
+.docs-video {
+  display: block;
+  width: 100%;
+  max-width: 42rem;
+  aspect-ratio: 16 / 9;
+  margin: var(--ifm-leading) 0;
+  border: 0;
+  padding: 0;
+  border-radius: var(--ifm-global-radius);
+  overflow: hidden;
+  background-color: #000;
+}
+
+.docs-video-poster {
+  position: relative;
+  cursor: pointer;
+  /* El botón hereda la tipografía del sistema si no se dice nada. No importa
+   * (no tiene texto), pero sí importa que no herede el fondo del theme. */
+  appearance: none;
+}
+
+.docs-video-poster:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 2px;
+}
+
+/* La miniatura de YouTube viene en 4:3 con dos bandas negras arriba y abajo.
+ * `object-fit: cover` recorta esas bandas y deja la imagen llenando el 16:9,
+ * que es cómo se ve el video de verdad. */
+.docs-video-miniatura {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.docs-video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 68px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.docs-video-play svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Gris translúcido en reposo, rojo de YouTube al hover: es el gesto que la
+ * gente ya conoce del reproductor real. No depende del tema del sitio porque
+ * siempre va sobre la miniatura, que es una foto. */
+.docs-video-play-fondo {
+  fill: #212121;
+  fill-opacity: 0.8;
+  transition: fill-opacity var(--ifm-transition-fast) ease;
+}
+
+.docs-video-poster:hover .docs-video-play-fondo,
+.docs-video-poster:focus-visible .docs-video-play-fondo {
+  fill: #f00;
+  fill-opacity: 1;
+}
+
+.docs-video-play-flecha {
+  fill: #fff;
+}
+
+/* El fallback de las URLs que no son de YouTube: un botón de infima, así hereda
+ * el primario de cada sitio y el modo oscuro sale gratis. */
+.docs-video-enlace {
+  display: inline-block;
+  margin: var(--ifm-leading) 0;
+  text-decoration: none;
+}
+
+/* ── 2. La escala de títulos del artículo ───────────────────────────────────
+ *
+ * Pedido de los POs (revisión del 24/08): "agrandar el tamaño de los títulos
+ * para mejorar visibilidad".
+ *
+ * El h1 NO se toca. Infima ya le da 3rem (`.markdown h1:first-child`), que es
+ * más grande que lo que uno supondría mirando `--ifm-h1-font-size: 2rem` — esa
+ * variable es la del h1 genérico, no la del título del artículo. Subirlo a
+ * "2.5rem" lo habría ACHICADO.
+ *
+ * Lo que sí estaba apretado es el escalón de abajo: h2 2rem y h3 1.5rem contra
+ * un h1 de 3rem dejan los subtítulos de una página larga —y las páginas de
+ * este manual son largas por diseño— pesando poco. Suben a 2.25 y 1.7: la
+ * jerarquía queda 3 / 2.25 / 1.7 en vez de 3 / 2 / 1.5, con los mismos saltos
+ * relativos pero más presencia.
+ *
+ * El h4 pasa de 1rem a 1.15rem por una razón distinta: a 1rem es EXACTAMENTE
+ * el tamaño del cuerpo, y un título que sólo se distingue por el peso no se
+ * lee como título. Hoy el contenido no usa h4, así que es preventivo.
+ *
+ * Especificidad: infima escribe `.markdown > h2` (0,1,1). Estas reglas usan
+ * las dos clases del mismo div (`.theme-doc-markdown.markdown`, 0,2,1) para
+ * ganar sin depender del orden en que el bundler concatene los CSS. */
+
+.theme-doc-markdown.markdown > h2 {
+  --ifm-h2-font-size: 2.25rem;
+}
+
+.theme-doc-markdown.markdown > h3 {
+  --ifm-h3-font-size: 1.7rem;
+}
+
+.theme-doc-markdown.markdown h4 {
+  font-size: 1.15rem;
+}
+
+/* En pantallas chicas infima baja toda la escala (h1 2rem / h2 1.5 / h3 1.25).
+ * Se mantiene ese criterio —un h2 de 2.25rem en un teléfono ocupa tres
+ * renglones— pero con el mismo aumento proporcional. */
+@media (max-width: 576px) {
+  .theme-doc-markdown.markdown > h2 {
+    --ifm-h2-font-size: 1.7rem;
+  }
+
+  .theme-doc-markdown.markdown > h3 {
+    --ifm-h3-font-size: 1.4rem;
+  }
+}
