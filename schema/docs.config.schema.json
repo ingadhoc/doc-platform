@@ -97,6 +97,12 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+        },
+        "paises": {
+          "description": "Vocabulario cerrado de `paises:` en el frontmatter (ISO alpha-2 en MAYÚSCULAS). Vacío o ausente ⇒ el corpus no tiene la faceta y el MCP no ofrece el filtro. NO es un eje: no multiplica el build ni bifurca URLs. La AUSENCIA del tag en un artículo significa TODOS los países, y por eso el filtro devuelve siempre los artículos sin país.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Z]{2}$" }
         }
       }
     },

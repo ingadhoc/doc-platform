@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE de la faceta `paises` sobre el eje `version` (el corpus de oba-docs). Existe para un solo comportamiento, que es el que se rompe solo: el filtro de país es DURO y EXCLUYE, pero un artículo SIN país es universal y tiene que salir bajo cualquier filtro. Es el mismo Fix #12 que dejó invisible a `relacion/` cuando el comodín faltaba en el eje. `manual/localizaciones/uruguay/e-remito` lleva `paises: [\"UY\"]` DERIVADO del path por el build del repo de contenido: su fuente no lo declara, y para el motor eso es indistinguible de un tag escrito a mano — que es exactamente la propiedad que se quiere. `manual/uso-general/busqueda` no declara ni `paises` ni `modules`: es el par que prueba que el comodín es POR FACETA y que `modules` conserva la semántica opuesta.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-08-25T09:00:00.000Z",
+    "articulos": 7,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "version",
+      "default": "19",
+      "valores": [
+        {
+          "id": "19",
+          "label": "19.0"
+        },
+        {
+          "id": "18",
+          "label": "18.0"
+        }
+      ]
+    },
+    "metadata": {
+      "modules": true,
+      "paises": [
+        "AR",
+        "CL",
+        "UY"
+      ]
+    }
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "finanzas/cobros-y-pagos",
+      "label": "finanzas/cobros-y-pagos",
+      "modules": [
+        "account"
+      ],
+      "paises": [],
+      "ejeValores": [
+        "19"
+      ],
+      "count": 1
+    },
+    {
+      "seccion": "manual",
+      "categoria": "inventario/rutas-y-envios",
+      "label": "inventario/rutas-y-envios",
+      "modules": [
+        "stock"
+      ],
+      "paises": [
+        "AR"
+      ],
+      "ejeValores": [
+        "19"
+      ],
+      "count": 1
+    },
+    {
+      "seccion": "manual",
+      "categoria": "localizaciones/uruguay",
+      "label": "localizaciones/uruguay",
+      "modules": [
+        "l10n_uy"
+      ],
+      "paises": [
+        "UY"
+      ],
+      "ejeValores": [
+        "19"
+      ],
+      "count": 1
+    },
+    {
+      "seccion": "manual",
+      "categoria": "soluciones-de-pago",
+      "label": "soluciones-de-pago",
+      "modules": [
+        "account"
+      ],
+      "paises": [
+        "UY"
+      ],
+      "ejeValores": [
+        "18",
+        "19"
+      ],
+      "count": 2
+    },
+    {
+      "seccion": "manual",
+      "categoria": "uso-general",
+      "label": "uso-general",
+      "modules": [],
+      "paises": [],
+      "ejeValores": [
+        "19"
+      ],
+      "count": 1
+    },
+    {
+      "seccion": "relacion",
+      "categoria": "como-te-acompanamos",
+      "label": "como-te-acompanamos",
+      "modules": [],
+      "paises": [],
+      "ejeValores": [],
+      "count": 1
+    }
+  ],
+  "articulos": [
+    {
+      "id": "19::manual/soluciones-de-pago/abitab",
+      "slug": "manual/soluciones-de-pago/abitab",
+      "eje": "19",
+      "title": "Cobrar por Abitab",
+      "description": "Cobrar una factura en las redes de cobranza de Abitab.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "paises": [
+        "UY"
+      ],
+      "url": "/19/manual/soluciones-de-pago/abitab",
+      "keywords": [
+        "abitab",
+        "red de cobranza"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# Cobrar por Abitab\n\n## Cómo funciona\n\nLa cobranza se acredita al día siguiente.\n"
+    },
+    {
+      "id": "19::manual/inventario/rutas-y-envios/andreani",
+      "slug": "manual/inventario/rutas-y-envios/andreani",
+      "eje": "19",
+      "title": "Integración con Andreani",
+      "description": "Despachar entregas con la integración de Andreani.",
+      "seccion": "manual",
+      "modules": [
+        "stock"
+      ],
+      "paises": [
+        "AR"
+      ],
+      "url": "/19/manual/inventario/rutas-y-envios/andreani",
+      "keywords": [
+        "andreani",
+        "transportista"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# Integración con Andreani\n\n## Cómo funciona\n\nLa cobranza contra reembolso viaja en la guía.\n"
+    },
+    {
+      "id": "19::manual/finanzas/cobros-y-pagos/registrar-un-cobro",
+      "slug": "manual/finanzas/cobros-y-pagos/registrar-un-cobro",
+      "eje": "19",
+      "title": "Registrar un cobro",
+      "description": "Registrar el cobro de una factura para que quede pagada.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/finanzas/cobros-y-pagos/registrar-un-cobro",
+      "keywords": [
+        "cobro",
+        "pagada"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# Registrar un cobro\n\n## Cómo funciona\n\nLa cobranza se registra desde la factura.\n"
+    },
+    {
+      "id": "19::manual/localizaciones/uruguay/e-remito",
+      "slug": "manual/localizaciones/uruguay/e-remito",
+      "eje": "19",
+      "title": "e-Remito",
+      "description": "Emitir el e-remito que exige la DGI para trasladar mercadería.",
+      "seccion": "manual",
+      "modules": [
+        "l10n_uy"
+      ],
+      "paises": [
+        "UY"
+      ],
+      "url": "/19/manual/localizaciones/uruguay/e-remito",
+      "keywords": [
+        "remito",
+        "dgi",
+        "traslado"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# e-Remito\n\n## Cómo funciona\n\nEl e-remito acompaña la cobranza contra entrega.\n"
+    },
+    {
+      "id": "19::manual/uso-general/busqueda",
+      "slug": "manual/uso-general/busqueda",
+      "eje": "19",
+      "title": "Buscar y filtrar",
+      "description": "Usar la barra de búsqueda y los filtros de cualquier lista.",
+      "seccion": "manual",
+      "url": "/19/manual/uso-general/busqueda",
+      "keywords": [
+        "filtros",
+        "búsqueda"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# Buscar y filtrar\n\n## Cómo funciona\n\nFiltrá la lista de cobranza por cliente.\n"
+    },
+    {
+      "id": "*::relacion/como-te-acompanamos/actualizacion-de-version",
+      "slug": "relacion/como-te-acompanamos/actualizacion-de-version",
+      "eje": null,
+      "title": "Actualización de versión",
+      "description": "Cómo acompañamos el pasaje de una versión de Odoo a la siguiente.",
+      "seccion": "relacion",
+      "modules": [],
+      "url": "/relacion/como-te-acompanamos/actualizacion-de-version",
+      "keywords": [
+        "upgrade"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# Actualización de versión\n\n## Cómo funciona\n\nLa cobranza del servicio no cambia.\n"
+    },
+    {
+      "id": "18::manual/soluciones-de-pago/abitab",
+      "slug": "manual/soluciones-de-pago/abitab",
+      "eje": "18",
+      "title": "Cobrar por Abitab",
+      "description": "Cobrar una factura en las redes de cobranza de Abitab.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "paises": [
+        "UY"
+      ],
+      "url": "/18/manual/soluciones-de-pago/abitab",
+      "keywords": [
+        "abitab",
+        "red de cobranza"
+      ],
+      "headings": [
+        {
+          "id": "como-funciona",
+          "text": "Cómo funciona",
+          "level": 2
+        }
+      ],
+      "body": "# Cobrar por Abitab\n\n## Cómo funciona\n\nLa cobranza se acredita al día siguiente.\n"
+    }
+  ]
+}

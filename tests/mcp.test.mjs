@@ -430,6 +430,31 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.doesNotMatch(result.tools.find((t) => t.name === 'mapa').description, /valores de/);
   });
 
+  it('la faceta `paises` la enciende el ÍNDICE, no el config del repo', async () => {
+    // Mismo criterio que el eje: el config declara prosa, el índice declara qué
+    // hay. Un repo que todavía no taguea países no puede quedar ofreciendo un
+    // filtro que devolvería siempre lo mismo. Y al revés: cuando el build
+    // empieza a emitir `metadata.paises`, la tool lo ofrece sin tocar el config.
+    const base = crearIndiceFake({ tipo: 'version' });
+    const conPaises = { ...base, mapa: () => ({ ...base.mapa(), metadata: { modules: true, paises: ['AR', 'CL', 'UY'] } }) };
+
+    const sin = montar(CONFIG_OBA);
+    const { result: r1 } = await leerRpc(await sin.handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.equal(props(r1.tools, 'buscar').includes('paises'), false);
+
+    const con = montar(CONFIG_OBA, { indice: conPaises });
+    const { result: r2 } = await leerRpc(await con.handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.deepEqual(props(r2.tools, 'buscar'), ['modules', 'page', 'paises', 'q', 'seccion', 'version']);
+    // Las tres cosas que el LLM no puede deducir del nombre del parámetro:
+    // que es duro, que EXCLUYE, y que la ausencia significa "todos".
+    const desc = r2.tools.find((t) => t.name === 'buscar').description;
+    assert.match(desc, /El filtro es duro y excluye/);
+    assert.match(desc, /Un artículo sin país aplica a todos y se devuelve siempre/);
+    // El país NO es un eje: no aparece en `leer()` ni en `feedback()`, que son
+    // las tools cuyo parámetro identifica UN artículo.
+    assert.deepEqual(props(r2.tools, 'leer'), ['page', 'slug', 'version']);
+  });
+
   it('el eje declarado se APAGA si el índice dice que el corpus no lo tiene', async () => {
     // La config dice QUÉ eje; el índice dice SI hay, y su palabra manda: un
     // build emitido con `eje.tipo: "none"` no puede dejar la tool ofreciendo
