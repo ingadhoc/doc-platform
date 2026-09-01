@@ -12,6 +12,8 @@ import { describe, it } from 'node:test';
 
 import {
   COOKIE_SESION,
+  PROPOSITO_INTENTO,
+  PROPOSITO_SESION,
   cookieDeSesion,
   firmarSesion,
   leerCookie,
@@ -142,5 +144,50 @@ describe('cookieDeSesion', () => {
     // browser no manda la cookie en ese primer request.
     assert.match(cookie, /SameSite=Lax/);
     assert.match(cookie, /Max-Age=60/);
+  });
+});
+
+describe('el propósito — una firma válida no dice para qué se emitió', () => {
+  it('lo firmado como intento no vale como sesión', async () => {
+    // Con el mismo secreto se firman dos cosas: el intento de login, que
+    // `/api/auth/login` le da a cualquiera SIN CREDENCIAL, y la sesión, que
+    // abre el gate. Sin el propósito adentro de la firma son la misma cookie
+    // con distinto nombre, y la primera se convierte en la segunda gratis.
+    const intento = await firmarSesion({ state: 'abc', volver: '/x' }, SECRETO, {
+      proposito: PROPOSITO_INTENTO,
+    });
+    assert.equal(await verificarSesion(intento, SECRETO), null);
+    assert.ok(await verificarSesion(intento, SECRETO, { proposito: PROPOSITO_INTENTO }));
+  });
+
+  it('y lo firmado como sesión no vale como intento', async () => {
+    const sesion = await firmarSesion(VIB, SECRETO);
+    assert.equal(await verificarSesion(sesion, SECRETO, { proposito: PROPOSITO_INTENTO }), null);
+    assert.ok(await verificarSesion(sesion, SECRETO, { proposito: PROPOSITO_SESION }));
+  });
+
+  it('una cookie sin `typ` no vale para nada', async () => {
+    // Las de antes de que el propósito existiera. Son pocas y duran horas: se
+    // rechazan y se vuelve a entrar, que es más barato que aceptarlas.
+    const cuerpo = btoa(JSON.stringify({ sub: 1866, exp: Math.floor(Date.now() / 1000) + 600 }))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    // Firmada de verdad con nuestro secreto: lo único que le falta es el `typ`.
+    const clave = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(SECRETO),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const firma = new Uint8Array(
+      await crypto.subtle.sign('HMAC', clave, new TextEncoder().encode(cuerpo)),
+    );
+    let crudo = '';
+    for (const b of firma) crudo += String.fromCharCode(b);
+    const valor = `${cuerpo}.${btoa(crudo).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+
+    assert.equal(await verificarSesion(valor, SECRETO), null);
   });
 });

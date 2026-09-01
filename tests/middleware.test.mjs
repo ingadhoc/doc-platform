@@ -333,4 +333,36 @@ describe('las rutas de puerta', () => {
     const r = await decidir(req('/api/auth/login'), {}, { audiencias: DOS });
     assert.equal(r.status, 503);
   });
+
+  it('lo que la puerta reparte sin credencial NO abre el gate', async () => {
+    // El agujero, de punta a punta y con las dos piezas de verdad: la puerta
+    // pasa sin credencial y contesta con una cookie firmada. Un anónimo la
+    // pide, le cambia el nombre a `docs_sesion` y la manda de vuelta. Si el
+    // gate la acepta, entró a toda la documentación interna sin pasar nunca
+    // por Odoo, sin ser nadie, y renovable para siempre.
+    const env = {
+      DOCS_AUDIENCE: 'interno',
+      DOCS_SESION_SECRET: 'secreto-de-firma',
+      DOCS_ODOO_URL: 'https://test-adhoc.example.com',
+      DOCS_ODOO_CLIENT_ID: 'un-client-id',
+      DOCS_ODOO_CLIENT_SECRET: 'un-secreto',
+      DOCS_SITIO_URL: 'https://docs-interna.adhoc.inc',
+      DOCS_ODOO_SCOPE: 'docs_interna',
+    };
+    const { manejarLogin } = await import(new URL('../lib/login-odoo.mjs', import.meta.url));
+
+    const puerta = await manejarLogin(req('/api/auth/login?volver=%2F'), env);
+    const cookie = puerta.headers.get('set-cookie');
+    const robada = cookie.slice(cookie.indexOf('=') + 1, cookie.indexOf(';'));
+
+    const r = await decidir(
+      new Request('https://docs-interna.adhoc.inc/19/manual/x', {
+        headers: { accept: 'text/html', cookie: `${COOKIE_SESION}=${robada}` },
+      }),
+      env,
+      { audiencias: DOS },
+    );
+    assert.notEqual(r, null, 'el gate dejó pasar la cookie del intento');
+    assert.equal(r.status, 302, 'y tiene que mandarla a loguearse');
+  });
 });

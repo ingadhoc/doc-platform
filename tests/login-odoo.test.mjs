@@ -11,8 +11,19 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { COOKIE_INTENTO, destinoSeguro, manejarCallback, manejarLogin } from '../lib/login-odoo.mjs';
-import { COOKIE_SESION, firmarSesion, verificarSesion } from '../lib/mcp/sesion.mjs';
+import {
+  COOKIE_INTENTO,
+  destinoSeguro,
+  manejarCallback,
+  manejarLogin,
+  manejarLogout,
+} from '../lib/login-odoo.mjs';
+import {
+  COOKIE_SESION,
+  PROPOSITO_INTENTO,
+  firmarSesion,
+  verificarSesion,
+} from '../lib/mcp/sesion.mjs';
 
 const ENV = {
   DOCS_ODOO_URL: 'https://test-adhoc.example.com',
@@ -20,6 +31,7 @@ const ENV = {
   DOCS_ODOO_CLIENT_SECRET: 'un-secreto',
   DOCS_SESION_SECRET: 'secreto-de-firma',
   DOCS_SITIO_URL: 'https://docs-interna.example.com',
+  DOCS_ODOO_SCOPE: 'docs_interna',
 };
 
 const get = (path, cookie) =>
@@ -49,7 +61,10 @@ async function conFetch(respuestas, fn) {
 
 /** Arma el par (cookie de intento, state) como lo dejaría el paso 1. */
 async function intento(state, volver = '/19/manual/x') {
-  const valor = await firmarSesion({ state, volver }, ENV.DOCS_SESION_SECRET, { ttlSegundos: 600 });
+  const valor = await firmarSesion({ state, volver }, ENV.DOCS_SESION_SECRET, {
+    ttlSegundos: 600,
+    proposito: PROPOSITO_INTENTO,
+  });
   return `${COOKIE_INTENTO}=${valor}`;
 }
 
@@ -62,7 +77,9 @@ describe('paso 1 — mandar a la persona a Odoo', () => {
     assert.equal(destino.pathname, '/oauth2/authorize');
     assert.equal(destino.searchParams.get('response_type'), 'code');
     assert.equal(destino.searchParams.get('client_id'), 'un-client-id');
-    assert.equal(destino.searchParams.get('scope'), 'userinfo');
+    // El scope no es decorativo: es el que filtra a los internos. Ver el
+    // encabezado de `login-odoo.mjs`.
+    assert.equal(destino.searchParams.get('scope'), 'docs_interna');
     assert.equal(
       destino.searchParams.get('redirect_uri'),
       'https://docs-interna.example.com/api/auth/callback',
@@ -83,7 +100,9 @@ describe('paso 1 — mandar a la persona a Odoo', () => {
     assert.match(cookie, /HttpOnly/);
     assert.match(cookie, /Path=\/api\/auth/);
     const valor = cookie.slice(cookie.indexOf('=') + 1, cookie.indexOf(';'));
-    const datos = await verificarSesion(valor, ENV.DOCS_SESION_SECRET);
+    const datos = await verificarSesion(valor, ENV.DOCS_SESION_SECRET, {
+      proposito: PROPOSITO_INTENTO,
+    });
     assert.equal(datos.volver, '/x');
     assert.equal(datos.state, new URL(r.headers.get('location')).searchParams.get('state'));
   });
@@ -175,6 +194,7 @@ describe('paso 2 — la vuelta de Odoo', () => {
     const viejo = await firmarSesion({ state: 'abc', volver: '/x' }, ENV.DOCS_SESION_SECRET, {
       ttlSegundos: 1,
       ahora: Date.now() - 10_000,
+      proposito: PROPOSITO_INTENTO,
     });
     const r = await manejarCallback(
       get('/api/auth/callback?code=un-code&state=abc', `${COOKIE_INTENTO}=${viejo}`),
@@ -225,25 +245,76 @@ describe('paso 2 — la vuelta de Odoo', () => {
     assert.match(await r.text(), /de qué usuario es el token/);
   });
 
-  it('si userinfo viene vacío igual hay sesión: el id ya vino con el token', async () => {
-    // Le pasa a los usuarios archivados, como `admin`: `userinfo` arma su
-    // respuesta con un `search`, que los excluye, y devuelve `{}`.
+  it('userinfo vacío es un NO: así se quedan afuera los usuarios portal', async () => {
+    // ESTE ES EL CONTROL DE ACCESO. El `authorize` de `oauth_provider` se lo
+    // permite a cualquiera que pueda loguearse en nuestro Odoo, y ahí adentro
+    // están los miles de usuarios portal de los clientes. Lo único que los
+    // separa de la documentación interna es el filtro del scope, que les hace
+    // contestar `{}` — y esta línea, que lo lee como un no.
     const { resultado: r } = await conFetch([OK_TOKEN, { cuerpo: {} }], async () =>
       manejarCallback(get('/api/auth/callback?code=c&state=abc', await intento('abc')), ENV),
     );
-    assert.equal(r.status, 302);
-    const sesion = r.headers.getSetCookie().find((c) => c.startsWith('docs_sesion='));
-    const datos = await verificarSesion(
-      sesion.slice(sesion.indexOf('=') + 1, sesion.indexOf(';')),
-      ENV.DOCS_SESION_SECRET,
-    );
-    assert.equal(datos.sub, 1866);
+    assert.equal(r.status, 403);
+    assert.match(await r.text(), /no tiene acceso a la documentación interna/);
+    assert.equal(r.headers.getSetCookie().length, 0, 'no puede quedar sesión');
   });
 
-  it('userinfo caído no tira el login abajo', async () => {
+  it('userinfo caído es 502 y tampoco deja sesión: ante la duda no se abre', async () => {
     const { resultado: r } = await conFetch([OK_TOKEN, new Error('timeout')], async () =>
       manejarCallback(get('/api/auth/callback?code=c&state=abc', await intento('abc')), ENV),
     );
+    assert.equal(r.status, 502);
+    assert.equal(r.headers.getSetCookie().length, 0);
+  });
+
+  it('userinfo con HTTP de error: 502, sin sesión', async () => {
+    const { resultado: r } = await conFetch([OK_TOKEN, { status: 500, cuerpo: {} }], async () =>
+      manejarCallback(get('/api/auth/callback?code=c&state=abc', await intento('abc')), ENV),
+    );
+    assert.equal(r.status, 502);
+    assert.equal(r.headers.getSetCookie().length, 0);
+  });
+});
+
+describe('la cookie del intento no es una sesión', () => {
+  it('lo que reparte la puerta sin credencial no abre el gate', async () => {
+    // El agujero que esto cierra: `/api/auth/login` pasa sin credencial y
+    // contesta con una cookie firmada. Si esa cookie valiera como sesión,
+    // cualquiera desde internet la pedía, le cambiaba el nombre a `docs_sesion`
+    // y entraba a toda la documentación interna sin pasar por Odoo.
+    const r = await manejarLogin(get('/api/auth/login?volver=%2Fx'), ENV);
+    const cookie = r.headers.get('set-cookie');
+    const valor = cookie.slice(cookie.indexOf('=') + 1, cookie.indexOf(';'));
+
+    assert.equal(await verificarSesion(valor, ENV.DOCS_SESION_SECRET), null);
+    assert.ok(
+      await verificarSesion(valor, ENV.DOCS_SESION_SECRET, { proposito: PROPOSITO_INTENTO }),
+      'como intento sí tiene que valer',
+    );
+  });
+
+  it('y una sesión tampoco vale como intento', async () => {
+    const sesion = await firmarSesion({ sub: 1866, state: 'abc' }, ENV.DOCS_SESION_SECRET);
+    const r = await manejarCallback(
+      get('/api/auth/callback?code=c&state=abc', `${COOKIE_INTENTO}=${sesion}`),
+      ENV,
+    );
+    assert.equal(r.status, 400);
+  });
+});
+
+describe('salir', () => {
+  it('borra la cookie de sesión y devuelve a donde se pidió', async () => {
+    const r = await manejarLogout(get('/api/auth/logout?volver=%2F19%2Fmanual%2Fx'), ENV);
     assert.equal(r.status, 302);
+    assert.equal(r.headers.get('location'), '/19/manual/x');
+    const cookie = r.headers.getSetCookie().find((c) => c.startsWith(`${COOKIE_SESION}=`));
+    assert.match(cookie, /Max-Age=0/);
+    assert.match(cookie, /Path=\//);
+  });
+
+  it('el destino de vuelta se valida igual que en el login', async () => {
+    const r = await manejarLogout(get('/api/auth/logout?volver=%2F%2Fsitio-de-otro.com'), ENV);
+    assert.equal(r.headers.get('location'), '/');
   });
 });
