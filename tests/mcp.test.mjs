@@ -31,7 +31,7 @@ const TOKENS = 'tuqui:tok-tuqui,claude-code:tok-claude';
 // ───────────────────────────────────────────────────────── tokens y auth
 
 describe('tokens', () => {
-  it('parsea la gramática de DOCS_MCP_TOKENS y tolera basura', () => {
+  it('parsea la gramática de DOCS_MCP_TOKENS y tolera basura', async () => {
     assert.deepEqual(paresDeTokens(' tuqui:tok1 , claude-code:tok2 ,, sin-token: , :sin-nombre'), [
       { nombre: 'tuqui', token: 'tok1' },
       { nombre: 'claude-code', token: 'tok2' },
@@ -40,14 +40,14 @@ describe('tokens', () => {
     assert.deepEqual(paresDeTokens(undefined), []);
   });
 
-  it('duplicados: los devuelve todos, en orden (la semántica es del comparador)', () => {
+  it('duplicados: los devuelve todos, en orden (la semántica es del comparador)', async () => {
     assert.deepEqual(paresDeTokens('a:t1,a:t2'), [
       { nombre: 'a', token: 't1' },
       { nombre: 'a', token: 't2' },
     ]);
   });
 
-  it('resuelve el consumidor dueño del token', () => {
+  it('resuelve el consumidor dueño del token', async () => {
     const tokens = parsearTokens(TOKENS);
     assert.equal(consumidorDe(tokens, 'tok-claude'), 'claude-code');
     assert.equal(consumidorDe(tokens, 'tok-inventado'), null);
@@ -67,7 +67,7 @@ describe('tokens', () => {
  */
 describe('gate', () => {
   const req = (url, init) => new Request(url, init);
-  const ENV = { DOCS_AUDIENCE: 'interno', DOCS_MCP_TOKENS: 'tuqui:tok-tuqui', DOCS_AUTH_PASSWORD: 'clave' };
+  const ENV = { DOCS_AUDIENCE: 'interno', DOCS_MCP_TOKENS: 'tuqui:tok-tuqui', DOCS_SESION_SECRET: 'secreto-de-firma' };
 
   const dosAudiencias = crearGate({ audiencias: ['publico', 'interno'] }); // oba / odumbo
   const soloInterno = crearGate({ audiencias: ['interno'] }); // adhoc-docs
@@ -77,112 +77,115 @@ describe('gate', () => {
     ['una audiencia interna', soloInterno],
   ]) {
     describe(nombre, () => {
-      it('POST al MCP con Bearer válido pasa', () => {
-        const r = decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), ENV);
+      it('POST al MCP con Bearer válido pasa', async () => {
+        const r = await decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), ENV);
         assert.equal(r, null);
       });
 
-      it('POST al MCP sin token es 401 con challenge Bearer (nunca Basic)', () => {
-        const r = decidir(req('https://d/api/mcp', { method: 'POST' }), ENV);
+      it('POST al MCP sin token es 401 con challenge Bearer (nunca Basic)', async () => {
+        const r = await decidir(req('https://d/api/mcp', { method: 'POST' }), ENV);
         assert.equal(r.status, 401);
         assert.equal(r.headers.get('WWW-Authenticate'), 'Bearer error="invalid_token"');
       });
 
-      it('POST al MCP con token inválido es 401', () => {
-        const r = decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer nope' } }), ENV);
+      it('POST al MCP con token inválido es 401', async () => {
+        const r = await decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer nope' } }), ENV);
         assert.equal(r.status, 401);
       });
 
       it('GET al MCP devuelve el cartel, no un 401 fatal, y sin challenge', async () => {
-        const r = decidir(req('https://d/api/mcp'), ENV);
+        const r = await decidir(req('https://d/api/mcp'), ENV);
         assert.equal(r.status, 200);
         assert.equal(r.headers.get('WWW-Authenticate'), null);
         assert.match(await r.text(), /configurá tu token/);
       });
 
-      it('HEAD al MCP no trae cuerpo', () => {
-        const r = decidir(req('https://d/api/mcp', { method: 'HEAD' }), ENV);
+      it('HEAD al MCP no trae cuerpo', async () => {
+        const r = await decidir(req('https://d/api/mcp', { method: 'HEAD' }), ENV);
         assert.equal(r.status, 200);
         assert.equal(r.body, null);
       });
 
-      it('MCP sin DOCS_MCP_TOKENS: no atiende a nadie (fail-closed)', () => {
-        const r = decidir(req('https://d/api/mcp', { method: 'POST' }), {
+      it('MCP sin DOCS_MCP_TOKENS: no atiende a nadie (fail-closed)', async () => {
+        const r = await decidir(req('https://d/api/mcp', { method: 'POST' }), {
           DOCS_AUDIENCE: 'interno',
-          DOCS_AUTH_PASSWORD: 'clave',
+          DOCS_SESION_SECRET: 'secreto-de-firma',
         });
         assert.equal(r.status, 503);
       });
 
-      it('sin DOCS_AUTH_PASSWORD el sitio no sirve, pero el MCP con Bearer sigue andando', () => {
+      it('sin DOCS_SESION_SECRET el sitio no sirve, pero el MCP con Bearer sigue andando', async () => {
         const env = { DOCS_AUDIENCE: 'interno', DOCS_MCP_TOKENS: 'tuqui:tok-tuqui' };
-        assert.equal(decidir(req('https://d/x/'), env).status, 503);
+        assert.equal((await decidir(req('https://d/x/'), env)).status, 503);
         assert.equal(
-          decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), env),
+          await decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), env),
           null,
         );
-        // Y los estáticos del agente también: rotar la contraseña de humanos
-        // no puede tirar a las máquinas.
-        assert.equal(decidir(req('https://d/agente/index.json', { headers: { authorization: 'Bearer tok-tuqui' } }), env), null);
+        // Y los estáticos del agente también: que el login de humanos esté sin
+        // configurar —o Odoo caído— no puede tirar a las máquinas.
+        assert.equal(await decidir(req('https://d/agente/index.json', { headers: { authorization: 'Bearer tok-tuqui' } }), env), null);
       });
 
-      it('el sitio pide Basic a los humanos y acepta Bearer a las máquinas', () => {
-        const r = decidir(req('https://d/x/'), ENV);
+      it('el sitio manda a los humanos al login y acepta Bearer a las máquinas', async () => {
+        const r = await decidir(req('https://d/x/'), ENV);
         assert.equal(r.status, 401);
-        assert.match(r.headers.get('WWW-Authenticate'), /^Basic realm="Documentacion interna de Adhoc"/);
-        assert.equal(decidir(req('https://d/x/', { headers: { authorization: 'Bearer tok-tuqui' } }), ENV), null);
+        assert.equal(r.headers.get('WWW-Authenticate'), null, 'nunca un challenge Basic');
+        assert.equal(await decidir(req('https://d/x/', { headers: { authorization: 'Bearer tok-tuqui' } }), ENV), null);
+        // La credencial compartida se fue con la v0.6.0: no abre ni con el
+        // usuario y la clave que valían ayer.
         const basic = 'Basic ' + Buffer.from('adhoc:clave').toString('base64');
-        assert.equal(decidir(req('https://d/x/', { headers: { authorization: basic } }), ENV), null);
-        const mala = 'Basic ' + Buffer.from('adhoc:otra').toString('base64');
-        assert.equal(decidir(req('https://d/x/', { headers: { authorization: mala } }), ENV).status, 401);
+        assert.equal((await decidir(req('https://d/x/', { headers: { authorization: basic } }), ENV)).status, 401);
       });
 
-      it('Basic malformado (sin ":") no explota: 401', () => {
-        const raro = 'Basic ' + Buffer.from('adhocsindospuntos').toString('base64');
-        assert.equal(decidir(req('https://d/x/', { headers: { authorization: raro } }), ENV).status, 401);
+      it('un Authorization raro no explota: 401', async () => {
+        // Ya no se parsea nada del header en el camino humano, pero el gate
+        // igual tiene que contestar y no tirar.
+        for (const raro of ['Basic ' + Buffer.from('adhocsindospuntos').toString('base64'), 'Basic ###', 'Bananas']) {
+          assert.equal((await decidir(req('https://d/x/', { headers: { authorization: raro } }), ENV)).status, 401);
+        }
       });
 
-      it('tokens duplicados: los dos valen', () => {
+      it('tokens duplicados: los dos valen', async () => {
         const env = { ...ENV, DOCS_MCP_TOKENS: 'a:t1,a:t2' };
         for (const t of ['t1', 't2']) {
-          assert.equal(decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: `Bearer ${t}` } }), env), null);
+          assert.equal(await decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: `Bearer ${t}` } }), env), null);
         }
       });
 
       // ── EL FIX: fail-closed sobre la variable, no solo sobre su valor.
       // Estaba en odumbo-docs y (en su variante de una audiencia) en
       // adhoc-docs; oba-docs devolvía "pasa" en los tres casos.
-      it('sin DOCS_AUDIENCE: 503, no se asume público', () => {
-        const r = decidir(req('https://d/x/'), { DOCS_AUTH_PASSWORD: 'clave', DOCS_MCP_TOKENS: 'a:t' });
+      it('sin DOCS_AUDIENCE: 503, no se asume público', async () => {
+        const r = await decidir(req('https://d/x/'), { DOCS_SESION_SECRET: 's', DOCS_MCP_TOKENS: 'a:t' });
         assert.equal(r.status, 503);
         assert.match(r.headers.get('X-Robots-Tag'), /noindex/);
       });
 
-      it('sin DOCS_AUDIENCE: el MCP con Bearer válido tampoco pasa', () => {
-        const r = decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), {
+      it('sin DOCS_AUDIENCE: el MCP con Bearer válido tampoco pasa', async () => {
+        const r = await decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), {
           DOCS_MCP_TOKENS: 'tuqui:tok-tuqui',
         });
         assert.equal(r.status, 503);
       });
 
-      it('DOCS_AUDIENCE con un valor desconocido: 503', () => {
-        const r = decidir(req('https://d/x/'), { ...ENV, DOCS_AUDIENCE: 'publicoo' });
+      it('DOCS_AUDIENCE con un valor desconocido: 503', async () => {
+        const r = await decidir(req('https://d/x/'), { ...ENV, DOCS_AUDIENCE: 'publicoo' });
         assert.equal(r.status, 503);
       });
     });
   }
 
-  it('con audiencia pública declarada, el sitio y el MCP pasan de largo', () => {
+  it('con audiencia pública declarada, el sitio y el MCP pasan de largo', async () => {
     const env = { DOCS_AUDIENCE: 'publico' };
-    assert.equal(dosAudiencias(req('https://d/19/manual/x'), env), null);
-    assert.equal(dosAudiencias(req('https://d/api/mcp', { method: 'POST' }), env), null);
+    assert.equal(await dosAudiencias(req('https://d/19/manual/x'), env), null);
+    assert.equal(await dosAudiencias(req('https://d/api/mcp', { method: 'POST' }), env), null);
   });
 
-  it('un repo de una sola audiencia interna NO tiene apagado: `publico` corta en 503', () => {
+  it('un repo de una sola audiencia interna NO tiene apagado: `publico` corta en 503', async () => {
     // adhoc-docs no tiene guard de fuga: el día que alguien ponga `publico`,
     // mejor 503 que una fuga silenciosa.
     for (const audiencia of ['publico', undefined]) {
-      const r = soloInterno(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), {
+      const r = await soloInterno(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), {
         ...ENV,
         DOCS_AUDIENCE: audiencia,
       });
@@ -191,31 +194,34 @@ describe('gate', () => {
   });
 
   it('el mensaje del 503 distingue "falta" de "no servible"', async () => {
-    const falta = await soloInterno(new Request('https://d/x/'), {}).text();
+    const falta = await (await soloInterno(new Request('https://d/x/'), {})).text();
     assert.match(falta, /falta DOCS_AUDIENCE/);
-    const rara = await soloInterno(new Request('https://d/x/'), { DOCS_AUDIENCE: 'publico' }).text();
+    const rara = await (await soloInterno(new Request('https://d/x/'), { DOCS_AUDIENCE: 'publico' })).text();
     assert.match(rara, /no es una audiencia servible \(esperaba interno\)/);
   });
 
   it('el cartel del MCP sale de la config, compartido con el handler', async () => {
     const gate = crearGate({ audiencias: ['interno'], cartelMcp: { interno: 'CARTEL PROPIO\n' } });
-    const r = gate(new Request('https://d/api/mcp'), ENV);
+    const r = await gate(new Request('https://d/api/mcp'), ENV);
     assert.equal(await r.text(), 'CARTEL PROPIO\n');
   });
 
-  it('la ruta del MCP es configurable y solo esa ruta es MCP', () => {
+  it('la ruta del MCP es configurable y solo esa ruta es MCP', async () => {
     const gate = crearGate({ audiencias: ['interno'], rutaMcp: '/api/otro' });
     // `/api/mcp` deja de ser MCP: cae al camino humano.
-    assert.equal(gate(new Request('https://d/api/mcp'), ENV).status, 401);
-    assert.equal(gate(new Request('https://d/api/otro'), ENV).status, 200);
+    assert.equal((await gate(new Request('https://d/api/mcp'), ENV)).status, 401);
+    assert.equal((await gate(new Request('https://d/api/otro'), ENV)).status, 200);
   });
 
-  it('el usuario Basic default es "adhoc" y DOCS_AUTH_USER lo cambia', () => {
+  it('el gate ya no sabe qué es un usuario y una contraseña', async () => {
+    // La v0.6.0 sacó el camino Basic entero: `DOCS_AUTH_USER` y
+    // `DOCS_AUTH_PASSWORD` no las lee nadie, y setearlas no cambia nada.
     const basic = (u, p) => 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64');
-    assert.equal(soloInterno(new Request('https://d/x/', { headers: { authorization: basic('adhoc', 'clave') } }), ENV), null);
-    const env = { ...ENV, DOCS_AUTH_USER: 'otro' };
-    assert.equal(soloInterno(new Request('https://d/x/', { headers: { authorization: basic('adhoc', 'clave') } }), env).status, 401);
-    assert.equal(soloInterno(new Request('https://d/x/', { headers: { authorization: basic('otro', 'clave') } }), env), null);
+    const env = { ...ENV, DOCS_AUTH_USER: 'otro', DOCS_AUTH_PASSWORD: 'clave' };
+    for (const cred of [basic('adhoc', 'clave'), basic('otro', 'clave')]) {
+      const r = await soloInterno(new Request('https://d/x/', { headers: { authorization: cred } }), env);
+      assert.equal(r.status, 401);
+    }
   });
 });
 
