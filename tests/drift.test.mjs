@@ -156,7 +156,7 @@ describe('el check completo, contra un consumidor de mentira', () => {
     assert.match(r.salida, /no hay drift que medir/);
   });
 
-  it('lockfile que resolvió otra cosa que el package.json: avisa', async () => {
+  it('lockfile que resolvió otra cosa que el package.json: BLOQUEA', async () => {
     const repo = consumidor('github:ingadhoc/doc-platform#v0.3.0', {
       lock: {
         packages: {
@@ -168,8 +168,27 @@ describe('el check completo, contra un consumidor de mentira', () => {
       },
     });
     const r = await correr(repo);
-    assert.equal(r.codigo, 0);
+    // Bloquea, no avisa: lo que se deploya no es lo que el repo declara, y un
+    // aviso ahí ya demostró que se lee tarde (01/09/2026, tres repos).
+    assert.equal(r.codigo, 1);
     assert.match(r.salida, /el lockfile resolvió/);
+    assert.match(r.salida, /npm install/, 'tiene que decir cómo se arregla');
+  });
+
+  it('el lockfile alineado no molesta, aunque el `resolved` sea un sha', async () => {
+    // El `resolved` de un dep de git es `...#<sha>`, nunca el tag: lo que
+    // alinea es la `version` del paquete.
+    const repo = consumidor('github:ingadhoc/doc-platform#v0.3.0', {
+      lock: {
+        packages: {
+          'node_modules/@ingadhoc/docs-platform': {
+            version: '0.3.0',
+            resolved: 'git+ssh://git@github.com/ingadhoc/doc-platform.git#abc123',
+          },
+        },
+      },
+    });
+    assert.equal((await correr(repo)).codigo, 0);
   });
 
   it('--json: una línea agregable, con el lag y los bloqueantes', async () => {
