@@ -14,6 +14,23 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.6.2 — 2026-09-01
+
+- **[seguridad] login-odoo: `puertaLogin`, `puertaCallback` y `puertaLogout` —
+  las tres rutas listas para montar, como objetos con `fetch`.** El pegamento
+  de los repos exportaba una función pelada, y Vercel entonces la invoca al
+  estilo Node con `(req, res)`: `request.headers.get` no existe, `request.url`
+  es relativa, y las tres rutas contestan 500 — el sitio interno queda sin
+  acceso humano, que es lo que pasó en producción. Un objeto con `fetch` es lo
+  único que hace que llegue un `Request` web. Es la misma forma que ya usaba
+  `mcp-handler`, que por eso nunca tuvo el problema.
+
+  El consumidor pasa a `export { puertaLogin as default } from
+  '@ingadhoc/docs-platform/login-odoo';`. Que la forma viva en el paquete y no
+  en el pegamento de cada repo es para que el próximo sitio no lo redescubra.
+
+---
+
 ## v0.6.1 — 2026-09-01
 
 - **[seguridad] login-odoo: las tres rutas de la puerta devolvían 500 en

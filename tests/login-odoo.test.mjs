@@ -17,6 +17,9 @@ import {
   manejarCallback,
   manejarLogin,
   manejarLogout,
+  puertaCallback,
+  puertaLogin,
+  puertaLogout,
 } from '../lib/login-odoo.mjs';
 import {
   COOKIE_SESION,
@@ -389,5 +392,36 @@ describe('salir', () => {
   it('el destino de vuelta se valida igual que en el login', async () => {
     const r = await manejarLogout(get('/api/auth/logout?volver=%2F%2Fsitio-de-otro.com'), ENV);
     assert.equal(r.headers.get('location'), '/');
+  });
+});
+
+describe('las tres rutas listas para montar', () => {
+  it('son objetos con `fetch`, no funciones', () => {
+    // NO ES ESTILO. Una función pelada hace que Vercel invoque la ruta al
+    // estilo Node con `(req, res)`: `request.headers.get` no existe,
+    // `request.url` es relativa, y las tres contestan 500 — el sitio interno
+    // sin acceso humano. Pasó en producción el 01/09/2026. Un objeto con
+    // `fetch` es lo único que hace llegar un `Request` web.
+    for (const [nombre, puerta] of Object.entries({ puertaLogin, puertaCallback, puertaLogout })) {
+      assert.equal(typeof puerta, 'object', `${nombre} tiene que ser un objeto`);
+      assert.equal(typeof puerta.fetch, 'function', `${nombre} tiene que exponer fetch`);
+    }
+  });
+
+  it('cada una llama a lo suyo', async () => {
+    const antes = process.env;
+    process.env = { ...ENV };
+    try {
+      const login = await puertaLogin.fetch(get('/api/auth/login?volver=%2Fx'));
+      assert.equal(new URL(login.headers.get('location')).pathname, '/oauth2/authorize');
+
+      const logout = await puertaLogout.fetch(get('/api/auth/logout?volver=%2Fx'));
+      assert.match(logout.headers.getSetCookie().join(''), /Max-Age=0/);
+
+      const callback = await puertaCallback.fetch(get('/api/auth/callback?error=access_denied'));
+      assert.equal(callback.status, 403);
+    } finally {
+      process.env = antes;
+    }
   });
 });
