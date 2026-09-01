@@ -30,12 +30,11 @@ const ENV = {
   DOCS_ODOO_CLIENT_ID: 'un-client-id',
   DOCS_ODOO_CLIENT_SECRET: 'un-secreto',
   DOCS_SESION_SECRET: 'secreto-de-firma',
-  DOCS_SITIO_URL: 'https://docs-interna.example.com',
   DOCS_ODOO_SCOPE: 'docs_interna',
 };
 
-const get = (path, cookie) =>
-  new Request(`https://docs-interna.example.com${path}`, {
+const get = (path, cookie, host = 'docs-interna.example.com') =>
+  new Request(`https://${host}${path}`, {
     headers: cookie ? { cookie } : {},
   });
 
@@ -116,6 +115,34 @@ describe('paso 1 — mandar a la persona a Odoo', () => {
     );
   });
 
+  it('el redirect_uri sale del host del request, no de una variable', async () => {
+    // Un preview de PR tiene otro host. Con un valor fijo, quien lo abría se
+    // logueaba y terminaba en PRODUCCIÓN sin enterarse. Ahora el `redirect_uri`
+    // apunta al deployment donde está parado: si ese host no está registrado en
+    // Odoo, Odoo rechaza el login a la vista de todos.
+    const preview = await manejarLogin(
+      get('/api/auth/login', undefined, 'oba-docs-interno-git-mi-rama.vercel.app'),
+      ENV,
+    );
+    assert.equal(
+      new URL(preview.headers.get('location')).searchParams.get('redirect_uri'),
+      'https://oba-docs-interno-git-mi-rama.vercel.app/api/auth/callback',
+    );
+  });
+
+  it('un `x-forwarded-host` gana sobre el host interno del hosting', async () => {
+    const r = await manejarLogin(
+      new Request('https://algo-interno.vercel-internal/api/auth/login', {
+        headers: { 'x-forwarded-host': 'wiki.adhoc.inc', 'x-forwarded-proto': 'https' },
+      }),
+      ENV,
+    );
+    assert.equal(
+      new URL(r.headers.get('location')).searchParams.get('redirect_uri'),
+      'https://wiki.adhoc.inc/api/auth/callback',
+    );
+  });
+
   it('sin configuración completa: 503 que dice qué falta', async () => {
     const { DOCS_ODOO_CLIENT_SECRET, ...incompleto } = ENV;
     const r = await manejarLogin(get('/api/auth/login'), incompleto);
@@ -173,6 +200,12 @@ describe('paso 2 — la vuelta de Odoo', () => {
     assert.match(pedidos[0].url, /\/oauth2\/token$/);
     assert.equal(pedidos[0].init.method, 'POST');
     assert.match(pedidos[0].init.body.toString(), /client_secret=un-secreto/);
+    // El `redirect_uri` del intercambio tiene que ser IDÉNTICO al del paso 1, o
+    // el proveedor rechaza el code. Sale del mismo lugar: el host del request.
+    assert.match(
+      pedidos[0].init.body.toString(),
+      /redirect_uri=https%3A%2F%2Fdocs-interna.example.com%2Fapi%2Fauth%2Fcallback/,
+    );
   });
 
   it('el state que no coincide se descarta', async () => {

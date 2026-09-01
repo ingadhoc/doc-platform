@@ -48,14 +48,24 @@ documentación interna se entra con el usuario de Odoo, y no hay otra forma.
   a humanos. Las máquinas no dependen de esto — el MCP y los estáticos con
   Bearer siguen andando con `DOCS_MCP_TOKENS`, y ese fail-closed por capa está
   fijado por tests.
+- **login-odoo: el `redirect_uri` sale del host del request y `DOCS_SITIO_URL`
+  desaparece.** Una variable con la URL del sitio solo podía decir dos cosas: lo
+  mismo que el host real —y entonces sobra— o algo distinto. Lo segundo rompía
+  los previews: quien abría un preview de PR se logueaba, Odoo lo devolvía al
+  callback de PRODUCCIÓN y terminaba ahí, con la cookie en el dominio de
+  producción, sin enterarse de que nunca vio el preview. Ahora cada deployment
+  pide volver a sí mismo. Como la lista de `redirect_uri` la valida Odoo, un
+  host que no esté registrado falla con un error de Odoo a la vista en vez de
+  mandar a alguien a otro sitio en silencio — y habilitar un preview es agregar
+  su URL al client.
 - login-odoo: `/api/auth/logout` — tercera ruta de puerta. Borra la cookie y
   nada más; no cierra la sesión de Odoo. Es para la máquina prestada, no para la
   baja de alguien: eso lo hace archivar el usuario en Odoo, que corta el próximo
   login y vence la sesión viva en menos de 12 h.
 
 **Para el consumidor:** además del `await` de la v0.5.0, hay que configurar
-`DOCS_SESION_SECRET`, `DOCS_ODOO_*` y `DOCS_SITIO_URL` en el proyecto de Vercel
-**antes** de subir el pin — sin `DOCS_SESION_SECRET` el sitio interno devuelve
+`DOCS_SESION_SECRET` y las `DOCS_ODOO_*` en el proyecto de Vercel **antes** de
+subir el pin — sin `DOCS_SESION_SECRET` el sitio interno devuelve
 503. `DOCS_AUTH_PASSWORD` y `DOCS_AUTH_USER` se pueden borrar: ya no las lee
 nadie.
 
