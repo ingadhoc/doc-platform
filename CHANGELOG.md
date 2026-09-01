@@ -14,6 +14,45 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.5.0 — 2026-09-01
+
+Entrar a la documentación interna con **el usuario de Odoo** en vez de la
+credencial compartida (task 72391). El gate sigue siendo el mismo y sigue
+cubriendo todas las rutas: lo que cambia es la función de chequeo.
+
+- **[seguridad] gate: `decidir()` ahora es `async` y hay que `await`-earla.** Es
+  un cambio incompatible y silencioso si no se adopta: sin el `await`, el
+  middleware devuelve una promesa donde el runtime espera una respuesta, y un
+  sitio interno puede terminar sirviendo contenido sin gate. El pegamento de cada
+  repo consumidor pasa a `export default async function middleware(request)` +
+  `await decidir(...)`. Una línea por repo, y no es opcional.
+- gate: acepta una **cookie de sesión firmada** (`DOCS_SESION_SECRET`). Con
+  sesión válida pasa; sin ella, a una persona navegando la manda al login
+  (302) y a una máquina le contesta 401 sin challenge `Basic`.
+- gate: `RUTAS_DE_PUERTA` — `/api/auth/login` y `/api/auth/callback` pasan sin
+  credencial, porque una puerta cerrada con llave desde afuera no se abre. Es
+  una **lista exacta**, no un prefijo: con `/api/auth/*` alcanzaría agregar un
+  archivo en esa carpeta para publicar sin gate. Hay un test que la fija.
+- gate: la credencial compartida sigue valiendo mientras `DOCS_AUTH_PASSWORD`
+  esté configurada, y es el break-glass para cuando Odoo no responda. El
+  fail-closed ahora es sobre las dos variables: sin ninguna, 503.
+- sesion: nace `@ingadhoc/docs-platform/sesion` — firma y verifica la cookie con
+  WebCrypto (HMAC-SHA256), con la expiración adentro de la firma. Apto edge.
+- login-odoo: nace `@ingadhoc/docs-platform/login-odoo` con `manejarLogin` y
+  `manejarCallback`, el ida y vuelta OAuth2 contra `oauth_provider` de OCA. Se
+  llama así y no `oidc` porque ese módulo es OAuth2 pelado: sin discovery, sin
+  JWKS y sin `id_token`.
+- login-odoo: **la identidad sale de `odoo_user_id`, que ya viene en la
+  respuesta del token**, no de `/oauth2/userinfo`. Ese endpoint arma su
+  respuesta con un `search` sobre `res.users`, que excluye los archivados, y con
+  un usuario archivado devuelve `{}` y HTTP 200: el login se caería con una
+  sesión válida en la mano. El email y el nombre se piden aparte y son
+  opcionales.
+- login-odoo: el destino de vuelta se valida contra rutas protocol-relative
+  (`//otro.com`, `/\otro.com`), que convertirían al login en un trampolín.
+
+---
+
 ## v0.4.1 — 2026-08-25
 
 - docusaurus-plugin: el import de `@docusaurus/plugin-content-docs/client` del badge de países no resolvía con `npm ci` (el paquete vive en el node_modules de la raíz del consumidor y Docusaurus en `site/node_modules`); el plugin ahora lo alias-ea resolviéndolo desde el siteDir. Localmente el hoisting lo tapaba — en CI rompía el bundle entero.

@@ -29,7 +29,10 @@ const MIDDLEWARE = process.env.DOCS_MIDDLEWARE_PATH
   ? new URL(process.env.DOCS_MIDDLEWARE_PATH, `file://${process.cwd()}/`)
   : new URL('../lib/middleware.js', import.meta.url);
 
-const { decidir } = await import(GATE);
+const { decidir, RUTAS_DE_PUERTA } = await import(GATE);
+const { COOKIE_SESION, firmarSesion } = await import(
+  new URL('../lib/mcp/sesion.mjs', import.meta.url),
+);
 
 const basic = (u, p) => `Basic ${Buffer.from(`${u}:${p}`).toString('base64')}`;
 const req = (path, { metodo = 'GET', auth, host = 'docs.adhoc.com.ar' } = {}) =>
@@ -61,7 +64,7 @@ function caso([desc, request, env, audiencias, esperado, extra]) {
   // `async` + `await extra(r)`: hay chequeos que leen el body (una promesa) y
   // con un callback sincrónico su assert se perdía en silencio.
   it(desc, async () => {
-    const r = decidir(request, env, { audiencias });
+    const r = await decidir(request, env, { audiencias });
     const obtenido = r === null ? null : r.status;
     assert.equal(obtenido, esperado, `esperaba ${esperado ?? 'pasa'} y dio ${obtenido ?? 'pasa'}`);
     if (extra) await extra(r);
@@ -206,5 +209,128 @@ describe('invariantes sobre el CÓDIGO (no sobre el comportamiento)', () => {
       !/if\s*\(\s*!\s*env\.DOCS_AUTH_PASSWORD\s*\)\s*return\s+null/.test(sinComentarios),
       'sin contraseña se responde 503, nunca se deja pasar',
     );
+  });
+});
+
+// ─────────────────────────── login con el usuario de Odoo (task 72391)
+
+describe('la sesión firmada reemplaza a la credencial compartida', () => {
+  const SECRETO = 'secreto-de-firma';
+  // Un sitio interno ya migrado: sesión sí, credencial compartida no.
+  const CON_SESION = {
+    DOCS_AUDIENCE: 'interno',
+    DOCS_SESION_SECRET: SECRETO,
+    DOCS_MCP_TOKENS: 'tuqui:tok-tuqui',
+  };
+  // Durante la transición conviven las dos.
+  const LAS_DOS = { ...CON_SESION, DOCS_AUTH_PASSWORD: 'clave-secreta' };
+
+  const navegando = (path, cookie) =>
+    new Request(`https://docs-interna.adhoc.inc${path}`, {
+      headers: { accept: 'text/html,application/xhtml+xml', ...(cookie ? { cookie } : {}) },
+    });
+  const buscando = (path, cookie) =>
+    new Request(`https://docs-interna.adhoc.inc${path}`, {
+      headers: { accept: 'application/json', ...(cookie ? { cookie } : {}) },
+    });
+
+  const cookieViva = async () =>
+    `${COOKIE_SESION}=${await firmarSesion({ sub: 1866, email: 'vib@example.com' }, SECRETO)}`;
+
+  it('con sesión válida, la persona pasa', async () => {
+    const r = await decidir(navegando('/19/manual/x', await cookieViva()), CON_SESION, {
+      audiencias: DOS,
+    });
+    assert.equal(r, null);
+  });
+
+  it('sin sesión, a la persona se la manda a loguearse y vuelve a donde quería ir', async () => {
+    const r = await decidir(navegando('/19/manual/facturas?q=arca'), CON_SESION, {
+      audiencias: DOS,
+    });
+    assert.equal(r.status, 302);
+    assert.equal(
+      r.headers.get('location'),
+      '/api/auth/login?volver=%2F19%2Fmanual%2Ffacturas%3Fq%3Darca',
+    );
+  });
+
+  it('a las máquinas no se las redirige: 401 y sin challenge Basic', async () => {
+    // El buscador del sitio pide `/search-index.json` con fetch. Un 302 le
+    // devolvería HTML de login donde espera JSON, y un challenge `Basic` le
+    // abriría al humano el prompt de una contraseña que ya no existe.
+    const r = await decidir(buscando('/search-index.json'), CON_SESION, { audiencias: DOS });
+    assert.equal(r.status, 401);
+    assert.equal(r.headers.get('www-authenticate'), null);
+  });
+
+  it('una cookie con la firma cambiada no entra', async () => {
+    const valor = await firmarSesion({ sub: 1866 }, 'otro-secreto');
+    const r = await decidir(navegando('/x', `${COOKIE_SESION}=${valor}`), CON_SESION, {
+      audiencias: DOS,
+    });
+    assert.equal(r.status, 302);
+  });
+
+  it('fail-closed: sin sesión NI credencial compartida configuradas, 503', async () => {
+    // Ni un sitio abierto ni un sitio que pide algo que nadie puede tener: el
+    // build está mal configurado y se dice.
+    const r = await decidir(navegando('/x'), { DOCS_AUDIENCE: 'interno' }, { audiencias: DOS });
+    assert.equal(r.status, 503);
+  });
+
+  it('mientras las dos convivan, la credencial compartida sigue entrando (break-glass)', async () => {
+    const basicOk = `Basic ${Buffer.from('adhoc:clave-secreta').toString('base64')}`;
+    const r = await decidir(
+      new Request('https://d/x', { headers: { authorization: basicOk, accept: 'text/html' } }),
+      LAS_DOS,
+      { audiencias: DOS },
+    );
+    assert.equal(r, null);
+  });
+
+  it('quien mandó Basic mal recibe otro challenge Basic, no un redirect', async () => {
+    // Tiene el prompt del browser abierto delante: mandarlo al login ahí es
+    // perderle el intento.
+    const basicMal = `Basic ${Buffer.from('adhoc:la-que-no-es').toString('base64')}`;
+    const r = await decidir(
+      new Request('https://d/x', { headers: { authorization: basicMal, accept: 'text/html' } }),
+      LAS_DOS,
+      { audiencias: DOS },
+    );
+    assert.equal(r.status, 401);
+    assert.match(r.headers.get('www-authenticate') ?? '', /^Basic/);
+  });
+
+  it('el MCP no cambia: sigue siendo Bearer, la sesión no lo abre', async () => {
+    const r = await decidir(
+      new Request('https://d/api/mcp', { method: 'POST', headers: { cookie: await cookieViva() } }),
+      CON_SESION,
+      { audiencias: DOS },
+    );
+    assert.equal(r.status, 401);
+    assert.match(r.headers.get('www-authenticate') ?? '', /^Bearer/);
+  });
+});
+
+describe('las rutas de puerta', () => {
+  const CON_SESION = { DOCS_AUDIENCE: 'interno', DOCS_SESION_SECRET: 'secreto-de-firma' };
+
+  for (const ruta of RUTAS_DE_PUERTA) {
+    it(`${ruta} pasa sin credencial (si no, no hay forma de llegar al login)`, async () => {
+      assert.equal(await decidir(req(ruta), CON_SESION, { audiencias: DOS }), null);
+    });
+  }
+
+  it('la lista es exacta, no un prefijo: /api/auth/otra-cosa NO pasa', async () => {
+    // Con un prefijo, agregar un archivo en esa carpeta publicaría cualquier
+    // cosa sin gate y nadie lo vería en el diff.
+    const r = await decidir(req('/api/auth/otra-cosa'), CON_SESION, { audiencias: DOS });
+    assert.notEqual(r, null);
+  });
+
+  it('un build mal configurado devuelve 503 hasta en la puerta', async () => {
+    const r = await decidir(req('/api/auth/login'), {}, { audiencias: DOS });
+    assert.equal(r.status, 503);
   });
 });
