@@ -146,3 +146,57 @@ puede autenticar.
 Ojo con el `Host`: quien llame puede mandar el que quiera, pero lo único que
 consigue es que Odoo le rechace el login. Nosotros no validamos ese header —
 para eso está la lista del client.
+
+## Cómo se prueba un cambio de auth
+
+**Ningún preview de PR ejerce el login.** En `oba-docs` el deployment preview
+del sitio interno no se hace (el contenido se revisa en el público, que no tiene
+gate) y en `adhoc-docs` el preview existe pero no tiene las variables de un
+sitio con login configurado. El CI compila el sitio interno, que es otra cosa:
+verifica que el build sale, no que se pueda entrar.
+
+Consecuencia: **un cambio de auth se prueba contra el deployment real**, después
+de mergear, o disparando a mano el build del sitio interno. No hay atajo, y
+saberlo de antemano es la diferencia entre media hora y media tarde.
+
+La suite del paquete tampoco alcanza, y no es por falta de casos: los tres
+errores que rompieron el login en producción el 01/09/2026 son **invisibles**
+para un test en Node.
+
+| Lo que pasa en Vercel | Por qué el test no lo ve |
+|---|---|
+| `request.url` es **relativa** en la función y absoluta en el edge | `new Request(...)` no deja construir un pedido con url relativa |
+| Una **función pelada** exportada la invoca como handler de Node `(req, res)` | En un test la llamás vos, con lo que quieras |
+| `npm ci` instala lo que dice el **lockfile**, no el `package.json` | El test corre contra el código del repo, no contra un instalado |
+
+Los tres tienen hoy su caso —uno arma el pedido a mano, otro fija que las rutas
+son objetos con `fetch`, el tercero bloquea en el drift-check— pero ninguno
+nació de un test: nacieron de un 500 en producción.
+
+### La batería mínima, sin browser
+
+Contra el sitio ya deployado. Devuelve todo lo que se puede verificar sin un
+usuario de verdad:
+
+```bash
+S=https://docs-interna.adhoc.inc
+
+# La puerta redirige a Odoo, con el redirect_uri de ESTE host y el scope filtrado
+curl -si "$S/api/auth/login?volver=%2F19%2Fmanual" | grep -i '^location'
+
+# El bypass: la cookie que la puerta reparte sin credencial NO abre el gate
+INT=$(curl -si "$S/api/auth/login?volver=%2F" | sed -n 's/^[Ss]et-[Cc]ookie: docs_login=\([^;]*\).*/\1/p')
+curl -so /dev/null -w '%{http_code}\n' -H 'Accept: text/html' -H "Cookie: docs_sesion=$INT" "$S/19/manual"   # 302, nunca 200
+
+# Nada de esto se tiene que haber movido
+curl -so /dev/null -w 'buscador %{http_code}\n' "$S/search-index.json"                      # 401 sin challenge
+curl -so /dev/null -w 'mcp %{http_code}\n' "$S/api/mcp"                                     # 200 (cartel)
+curl -so /dev/null -w 'credencial vieja %{http_code}\n' -u adhoc:x -H 'Accept: text/html' "$S/"  # 302 al login
+```
+
+### Lo que sí o sí necesita a una persona
+
+Entrar. Con **un usuario interno** (tiene que entrar y volver al artículo que
+pidió, no a la home) y con **uno portal** (tiene que recibir el 403). Ese par es
+la única prueba real del control de acceso, porque el que decide es el filtro
+del scope y vive en Odoo, no acá.

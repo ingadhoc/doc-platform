@@ -14,6 +14,22 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.6.3 — 2026-09-01
+
+- **drift-check: un lockfile desalineado con el `package.json` ahora BLOQUEA**,
+  en vez de avisar. Un pin atrasado es un riesgo diferido; un lock desalineado
+  es que lo que se deploya no es lo que el repo declara — y el CI lo bendice
+  igual. Pasó: los tres repos subieron el pin a v0.6.0 editando el lock a mano,
+  el lock siguió resolviendo v0.4.1, y producción se deployó con la versión
+  vieja con todo en verde. El mensaje ahora dice el `npm install` exacto, porque
+  editar la línea a mano no re-resuelve el paquete.
+- docs: `docs/login-con-odoo.md` suma **cómo se prueba un cambio de auth** —
+  ningún preview de PR ejerce el login, qué clase de error es invisible para la
+  suite y por qué, la batería de `curl` sin browser, y las dos pruebas que sí
+  necesitan a una persona.
+
+---
+
 ## v0.6.2 — 2026-09-01
 
 - **[seguridad] login-odoo: `puertaLogin`, `puertaCallback` y `puertaLogout` —
