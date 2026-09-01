@@ -67,6 +67,46 @@ async function intento(state, volver = '/19/manual/x') {
   return `${COOKIE_INTENTO}=${valor}`;
 }
 
+/**
+ * Un pedido como llega a la FUNCIÓN en Vercel: `url` es la ruta relativa, no la
+ * URL absoluta que arma `new Request(...)`. Es la forma que rompió el login en
+ * producción, y la única manera de que un test la vea es construirla a mano —
+ * el constructor estándar no la deja existir.
+ */
+const comoVercel = (path, headers = {}) => ({
+  url: path,
+  headers: new Headers({ 'x-forwarded-host': 'wiki.adhoc.inc', 'x-forwarded-proto': 'https', ...headers }),
+});
+
+describe('la URL del pedido en el runtime de la función', () => {
+  it('el login no explota cuando `url` es relativa', async () => {
+    // Antes de este fix: TypeError ERR_INVALID_URL → 500 en las tres rutas de
+    // la puerta, y nadie podía entrar. En el edge la misma propiedad viene
+    // absoluta, así que el gate andaba y esto solo se veía del lado de la
+    // función. Verificado en producción el 01/09/2026.
+    const r = await manejarLogin(comoVercel('/api/auth/login?volver=%2Fadhoc-way'), ENV);
+    assert.equal(r.status, 302);
+    const destino = new URL(r.headers.get('location'));
+    assert.equal(destino.pathname, '/oauth2/authorize');
+    assert.equal(
+      destino.searchParams.get('redirect_uri'),
+      'https://wiki.adhoc.inc/api/auth/callback',
+    );
+  });
+
+  it('el logout tampoco, y respeta el destino', async () => {
+    const r = await manejarLogout(comoVercel('/api/auth/logout?volver=%2Fadhoc-way'), ENV);
+    assert.equal(r.status, 302);
+    assert.equal(r.headers.get('location'), '/adhoc-way');
+  });
+
+  it('y el callback lee sus parámetros igual', async () => {
+    const r = await manejarCallback(comoVercel('/api/auth/callback?error=access_denied'), ENV);
+    assert.equal(r.status, 403);
+    assert.match(await r.text(), /access_denied/);
+  });
+});
+
 describe('paso 1 — mandar a la persona a Odoo', () => {
   it('redirige a /oauth2/authorize con lo que Odoo espera', async () => {
     const r = await manejarLogin(get('/api/auth/login?volver=%2F19%2Fmanual%2Fx'), ENV);
