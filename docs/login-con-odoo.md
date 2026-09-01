@@ -111,6 +111,20 @@ No hay revocación individual instantánea: pedirla obligaría a hablar con Odoo
 cada request o a mantener una lista de revocación, y ninguna de las dos se paga
 sola para este caso.
 
+## El pegamento de cada repo
+
+Un archivo por ruta en `api/auth/`, y **una línea cada uno**:
+
+```js
+// api/auth/login.mjs
+export { puertaLogin as default } from '@ingadhoc/docs-platform/login-odoo';
+```
+
+Idem `puertaCallback` y `puertaLogout`. Son **objetos con `fetch`**, no
+funciones, y eso no es estilo: exportar una función pelada hace que Vercel la
+invoque al estilo Node con `(req, res)`, y las tres rutas contestan 500 con el
+sitio sin acceso humano. Pasó.
+
 ## Los previews de PR
 
 El `redirect_uri` sale del **host del request**, así que cada deployment pide
