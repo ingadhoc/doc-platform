@@ -14,6 +14,53 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.6.0 — 2026-09-01
+
+Cierra dos agujeros del login de la v0.5.0 —encontrados revisando el PR antes de
+mergearlo— y saca la credencial compartida. Es el final de la task 72391: a la
+documentación interna se entra con el usuario de Odoo, y no hay otra forma.
+
+- **[seguridad] sesion: el propósito va adentro de la firma (`typ`), y
+  `verificarSesion()` exige cuál espera.** Con el mismo secreto se firmaban dos
+  cosas —el intento de login y la sesión— y una firma válida no decía para qué
+  se emitió. Como `/api/auth/login` pasa sin credencial (tiene que pasar),
+  cualquiera desde internet pedía esa ruta, se quedaba con la cookie del intento,
+  le cambiaba el nombre a `docs_sesion` y entraba a toda la documentación
+  interna: sin pasar por Odoo, sin ser nadie y renovable indefinidamente.
+  Reproducido antes del fix. Una cookie sin `typ` tampoco vale: fail-closed.
+- **[seguridad] login-odoo: `userinfo` pasa a ser la autorización, no un
+  adorno.** `oauth.provider.client` no tiene ningún campo para restringir quién
+  puede autorizar un cliente, así que cualquiera que pueda loguearse en nuestro
+  Odoo completaba el flujo — incluidos los ~4200 usuarios portal activos, que
+  son clientes. El filtro vive ahora en el scope (**`DOCS_ODOO_SCOPE`**, nueva y
+  obligatoria, sin default): un `oauth.provider.scope` sobre `res.users` con un
+  `ir.filters` de `share = False`, que hace que `userinfo` conteste `{}` para
+  todo el que no sea interno. Una respuesta vacía es un NO. Odoo caído es 502 y
+  no deja sesión: ante la duda no se abre. El usuario archivado queda afuera,
+  que es lo correcto.
+- **[seguridad] gate: se fue la credencial compartida.** `DOCS_AUTH_PASSWORD`,
+  `DOCS_AUTH_USER`, el challenge `Basic` y `REALM_DEFAULT` no existen más, y con
+  ellos las dos cosas que la credencial no podía dar: saber quién entró, y que
+  rotarla alcanzara (cada deployment viejo seguía accesible con el secreto de su
+  época). El fail-closed pasa a ser sobre `DOCS_SESION_SECRET`.
+  **No queda break-glass, a propósito**: un segundo camino que abre todo es lo
+  que se vino a sacar. Si Odoo no responde, la documentación interna no se sirve
+  a humanos. Las máquinas no dependen de esto — el MCP y los estáticos con
+  Bearer siguen andando con `DOCS_MCP_TOKENS`, y ese fail-closed por capa está
+  fijado por tests.
+- login-odoo: `/api/auth/logout` — tercera ruta de puerta. Borra la cookie y
+  nada más; no cierra la sesión de Odoo. Es para la máquina prestada, no para la
+  baja de alguien: eso lo hace archivar el usuario en Odoo, que corta el próximo
+  login y vence la sesión viva en menos de 12 h.
+
+**Para el consumidor:** además del `await` de la v0.5.0, hay que configurar
+`DOCS_SESION_SECRET`, `DOCS_ODOO_*` y `DOCS_SITIO_URL` en el proyecto de Vercel
+**antes** de subir el pin — sin `DOCS_SESION_SECRET` el sitio interno devuelve
+503. `DOCS_AUTH_PASSWORD` y `DOCS_AUTH_USER` se pueden borrar: ya no las lee
+nadie.
+
+---
+
 ## v0.5.0 — 2026-09-01
 
 Entrar a la documentación interna con **el usuario de Odoo** en vez de la

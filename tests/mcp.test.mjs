@@ -67,7 +67,7 @@ describe('tokens', () => {
  */
 describe('gate', () => {
   const req = (url, init) => new Request(url, init);
-  const ENV = { DOCS_AUDIENCE: 'interno', DOCS_MCP_TOKENS: 'tuqui:tok-tuqui', DOCS_AUTH_PASSWORD: 'clave' };
+  const ENV = { DOCS_AUDIENCE: 'interno', DOCS_MCP_TOKENS: 'tuqui:tok-tuqui', DOCS_SESION_SECRET: 'secreto-de-firma' };
 
   const dosAudiencias = crearGate({ audiencias: ['publico', 'interno'] }); // oba / odumbo
   const soloInterno = crearGate({ audiencias: ['interno'] }); // adhoc-docs
@@ -109,37 +109,40 @@ describe('gate', () => {
       it('MCP sin DOCS_MCP_TOKENS: no atiende a nadie (fail-closed)', async () => {
         const r = await decidir(req('https://d/api/mcp', { method: 'POST' }), {
           DOCS_AUDIENCE: 'interno',
-          DOCS_AUTH_PASSWORD: 'clave',
+          DOCS_SESION_SECRET: 'secreto-de-firma',
         });
         assert.equal(r.status, 503);
       });
 
-      it('sin DOCS_AUTH_PASSWORD el sitio no sirve, pero el MCP con Bearer sigue andando', async () => {
+      it('sin DOCS_SESION_SECRET el sitio no sirve, pero el MCP con Bearer sigue andando', async () => {
         const env = { DOCS_AUDIENCE: 'interno', DOCS_MCP_TOKENS: 'tuqui:tok-tuqui' };
         assert.equal((await decidir(req('https://d/x/'), env)).status, 503);
         assert.equal(
           await decidir(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), env),
           null,
         );
-        // Y los estáticos del agente también: rotar la contraseña de humanos
-        // no puede tirar a las máquinas.
+        // Y los estáticos del agente también: que el login de humanos esté sin
+        // configurar —o Odoo caído— no puede tirar a las máquinas.
         assert.equal(await decidir(req('https://d/agente/index.json', { headers: { authorization: 'Bearer tok-tuqui' } }), env), null);
       });
 
-      it('el sitio pide Basic a los humanos y acepta Bearer a las máquinas', async () => {
+      it('el sitio manda a los humanos al login y acepta Bearer a las máquinas', async () => {
         const r = await decidir(req('https://d/x/'), ENV);
         assert.equal(r.status, 401);
-        assert.match(r.headers.get('WWW-Authenticate'), /^Basic realm="Documentacion interna de Adhoc"/);
+        assert.equal(r.headers.get('WWW-Authenticate'), null, 'nunca un challenge Basic');
         assert.equal(await decidir(req('https://d/x/', { headers: { authorization: 'Bearer tok-tuqui' } }), ENV), null);
+        // La credencial compartida se fue con la v0.6.0: no abre ni con el
+        // usuario y la clave que valían ayer.
         const basic = 'Basic ' + Buffer.from('adhoc:clave').toString('base64');
-        assert.equal(await decidir(req('https://d/x/', { headers: { authorization: basic } }), ENV), null);
-        const mala = 'Basic ' + Buffer.from('adhoc:otra').toString('base64');
-        assert.equal((await decidir(req('https://d/x/', { headers: { authorization: mala } }), ENV)).status, 401);
+        assert.equal((await decidir(req('https://d/x/', { headers: { authorization: basic } }), ENV)).status, 401);
       });
 
-      it('Basic malformado (sin ":") no explota: 401', async () => {
-        const raro = 'Basic ' + Buffer.from('adhocsindospuntos').toString('base64');
-        assert.equal((await decidir(req('https://d/x/', { headers: { authorization: raro } }), ENV)).status, 401);
+      it('un Authorization raro no explota: 401', async () => {
+        // Ya no se parsea nada del header en el camino humano, pero el gate
+        // igual tiene que contestar y no tirar.
+        for (const raro of ['Basic ' + Buffer.from('adhocsindospuntos').toString('base64'), 'Basic ###', 'Bananas']) {
+          assert.equal((await decidir(req('https://d/x/', { headers: { authorization: raro } }), ENV)).status, 401);
+        }
       });
 
       it('tokens duplicados: los dos valen', async () => {
@@ -153,7 +156,7 @@ describe('gate', () => {
       // Estaba en odumbo-docs y (en su variante de una audiencia) en
       // adhoc-docs; oba-docs devolvía "pasa" en los tres casos.
       it('sin DOCS_AUDIENCE: 503, no se asume público', async () => {
-        const r = await decidir(req('https://d/x/'), { DOCS_AUTH_PASSWORD: 'clave', DOCS_MCP_TOKENS: 'a:t' });
+        const r = await decidir(req('https://d/x/'), { DOCS_SESION_SECRET: 's', DOCS_MCP_TOKENS: 'a:t' });
         assert.equal(r.status, 503);
         assert.match(r.headers.get('X-Robots-Tag'), /noindex/);
       });
@@ -210,12 +213,15 @@ describe('gate', () => {
     assert.equal((await gate(new Request('https://d/api/otro'), ENV)).status, 200);
   });
 
-  it('el usuario Basic default es "adhoc" y DOCS_AUTH_USER lo cambia', async () => {
+  it('el gate ya no sabe qué es un usuario y una contraseña', async () => {
+    // La v0.6.0 sacó el camino Basic entero: `DOCS_AUTH_USER` y
+    // `DOCS_AUTH_PASSWORD` no las lee nadie, y setearlas no cambia nada.
     const basic = (u, p) => 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64');
-    assert.equal(await soloInterno(new Request('https://d/x/', { headers: { authorization: basic('adhoc', 'clave') } }), ENV), null);
-    const env = { ...ENV, DOCS_AUTH_USER: 'otro' };
-    assert.equal((await soloInterno(new Request('https://d/x/', { headers: { authorization: basic('adhoc', 'clave') } }), env)).status, 401);
-    assert.equal(await soloInterno(new Request('https://d/x/', { headers: { authorization: basic('otro', 'clave') } }), env), null);
+    const env = { ...ENV, DOCS_AUTH_USER: 'otro', DOCS_AUTH_PASSWORD: 'clave' };
+    for (const cred of [basic('adhoc', 'clave'), basic('otro', 'clave')]) {
+      const r = await soloInterno(new Request('https://d/x/', { headers: { authorization: cred } }), env);
+      assert.equal(r.status, 401);
+    }
   });
 });
 
