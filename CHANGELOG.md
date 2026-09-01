@@ -14,6 +14,24 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.6.1 — 2026-09-01
+
+- **[seguridad] login-odoo: las tres rutas de la puerta devolvían 500 en
+  producción.** En el runtime de la función, Vercel pasa `request.url` como
+  RUTA RELATIVA (`/api/auth/login?volver=%2F`), no como URL absoluta, así que
+  `new URL(request.url)` tiraba `ERR_INVALID_URL`. En el edge la misma
+  propiedad viene absoluta: por eso el gate mandaba a loguearse y el login
+  contestaba 500 — nadie podía entrar, y el sitio interno quedaba sin acceso
+  humano. Se ve solo corriendo en Vercel; el `Request` estándar no deja
+  construir una url relativa, así que la suite no podía verlo. Ahora hay un
+  `urlDelPedido()` que arma la URL absoluta desde los headers del proxy, y un
+  test que construye el pedido con la forma que llega de verdad.
+- login-odoo: el host del proxy (`x-forwarded-host`) gana sobre el que traiga
+  `request.url`, donde puede venir el host interno del hosting. El
+  `redirect_uri` tiene que ser el público o Odoo no lo reconoce.
+
+---
+
 ## v0.6.0 — 2026-09-01
 
 Cierra dos agujeros del login de la v0.5.0 —encontrados revisando el PR antes de

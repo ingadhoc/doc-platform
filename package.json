@@ -1,6 +1,6 @@
 {
   "name": "@ingadhoc/docs-platform",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Plataforma de documentaci\u00f3n de Adhoc: motor de b\u00fasqueda, MCP, guard de fuga, gate de audiencia y middleware \u2014 consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
