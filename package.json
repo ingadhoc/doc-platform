@@ -1,7 +1,7 @@
 {
   "name": "@ingadhoc/docs-platform",
-  "version": "0.6.3",
-  "description": "Plataforma de documentaci\u00f3n de Adhoc: motor de b\u00fasqueda, MCP, guard de fuga, gate de audiencia y middleware \u2014 consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
+  "version": "0.7.0",
+  "description": "Plataforma de documentación de Adhoc: motor de búsqueda, MCP, guard de fuga, gate de audiencia y middleware — consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
   "repository": "github:ingadhoc/doc-platform",
@@ -18,13 +18,16 @@
     "./video-url": "./lib/video-url.mjs",
     "./tuqui-embed": "./lib/tuqui-embed.mjs",
     "./docusaurus-plugin": "./lib/docusaurus-plugin.cjs",
+    "./busqueda": "./lib/busqueda.cjs",
+    "./indice-fuera-del-eje": "./lib/indice-fuera-del-eje.mjs",
     "./docusaurus-theme/*": "./lib/docusaurus-theme/*",
     "./sesion": "./lib/mcp/sesion.mjs",
     "./login-odoo": "./lib/login-odoo.mjs"
   },
   "bin": {
     "docs-guard-fuga": "bin/guard-fuga.mjs",
-    "docs-drift-check": "bin/drift-check.mjs"
+    "docs-drift-check": "bin/drift-check.mjs",
+    "docs-indice-fuera-del-eje": "bin/indice-fuera-del-eje.mjs"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs"

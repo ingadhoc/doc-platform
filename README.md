@@ -96,10 +96,51 @@ No lo cambies por `;`.
 | `@ingadhoc/docs-platform/guard-fuga` | `correrGuard()`, si querés llamarlo desde tu build en vez del bin |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
 | `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
+| `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema({docsRouteBasePath})`: la configuración del buscador del sitio, una sola vez para los tres repos (ver *El buscador y el contenido fuera del eje*) |
 | `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
 | `@ingadhoc/docs-platform/tuqui-embed` | `tuquiEmbedScripts(env)`: el campo `scripts` que embebe el widget de chat de Tuqui, activado por `TUQUI_EMBED_ID` (ver *Widget de Tuqui*) |
 | bin `docs-guard-fuga` | el guard de fuga, para el `buildCommand` |
 | bin `docs-drift-check` | el drift-check, para el CI del consumidor |
+| bin `docs-indice-fuera-del-eje` | mete el contenido fuera del eje en el índice de TODAS las versiones, para el `buildCommand` |
+
+## El buscador y el contenido fuera del eje
+
+El contrato declara que los artículos de `secciones.fueraDelEje` **aplican a
+todos los valores del eje**: "pasan cualquier filtro y ganan cualquier
+desambiguación". El MCP lo cumple —filtrar por `version: 18` devuelve igual las
+páginas de `relacion`, porque su `version` es `null`—. El buscador del sitio no
+lo cumplía, por dos motivos distintos:
+
+1. **`searchContextByPaths`**, que partía el índice por valor del eje. El
+   contenido fuera del eje no cae en ningún contexto, así que quedaba afuera del
+   índice desde el que se busca — incluso parado en la versión última. Se
+   arregla en la configuración, y por eso la configuración ahora vive acá
+   (`lib/busqueda.cjs`) en vez de copiada en cada repo.
+2. **El versionado de Docusaurus**, que emite un índice por versión y asocia el
+   contenido sin versionar a la versión ÚLTIMA. Parado en una versión vieja, la
+   sección no existe para el buscador. Esto no se arregla con configuración: el
+   plugin decide a qué índice va cada documento según a qué versión pertenece,
+   y el contenido fuera del eje pertenece a una sola.
+
+Lo segundo lo corrige `docs-indice-fuera-del-eje` sobre el artefacto ya
+construido: lee los documentos ya parseados del índice de la raíz y los suma al
+índice de cada versión, reconstruyendo el índice lunr con las mismas opciones
+que usó el build. Va **después** del build del sitio y **antes** del guard —el
+guard tiene que ver el artefacto final:
+
+```jsonc
+"buildCommand": "… && npm --prefix site run build && npx docs-indice-fuera-del-eje --salida=site/build && npx docs-guard-fuga --salida=site/build"
+```
+
+Dos cosas para el que lo lea de nuevo dentro de un año:
+
+- **Falla el build** si el artefacto no es el que sabe leer: índice partido por
+  contexto, formato del plugin cambiado, o la sección fuera del eje que dejó de
+  emitirse. Sumar cero documentos en silencio es el bug que este paso existe
+  para evitar.
+- Es **no-op** sin eje `version`, con un solo valor de eje, o sin secciones
+  fuera del eje. Entra al `buildCommand` de los tres repos aunque hoy solo
+  oba-docs lo necesite: el día que odumbo-docs prenda el eje, ya está puesto.
 
 ## La capa de theme
 
