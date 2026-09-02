@@ -1,6 +1,6 @@
 {
   "name": "@ingadhoc/docs-platform",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Plataforma de documentación de Adhoc: motor de búsqueda, MCP, guard de fuga, gate de audiencia y middleware — consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
@@ -27,7 +27,8 @@
   "bin": {
     "docs-guard-fuga": "bin/guard-fuga.mjs",
     "docs-drift-check": "bin/drift-check.mjs",
-    "docs-indice-fuera-del-eje": "bin/indice-fuera-del-eje.mjs"
+    "docs-indice-fuera-del-eje": "bin/indice-fuera-del-eje.mjs",
+    "docs-podar-static": "bin/podar-static.mjs"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs"

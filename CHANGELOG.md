@@ -14,6 +14,53 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.7.1 — 2026-09-02
+
+- **[seguridad] guard: bin nuevo `docs-podar-static`, para el `buildCommand`.**
+  El guard de fuga mira TEXTO en los artefactos del build, y una captura de
+  pantalla no tiene texto que grepear: las imágenes nunca se verificaron. Y sí
+  se filtran. Docusaurus copia `static/` entero a la salida ADEMÁS de emitir las
+  imágenes procesadas en `assets/images/`, así que cada imagen se publica dos
+  veces, y la copia cruda se publica **exista o no una página que la muestre**.
+  Una captura referenciada solo desde un bloque `:::interno` no aparece en
+  ninguna página pública y aun así queda servida bajo `/img/…`. Se detectó con
+  casos reales en un repo consumidor; el detalle y su remediación están en la
+  task interna, porque este repo es público.
+
+  El bin saca de la salida los archivos de `static/` que **ningún** artefacto
+  del build referencia. La regla es sobre el artefacto emitido y no necesita
+  saber qué es "interno": no se parsea el árbol fuente, que es el error que
+  `lib/guard-fuga.mjs` documenta en su decisión de diseño 2 (dos parsers del
+  mismo formato divergen, y cuando divergen dejan pasar justo la fuga). Va en el
+  `buildCommand` **antes** del guard:
+
+      … && npx docs-podar-static --salida=site/build && npx docs-guard-fuga …
+
+  De paso baja el peso del deploy: en un manual con años de capturas, la copia
+  cruda de `static/img` es casi toda material que ninguna página muestra.
+
+  **Al adoptarlo, verificá el reporte del bin la primera vez.** Dice cuántos
+  archivos conservó y cuántos borró; si el número de borrados es sospechosamente
+  alto para tu repo, corré `--dry-run` antes. El modo de falla es una imagen
+  rota en el sitio, visible pero en producción.
+
+  Ojo con una referencia que no es obvia: el índice para agentes
+  (`agente/md/*.md`, lo que sirve el MCP) lleva las rutas ORIGINALES de las
+  imágenes, no las hasheadas del HTML. Es lo único que mantiene viva la copia
+  cruda de una imagen pública, y por eso el escaneo incluye `.md`. Si tu repo
+  emite parte de ese índice FUERA de la salida —`api/_generated`, como el
+  `--extra` del guard— pasalo en `--extra` o vas a perder esas imágenes del
+  lado del agente con el sitio viéndose bien. `--salida` no sirve para eso: es
+  la raíz de lo que se poda, no solo de lo que se escanea.
+
+  Se compara por RUTA, no por nombre de archivo: dos capturas homónimas en
+  carpetas distintas (`captura.png`, `1.png` — lo normal en un manual) no se
+  salvan entre sí. Cuando una referencia no trae directorio y el nombre está
+  repetido, el archivo se conserva y sale listado en el reporte, porque ahí no
+  hay forma de saber a cuál apuntaba.
+
+---
+
 ## v0.7.0 — 2026-09-02
 
 - **busqueda: la configuración del buscador pasa a la plataforma
