@@ -14,6 +14,45 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.7.0 — 2026-09-02
+
+- **busqueda: la configuración del buscador pasa a la plataforma
+  (`@ingadhoc/docs-platform/busqueda`).** Vivía copiada en el
+  `docusaurus.config.js` de cada repo y había divergido: oba-docs partía el
+  índice con `searchContextByPaths` y adhoc-docs documentaba en un comentario
+  por qué no lo hacía. Además de la higiene hay una razón dura: el
+  post-proceso de abajo reconstruye índices lunr y tiene que hacerlo con el
+  mismo idioma y pipeline que usó el build — con dos configuraciones separadas,
+  el día que una cambie el índice reconstruido busca distinto que el original.
+- **indice-fuera-del-eje: bin nuevo `docs-indice-fuera-del-eje`, para el
+  `buildCommand`.** El contrato declara que los artículos de
+  `secciones.fueraDelEje` "aplican a TODOS los valores del eje". El MCP lo
+  cumplía; el buscador del sitio no, y no por su culpa: Docusaurus emite un
+  índice por versión y asocia el contenido sin versionar a la versión ÚLTIMA,
+  así que parado en una versión vieja la sección no existía. Medido en
+  producción: `/18/search-index.json` tenía 468 URLs de la 18 y CERO de
+  `relacion` — buscar "seguridad en la nube" desde la 18 daba cero resultados.
+  El bin lo corrige sobre el artefacto ya construido, y **falla el build** en vez
+  de escribir un índice dudoso: si el artefacto no es el que sabe leer (índice
+  partido por contexto, formato del plugin cambiado, una sección que dejó de
+  emitirse —chequeada **por sección**, no sobre el total), si reconstruir el
+  índice de una versión sin tocarlo no reproduce el archivo del build (o sea que
+  las opciones del buscador del sitio y las de la plataforma divergieron), o si
+  los ids de los documentos colisionan entre índices (que haría que el buscador
+  muestre la página equivocada, sin ningún error). Es **no-op** sin eje `version`, con un solo valor de eje, o sin
+  secciones fuera del eje: entra al `buildCommand` de los tres repos aunque hoy
+  solo lo necesite oba-docs.
+
+  Va DESPUÉS del build y ANTES del guard de fuga:
+
+  ```
+  npm --prefix site run build \
+    && npx docs-indice-fuera-del-eje --salida=site/build \
+    && npx docs-guard-fuga --salida=site/build
+  ```
+
+---
+
 ## v0.6.3 — 2026-09-01
 
 - **drift-check: un lockfile desalineado con el `package.json` ahora BLOQUEA**,
