@@ -23,7 +23,7 @@ import { consumidorDe, igual, parsearTokens } from '../lib/mcp/auth.mjs';
 import { crearFeedback } from '../lib/mcp/feedback.mjs';
 import { crearGate } from '../lib/mcp/gate.mjs';
 import { paresDeTokens } from '../lib/mcp/tokens.mjs';
-import { CONFIG_ADHOC, CONFIG_OBA, CONFIG_ODUMBO } from './fixtures/configs.mjs';
+import { CONFIG_ADHOC, CONFIG_OBA, CONFIG_OBA_SIN_SECCIONES, CONFIG_ODUMBO } from './fixtures/configs.mjs';
 import { crearIndiceFake } from './fixtures/indice-fake.mjs';
 
 const TOKENS = 'tuqui:tok-tuqui,claude-code:tok-claude';
@@ -405,6 +405,32 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     // La prosa del or-fallback solo sale si el corpus la tiene.
     assert.match(result.tools.find((t) => t.name === 'buscar').description, /or-fallback/);
     assert.match(result.tools.find((t) => t.name === 'buscar').description, /CROSS-VERSION/);
+    // La frase nombra las secciones declaradas: sin eso el agente no reconoce
+    // un hit cross cuando lo ve.
+    assert.match(result.tools.find((t) => t.name === 'buscar').description, /`relacion\/`/);
+  });
+
+  it('eje version SIN secciones declaradas: la prosa CROSS-VERSION no sale', async () => {
+    // Mismo eje `version` que CONFIG_OBA — lo único que cambia es que el corpus
+    // ya no declara `secciones.fueraDelEje`. El comodín del motor sigue
+    // encendido (es una capacidad del eje versión), pero anunciarle al agente
+    // una excepción sin contenido detrás es ofrecerle un filtro que devuelve
+    // cero: una tool que ofrece un filtro sin contenido detrás miente.
+    const { handler } = montar(CONFIG_OBA_SIN_SECCIONES);
+    const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+    const buscar = result.tools.find((t) => t.name === 'buscar');
+    // El eje sigue expuesto igual: esto apaga prosa, no el filtro.
+    assert.deepEqual(props(result.tools, 'buscar'), ['modules', 'page', 'q', 'seccion', 'version']);
+    assert.doesNotMatch(buscar.description, /CROSS/);
+    assert.doesNotMatch(buscar.description, /excepción/);
+    assert.doesNotMatch(buscar.description, /`relacion\/`/);
+    // Y la costura queda limpia donde estaba la frase: el filtro duro empalma
+    // con lo que sigue, sin oración colgada ni espacio doble.
+    assert.match(buscar.description, /artículos de la 18\. Devuelve hasta /);
+    assert.doesNotMatch(buscar.description, / {2}/);
+    // Lo que NO cambia: el resto de la prosa del eje versión.
+    assert.match(buscar.description, /`version` manda/);
+    assert.match(buscar.description, /or-fallback/);
   });
 
   it('adhoc (eje project): el filtro se llama `project`, no hay `modules`', async () => {

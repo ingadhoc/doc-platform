@@ -96,51 +96,50 @@ No lo cambies por `;`.
 | `@ingadhoc/docs-platform/guard-fuga` | `correrGuard()`, si querés llamarlo desde tu build en vez del bin |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
 | `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
-| `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema({docsRouteBasePath})`: la configuración del buscador del sitio, una sola vez para los tres repos (ver *El buscador y el contenido fuera del eje*) |
+| `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema()`: la configuración del buscador del sitio, una sola vez para los tres repos (ver *El buscador del sitio*) |
 | `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
 | `@ingadhoc/docs-platform/tuqui-embed` | `tuquiEmbedScripts(env)`: el campo `scripts` que embebe el widget de chat de Tuqui, activado por `TUQUI_EMBED_ID` (ver *Widget de Tuqui*) |
 | bin `docs-guard-fuga` | el guard de fuga, para el `buildCommand` |
 | bin `docs-drift-check` | el drift-check, para el CI del consumidor |
-| bin `docs-indice-fuera-del-eje` | mete el contenido fuera del eje en el índice de TODAS las versiones, para el `buildCommand` |
 
-## El buscador y el contenido fuera del eje
+## El buscador del sitio
 
-El contrato declara que los artículos de `secciones.fueraDelEje` **aplican a
-todos los valores del eje**: "pasan cualquier filtro y ganan cualquier
-desambiguación". El MCP lo cumple —filtrar por `version: 18` devuelve igual las
-páginas de `relacion`, porque su `version` es `null`—. El buscador del sitio no
-lo cumplía, por dos motivos distintos:
+El motor de búsqueda es de la plataforma (ADR 0007), pero su configuración
+vivía copiada en el `docusaurus.config.js` de cada repo — y una config copiada
+diverge igual que el código copiado. Divergió, así que ahora vive en
+`lib/busqueda.cjs` y el consumidor la pide entera:
 
-1. **`searchContextByPaths`**, que partía el índice por valor del eje. El
-   contenido fuera del eje no cae en ningún contexto, así que quedaba afuera del
-   índice desde el que se busca — incluso parado en la versión última. Se
-   arregla en la configuración, y por eso la configuración ahora vive acá
-   (`lib/busqueda.cjs`) en vez de copiada en cada repo.
-2. **El versionado de Docusaurus**, que emite un índice por versión y asocia el
-   contenido sin versionar a la versión ÚLTIMA. Parado en una versión vieja, la
-   sección no existe para el buscador. Esto no se arregla con configuración: el
-   plugin decide a qué índice va cada documento según a qué versión pertenece,
-   y el contenido fuera del eje pertenece a una sola.
-
-Lo segundo lo corrige `docs-indice-fuera-del-eje` sobre el artefacto ya
-construido: lee los documentos ya parseados del índice de la raíz y los suma al
-índice de cada versión, reconstruyendo el índice lunr con las mismas opciones
-que usó el build. Va **después** del build del sitio y **antes** del guard —el
-guard tiene que ver el artefacto final:
-
-```jsonc
-"buildCommand": "… && npm --prefix site run build && npx docs-indice-fuera-del-eje --salida=site/build && npx docs-guard-fuga --salida=site/build"
+```js
+const { opcionesDelTema } = require('@ingadhoc/docs-platform/busqueda');
+// themes: [ ['@easyops-cn/docusaurus-search-local', opcionesDelTema()] ]
 ```
+
+`docsRouteBasePath` es un parámetro con default `['/']`, que es lo que tienen
+los tres repos: una instancia de docs montada en la raíz. Sólo hay que pasarlo
+si el sitio monta un segundo plugin de docs.
+
+**Sin `searchContextByPaths`, a propósito y para los tres repos.** Partir el
+índice por valor del eje suena a "scope por versión", pero ese scope ya lo da
+Docusaurus: las versiones que no son la última se emiten como `versioned_docs`
+y el plugin escribe un índice por versión, en el subdirectorio de cada una. Los
+contextos duplican ese scope, y encima cualquier documento que no caiga en
+ninguno queda afuera del índice desde el que se busca. Medido en producción
+antes de sacarlo, con la sección que entonces vivía fuera del eje: el índice
+del contexto `19` tenía 503 URLs del manual y CERO de `relacion`.
 
 Dos cosas para el que lo lea de nuevo dentro de un año:
 
-- **Falla el build** si el artefacto no es el que sabe leer: índice partido por
-  contexto, formato del plugin cambiado, o la sección fuera del eje que dejó de
-  emitirse. Sumar cero documentos en silencio es el bug que este paso existe
-  para evitar.
-- Es **no-op** sin eje `version`, con un solo valor de eje, o sin secciones
-  fuera del eje. Entra al `buildCommand` de los tres repos aunque hoy solo
-  oba-docs lo necesite: el día que odumbo-docs prenda el eje, ya está puesto.
+- Hasta v0.7.1 esa decisión tenía un control automático: el bin
+  `docs-indice-fuera-del-eje` fallaba el build si encontraba el índice partido
+  por contexto. Ese bin **se borró en v0.8.0** junto con el contenido fuera del
+  eje que lo justificaba, así que hoy la decisión se sostiene sólo en que
+  `opcionesDelTema()` es la única fuente de las opciones del tema. Si vuelve
+  `searchContextByPaths`, tiene que volver acá.
+- El plugin asocia el contenido SIN versionar a la versión última, y eso no se
+  arregla con configuración. Un corpus que vuelva a poner contenido fuera del
+  eje lo va a tener invisible en el buscador del sitio parado en una versión
+  vieja — el MCP no tiene ese problema, porque el comodín del motor es del
+  índice y no del artefacto de Docusaurus.
 
 ## La capa de theme
 
@@ -356,7 +355,7 @@ El corpus declara **un** eje como objeto: `{ tipo, default?, valores[] }`.
 
 | `eje.tipo` | corpus | param en las tools | `leer()` sin valor | comodín (artículos fuera del eje) |
 |---|---|---|---|---|
-| `version` | oba-docs | `version` | elige el `default` **y lo dice** (`elegidoPor`) | sí (`relacion/` aplica a todas) |
+| `version` | oba-docs | `version` | elige el `default` **y lo dice** (`elegidoPor`) | sí: un artículo con `eje: null` pasa cualquier filtro (hoy ningún corpus emite uno) |
 | `project` | adhoc-docs | `project` | ambigüedad estructurada (no declara `default`) | no |
 | `none` | odumbo-docs | *(no se expone)* | — | — |
 
@@ -368,7 +367,7 @@ un `default` a un corpus con eje `project`.
 ## Correr los tests
 
 ```bash
-npm install && npm test        # 288 casos
+npm install && npm test        # 391 casos
 ```
 
 `bloques` necesita un repo de contenido (corre su `tools/build.mjs` de verdad
@@ -378,9 +377,10 @@ sobre los fixtures de incidentes) y se **skipea con motivo** si no hay:
 DOCS_REPO=~/repositorios/oba-docs node --test tests/bloques.test.mjs
 ```
 
-La franja del handler HTTP de `mcp.test.mjs` (16 casos) también se skipea con
+La franja del handler HTTP de `mcp.test.mjs` (18 casos) también se skipea con
 motivo si el checkout no tiene `mcp-handler`/`zod`, que son dependencias del
-consumidor y no de este paquete. Con las dos instaladas, `mcp` da 57.
+consumidor y no de este paquete. Con las dos instaladas, `mcp` da 59; sin
+ellas, `npm test` da 373.
 Un caso sin su capability se skipea explícitamente; no se corre degradado.
 
 ---

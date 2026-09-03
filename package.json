@@ -1,6 +1,6 @@
 {
   "name": "@ingadhoc/docs-platform",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Plataforma de documentación de Adhoc: motor de búsqueda, MCP, guard de fuga, gate de audiencia y middleware — consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
@@ -19,7 +19,6 @@
     "./tuqui-embed": "./lib/tuqui-embed.mjs",
     "./docusaurus-plugin": "./lib/docusaurus-plugin.cjs",
     "./busqueda": "./lib/busqueda.cjs",
-    "./indice-fuera-del-eje": "./lib/indice-fuera-del-eje.mjs",
     "./docusaurus-theme/*": "./lib/docusaurus-theme/*",
     "./sesion": "./lib/mcp/sesion.mjs",
     "./login-odoo": "./lib/login-odoo.mjs"
@@ -27,7 +26,6 @@
   "bin": {
     "docs-guard-fuga": "bin/guard-fuga.mjs",
     "docs-drift-check": "bin/drift-check.mjs",
-    "docs-indice-fuera-del-eje": "bin/indice-fuera-del-eje.mjs",
     "docs-podar-static": "bin/podar-static.mjs"
   },
   "scripts": {

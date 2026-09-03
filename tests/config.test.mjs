@@ -34,6 +34,11 @@ const OBA = {
     ],
   },
   audiences: ['publico', 'interno'],
+  // Declarado a propósito aunque desde v0.8.0 ningún corpus lo use: el campo
+  // sigue siendo válido en el contrato y este fixture es lo que lo prueba.
+  // Sacarlo del schema rompería el build de cualquier repo que todavía lo
+  // tenga en su `docs.config.json` — `lib/config.mjs` trata una clave
+  // desconocida como error duro.
   secciones: { fueraDelEje: ['relacion'] },
   metadata: { modules: true },
   deploy: {
