@@ -183,6 +183,16 @@ cross-version → `versions:` deja de ser obligatorio, build.mjs:556-563), :798 
 Implementación existente sólo para `version`; para `project` el schema lo admite
 pero ningún repo lo usa todavía.
 
+> **Nota posterior — v0.8.0 (2026-09-02).** Esta sección es el registro de la
+> decisión de la Etapa A y se deja como está. Lo que cambió después: el único
+> corpus que ejercía el campo era oba-docs con `relacion`, y por la #73556 esa
+> sección pasó a vivir dentro de cada versión. El campo **sigue en el schema y
+> sigue siendo válido**, pero hoy no lo declara ningún corpus, y el post-proceso
+> del buscador que le daba soporte en el sitio (`docs-indice-fuera-del-eje`) se
+> borró. Lo que queda vivo es el comodín del MOTOR —un artículo con `eje: null`
+> pasa cualquier filtro—, que es del índice y no de este campo. Ver el CHANGELOG
+> de v0.8.0.
+
 ### 1.5 `metadata`: `modules` y `types` — metadata de dominio, no ejes
 
 **Decisión.** Bloque `metadata` con dos claves opcionales:

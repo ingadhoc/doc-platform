@@ -14,6 +14,59 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.8.0 — 2026-09-02
+
+- **indice-fuera-del-eje: se borra el bin `docs-indice-fuera-del-eje` y su
+  módulo.** Sacalo del `buildCommand` y del CI antes de subir el pin: el bin ya
+  no existe y `npx docs-indice-fuera-del-eje` va a fallar el build.
+  El paso existía para un problema que dejó de tenerse: el plugin del buscador
+  asocia el contenido SIN versionar a la versión última, así que una sección
+  fuera del eje quedaba invisible parado en una versión vieja, y este
+  post-proceso la sumaba al índice de cada versión sobre el artefacto ya
+  construido. El único corpus que tenía contenido fuera del eje era oba-docs con
+  `relacion`, y por la #73556 `relacion` pasó a vivir DENTRO de cada versión: ya
+  no hay contenido que aplique a todas, en ningún repo. Un paso de build que
+  siempre es no-op es un paso que nadie va a revisar el día que empiece a
+  romper. Si un corpus vuelve a necesitar contenido fuera del eje, esto vuelve
+  desde el historial —el módulo estaba entero y testeado— o, mejor, se arregla
+  upstream, que es donde su propio docstring decía que iba el fix.
+
+- **config: `secciones.fueraDelEje` SIGUE siendo válido en el schema.** No hay
+  nada que coordinar de este lado: el campo se acepta igual, con la misma
+  semántica de contrato (los artículos de esas secciones aplican a todos los
+  valores del eje). Un repo puede sacarlo de su `docs.config.json` cuando le
+  quede sin uso, o dejarlo, y el validador no se queja en ninguno de los dos
+  casos.
+
+- **mcp-handler: la prosa CROSS-VERSION de `buscar()` ahora la enciende el
+  contenido, no el tipo de eje.** Con eje `version` y `secciones.fueraDelEje`
+  vacío o ausente, la `description` de la tool anunciaba igual "la única
+  excepción son los artículos CROSS-VERSION (…): aparecen bajo cualquier filtro
+  y vienen con `version: null` en el hit" — una excepción sin un solo artículo
+  detrás. Es el mismo criterio con el que este paquete apaga el eje de odumbo y
+  el `modules` que nadie declara: una tool que ofrece un filtro sin contenido
+  detrás miente. El comodín del MOTOR no se toca: un artículo con `eje: null`
+  sigue pasando cualquier filtro, porque es una capacidad del motor y no
+  depende del campo de config.
+
+- **busqueda: `opcionesDelTema()` no necesita argumentos.** `docsRouteBasePath`
+  pasa a tener default `['/']`, que es lo que tienen los tres repos ahora que
+  nadie monta un segundo plugin de docs; el parámetro sigue existiendo para el
+  corpus que alguna vez lo necesite. Podés simplificar la llamada del
+  `docusaurus.config.js` a `opcionesDelTema()`. Se va también la constante
+  `OPCIONES_DE_INDICE`, que sólo existía para que el bin borrado reconstruyera
+  índices lunr con el mismo pipeline que el tema: cero consumidores.
+  Lo que NO se va es la decisión de no usar `searchContextByPaths` — sigue
+  vigente y sigue documentada acá. Nota honesta: el bin borrado era además lo
+  que DETECTABA su reaparición (fallaba el build si encontraba el índice
+  partido por contexto); esa red se pierde, y la decisión queda sostenida sólo
+  por tener una única fuente de las opciones del tema.
+
+- **README: se reemplaza la sección "El buscador y el contenido fuera del eje"
+  por "El buscador del sitio"**, con lo que sigue siendo cierto.
+
+---
+
 ## v0.7.1 — 2026-09-02
 
 - **[seguridad] guard: bin nuevo `docs-podar-static`, para el `buildCommand`.**

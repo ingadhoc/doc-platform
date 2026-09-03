@@ -55,6 +55,22 @@ export const CONFIG_OBA = {
   feedback: { eje: EJE_VERSION },
 };
 
+/**
+ * El mismo corpus de oba, con el MISMO eje `version`, y SIN
+ * `secciones.fueraDelEje`. Es la config desde la task #73556: `relacion` pasó a
+ * vivir dentro de cada versión, así que ningún artículo emite `eje: null` y no
+ * queda contenido que aplique a todas.
+ *
+ * Existe para fijar que la prosa CROSS-VERSION de `buscar()` la enciende el
+ * contenido DECLARADO y no el tipo de eje. El comodín del motor sigue prendido
+ * con eje `version` —es una capacidad, no un contenido—, pero anunciárselo al
+ * agente sin secciones detrás es ofrecerle un filtro que devuelve cero: el
+ * mismo criterio que este repo aplica al eje de odumbo y al `modules` que nadie
+ * declara.
+ */
+const { secciones: _seccionesDeOba, ...OBA_SIN_SECCIONES } = CONFIG_OBA;
+export const CONFIG_OBA_SIN_SECCIONES = OBA_SIN_SECCIONES;
+
 export const CONFIG_ODUMBO = {
   nombre: 'odumbo-docs',
   audiencias: ['publico', 'interno'],
