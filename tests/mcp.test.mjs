@@ -23,7 +23,7 @@ import { consumidorDe, igual, parsearTokens } from '../lib/mcp/auth.mjs';
 import { crearFeedback } from '../lib/mcp/feedback.mjs';
 import { crearGate } from '../lib/mcp/gate.mjs';
 import { paresDeTokens } from '../lib/mcp/tokens.mjs';
-import { CONFIG_ADHOC, CONFIG_OBA, CONFIG_OBA_SIN_SECCIONES, CONFIG_ODUMBO } from './fixtures/configs.mjs';
+import { CONFIG_ADHOC, CONFIG_OBA, CONFIG_ODUMBO } from './fixtures/configs.mjs';
 import { crearIndiceFake } from './fixtures/indice-fake.mjs';
 
 const TOKENS = 'tuqui:tok-tuqui,claude-code:tok-claude';
@@ -419,13 +419,14 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.match(describeParam(result.tools, 'leer', 'version'), /aplica a todas las versiones/);
   });
 
-  it('eje version SIN secciones declaradas: la prosa CROSS-VERSION no sale', async () => {
-    // Mismo eje `version` que CONFIG_OBA — lo único que cambia es que el corpus
-    // ya no declara `secciones.fueraDelEje`. El comodín del motor sigue
-    // encendido (es una capacidad del eje versión), pero anunciarle al agente
-    // una excepción sin contenido detrás es ofrecerle un filtro que devuelve
-    // cero: una tool que ofrece un filtro sin contenido detrás miente.
-    const { handler } = montar(CONFIG_OBA_SIN_SECCIONES);
+  it('eje version SIN artículos bajo el comodín: la prosa CROSS-VERSION no sale', async () => {
+    // Mismo eje `version` que el test de arriba. Lo único que cambia es el
+    // CONTENIDO: el índice ya no tiene un artículo sin valor de eje. El comodín
+    // del motor sigue encendido (es una capacidad del eje versión), pero
+    // anunciarle al agente una excepción sin contenido detrás es ofrecerle un
+    // filtro que devuelve cero: una tool que ofrece un filtro sin contenido
+    // detrás miente.
+    const { handler } = montar(CONFIG_OBA, { indice: crearIndiceFake({ tipo: 'version', comodin: false }) });
     const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
     const buscar = result.tools.find((t) => t.name === 'buscar');
     // El eje sigue expuesto igual: esto apaga prosa, no el filtro.
@@ -450,6 +451,33 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo (p. ej. "19"). Filtro exacto y duro.');
     assert.match(describeParam(result.tools, 'leer', 'version'), /en `otrosDelEje`\.$/);
     assert.doesNotMatch(describeParam(result.tools, 'leer', 'version'), /todas las versiones/);
+  });
+
+  it('manda el CONTENIDO, no la declaración: config con secciones + índice sin comodín = sin prosa', async () => {
+    // El bug que este diseño cierra, reproducido: `secciones.fueraDelEje`
+    // declarado —como lo tenía oba-docs— y el contenido ya movido adentro del
+    // eje. Con la declaración mandando, las tools anunciaban artículos
+    // `version: null` que no existían. Ahora la declaración no alcanza.
+    // El `secciones` va inline y no en el fixture a propósito: desde la v0.9.0
+    // no es parte del contrato —el schema lo rechaza— y esto fija que un
+    // adaptador que igual se lo pase al handler no encienda nada.
+    const { handler } = montar(
+      { ...CONFIG_OBA, secciones: { fueraDelEje: ['relacion'] } },
+      { indice: crearIndiceFake({ tipo: 'version', comodin: false }) },
+    );
+    const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+    const buscar = result.tools.find((t) => t.name === 'buscar');
+    assert.doesNotMatch(buscar.description, /CROSS/);
+    assert.doesNotMatch(buscar.description, /`relacion\/`/);
+    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo (p. ej. "19"). Filtro exacto y duro.');
+    // Y al revés: el corpus que SÍ tiene el artículo enciende la prosa aunque
+    // el config no declare nada. La declaración dejó de participar.
+    const { handler: h2 } = montar(CONFIG_OBA, { indice: crearIndiceFake({ tipo: 'version', comodin: true }) });
+    const { result: r2 } = await leerRpc(await h2(rpc('tools/list', {}, 'tok-tuqui')));
+    const buscar2 = r2.tools.find((t) => t.name === 'buscar');
+    assert.match(buscar2.description, /CROSS-VERSION/);
+    // La sección la nombra el ÍNDICE: el artículo sin eje del fake vive en `relacion`.
+    assert.match(buscar2.description, /`relacion\/`/);
   });
 
   it('el override del adaptador pisa SU superficie, no la del otro', async () => {
