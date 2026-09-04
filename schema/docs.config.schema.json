@@ -75,7 +75,7 @@
       "additionalProperties": false,
       "properties": {
         "fueraDelEje": {
-          "description": "Secciones que viven al lado del eje, sin su segmento en la URL, y cuyos archivos no declaran valor de eje en el frontmatter (el `crossVersionSections` de hoy: `relacion` en oba-docs). Sus artículos aplican a TODOS los valores del eje: pasan cualquier filtro y ganan cualquier desambiguación.",
+          "description": "Secciones que viven al lado del eje, sin su segmento en la URL, y cuyos archivos no declaran valor de eje en el frontmatter. Sus artículos aplican a TODOS los valores del eje: pasan cualquier filtro y ganan cualquier desambiguación. HOY NO LO DECLARA NINGÚN CORPUS: `relacion` de oba-docs, que era el único, entró al eje en la #73556 (ADR 0010 de knowledge-management). El campo sigue siendo válido y el motor lo sigue aplicando; declararlo sin artículos detrás enciende prosa que le promete al agente contenido que no existe.",
           "type": "array",
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
@@ -213,7 +213,6 @@
         ]
       },
       "audiences": ["publico", "interno"],
-      "secciones": { "fueraDelEje": ["relacion"] },
       "metadata": { "modules": true },
       "deploy": {
         "proyectos": {

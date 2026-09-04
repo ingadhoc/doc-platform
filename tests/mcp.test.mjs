@@ -393,6 +393,11 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
 
   const props = (tools, nombre) => Object.keys(tools.find((t) => t.name === nombre).inputSchema.properties).sort();
 
+  // La `description` de UN parámetro, que es lo que el LLM lee cuando decide
+  // con qué filtros llamar a la tool.
+  const describeParam = (tools, nombre, param) =>
+    tools.find((t) => t.name === nombre).inputSchema.properties[param].description;
+
   it('oba (eje version, audiencia interna): cuatro tools y el filtro se llama `version`', async () => {
     const { handler } = montar(CONFIG_OBA);
     const r = await handler(rpc('tools/list', {}, 'tok-tuqui'));
@@ -408,6 +413,10 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     // La frase nombra las secciones declaradas: sin eso el agente no reconoce
     // un hit cross cuando lo ve.
     assert.match(result.tools.find((t) => t.name === 'buscar').description, /`relacion\/`/);
+    // Y el comodín se anuncia también en la `description` del parámetro, que es
+    // donde el LLM mira cuando arma la llamada.
+    assert.match(describeParam(result.tools, 'buscar', 'version'), /`version: null`\) pasan igual/);
+    assert.match(describeParam(result.tools, 'leer', 'version'), /aplica a todas las versiones/);
   });
 
   it('eje version SIN secciones declaradas: la prosa CROSS-VERSION no sale', async () => {
@@ -431,12 +440,39 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     // Lo que NO cambia: el resto de la prosa del eje versión.
     assert.match(buscar.description, /`version` manda/);
     assert.match(buscar.description, /or-fallback/);
+
+    // Y lo mismo en las `description` de los PARÁMETROS, que es la otra mitad
+    // del texto que lee el LLM: sin contenido cross detrás, prometer que hay
+    // artículos `version: null` lo manda a interpretar hits que no existen.
+    // El string entero, no un `doesNotMatch`: fija la costura además de la
+    // ausencia —la frase se va sin dejar espacio colgado— y no da un falso
+    // rojo el día que la prosa base mencione `null` por otro motivo.
+    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo (p. ej. "19"). Filtro exacto y duro.');
+    assert.match(describeParam(result.tools, 'leer', 'version'), /en `otrosDelEje`\.$/);
+    assert.doesNotMatch(describeParam(result.tools, 'leer', 'version'), /todas las versiones/);
+  });
+
+  it('el override del adaptador pisa SU superficie, no la del otro', async () => {
+    // `describeBuscar` es el texto del PARÁMETRO; `cross` es la frase del
+    // CUERPO de la tool. Son dos overrides distintos y pisar uno no apaga el
+    // otro — que es justo lo que hace falta para poder cambiar el texto de un
+    // filtro sin perder el anuncio del comodín.
+    const { handler } = montar({ ...CONFIG_OBA, eje: { ...CONFIG_OBA.eje, describeBuscar: 'Versión de Odoo, y nada más.' } });
+    const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo, y nada más.');
+    // El cuerpo NO lo pisó este override: sigue anunciando el cross, porque el
+    // corpus sí declara secciones. Para apagarlo está `eje.cross`.
+    assert.match(result.tools.find((t) => t.name === 'buscar').description, /CROSS-VERSION/);
+    // Y `leer`, que no se pisó, conserva su frase completa.
+    assert.match(describeParam(result.tools, 'leer', 'version'), /todas las versiones/);
   });
 
   it('adhoc (eje project): el filtro se llama `project`, no hay `modules`', async () => {
     const { handler } = montar(CONFIG_ADHOC);
     const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
     assert.deepEqual(props(result.tools, 'buscar'), ['page', 'project', 'q', 'seccion']);
+    // El eje `project` no tiene comodín: nada de "todas las versiones" acá.
+    assert.doesNotMatch(describeParam(result.tools, 'buscar', 'project'), /todas las/);
     assert.deepEqual(props(result.tools, 'leer'), ['page', 'project', 'slug']);
     const buscar = result.tools.find((t) => t.name === 'buscar');
     // El motor ahora es UNO: la prosa del or-fallback (la mejor descripción de
