@@ -14,6 +14,26 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.10.0 — 2026-09-04
+
+- **centinela: `docs-centinela-produccion`, el binario que responde si el sitio
+  publicado está en el commit que dice la rama.** Nace de un incidente:
+  `docs.adhoc.inc` estuvo cinco horas atrás de `main` con todo el CI en verde
+  —Vercel había dejado el deploy en `BLOCKED` porque el autor del commit no
+  tenía seat en el team, un deployment bloqueado nunca arranca, `vercel deploy`
+  no volvió nunca, y los once merges siguientes se encolaron detrás del
+  `concurrency` y se cancelaron entre sí—. **Un CI verde no significa
+  publicado**, y hasta ahora nada sabía la diferencia. Se corre después de
+  deployar (`--sha=$GITHUB_SHA --tolerancia=0`) y desde un cron o un push a
+  main (sin `--sha`: compara contra el HEAD del checkout). Los ids salen del
+  entorno que el job ya tiene para deployar, así que no hay una segunda copia
+  que se desincronice. Además chequea que el deployment **no** traiga metas
+  `githubCommit*`: son las que Vercel arma resolviendo el autor del commit, y
+  su reaparición avisa que el bloqueo por seats volvió a estar armado antes de
+  que trabe la cola.
+
+---
+
 ## v0.9.0 — 2026-09-04
 
 - **mcp-handler: la prosa del comodín la enciende el CONTENIDO medido, no una

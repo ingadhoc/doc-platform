@@ -82,6 +82,47 @@ export default function middleware(request) {
 El `&&` no es cosmético: es lo que aborta el deploy cuando el guard sale con 1.
 No lo cambies por `;`.
 
+## El centinela de producción
+
+`docs-centinela-produccion` responde una sola pregunta: **¿el sitio publicado
+está en el commit que dice la rama?** Existe porque un CI verde no significa
+publicado — el 04/09/2026 `docs.adhoc.inc` estuvo cinco horas atrás de `main`
+con todos los checks en verde y nadie se enteró hasta que alguien preguntó por
+qué su PR no se veía publicado.
+
+Va en dos lugares del workflow del consumidor:
+
+```yaml
+# 1. Después de deployar: que el dominio haya quedado en ESTE commit.
+#    Sin tolerancia — el deploy ya terminó, no hay nada que esperar.
+- run: npx docs-centinela-produccion --sha="${{ github.sha }}" --tolerancia=0
+
+# 2. En cada push a main y desde un cron: que producción no se haya quedado
+#    atrás. Sin --sha compara contra el HEAD del checkout, y usa la antigüedad
+#    de ese commit para no confundir un atraso con un deploy en curso.
+- run: npx docs-centinela-produccion
+```
+
+El job del punto 2 va **fuera** del `concurrency` del deploy, a propósito: su
+trabajo es mirar la cola desde afuera, y colgarlo del mismo lock que se traba
+lo dejaría esperando junto con todo lo demás.
+
+Los ids salen de `VERCEL_PROJECT_ID`, `VERCEL_ORG_ID` y `VERCEL_TOKEN`, que el
+job ya tiene para deployar: no hay una segunda copia que se pueda
+desincronizar. Exit **1** = hay que actuar; **2** = no se pudo averiguar (un
+500 de Vercel no es producción atrasada, y el workflow del consumidor abre
+issue con el 1 y no con el 2).
+
+**También mira algo que no es el atraso:** que el deployment no traiga metas
+`githubCommit*`. Vercel las arma resolviendo el autor del commit contra
+GitHub, y es ahí donde aplica el bloqueo por seats que originó el incidente —
+un deployment `BLOCKED` nunca arranca y `vercel deploy` no vuelve nunca. Si
+reaparecen, el próximo merge de alguien de afuera del team traba la cola: el
+centinela lo avisa antes, con producción todavía publicada. Se cierran los dos
+caminos por los que Vercel resuelve ese autor pasando metas propias
+(`-m commitSha=…`, sin el prefijo reservado `github`) y borrando el `.git` del
+directorio antes de subirlo.
+
 ## Qué exporta
 
 | Import | Qué es |
