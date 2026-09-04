@@ -14,6 +14,24 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.8.2 — 2026-09-04
+
+- **[seguridad] drift-check: la etiqueta `[seguridad]` en negrita no se
+  detectaba, y el bloqueo llevaba cuatro meses apagado.** `deSeguridad`
+  filtraba con `/^\[seguridad\]/i` sobre el ítem crudo; el parser saca el
+  `- ` del bullet y nada más, así que desde la v0.5.0 —cuando este archivo
+  empezó a escribir todos los ítems en negrita— `**[seguridad] gate: …` dejó de
+  empezar con `[` y ningún ítem matcheó. Medido con `pineado: v0.4.1`: decía
+  `0 de seguridad, 0 bloqueantes` cuando eran **7 y 3**. Los tests no lo veían
+  porque el fixture usaba texto plano, la única forma que este archivo ya no
+  usa; ahora está en negrita y sin el fix fallan cuatro. La etiqueta se busca
+  sobre el ítem sin su énfasis de markdown.
+- **Subí el pin y mirá lo que el check no te dijo en cuatro meses.** Al adoptar
+  esta versión, un consumidor rezagado va a ver de golpe los `[seguridad]` que
+  se le venían acumulando. Si te bloquea por `[seguridad] guard: bin nuevo
+  docs-podar-static` (v0.7.1), el bloqueo es correcto: sin ese bin el build
+  copia `static/` entero.
+
 ## v0.8.1 — 2026-09-04
 
 - **mcp-handler: la prosa del comodín ahora la enciende el contenido en las
