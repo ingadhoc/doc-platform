@@ -14,6 +14,39 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.8.1 — 2026-09-04
+
+- **mcp-handler: la prosa del comodín ahora la enciende el contenido en las
+  TRES frases, no en una.** La v0.8.0 apagó la frase `CROSS-VERSION` de la
+  `description` de `buscar()` cuando el corpus no declara
+  `secciones.fueraDelEje`, con el argumento de que una tool que ofrece un
+  filtro sin contenido detrás miente. Quedaron encendidas las otras dos, que
+  dicen lo mismo en el lugar donde el LLM mira cuando arma la llamada: la
+  `description` del parámetro `version` de `buscar()` ("los artículos que
+  aplican a todas las versiones (`version: null`) pasan igual") y la de
+  `leer()` ("un artículo que aplica a todas las versiones se devuelve para
+  cualquiera que pidas"). Medido en el MCP de oba-docs en producción: cero
+  artículos con `version: null` y las dos frases igual anunciándolos.
+  Ahora las tres salen y se van juntas, con la misma condición.
+- **mcp-handler: nada de esto toca el motor.** El comodín sigue encendido —un
+  artículo con `eje: null` sigue pasando cualquier filtro— y el parámetro
+  `version` sigue expuesto igual. Es prosa, no capacidad.
+- **mcp-handler: cómo se recuperan las tres frases.** Con `cross` encendido, o
+  sea cuando el corpus declara `secciones.fueraDelEje` **y su adaptador lo
+  reenvía a `crearMcp`**. Los tres consumidores de hoy tienen `cross` en null:
+  oba dejó de reenviar `secciones` en la #73556, adhoc va por eje `project` y
+  odumbo no tiene eje. Volver a ponerlo en `docs.config.json` no alcanza —
+  también hay que tocar el `docs.mcp.config.mjs` del repo.
+- **mcp-handler: cada override pisa SU superficie, y eso no cambió.**
+  `eje.describeBuscar` / `eje.describeLeer` pisan la `description` del
+  parámetro; `eje.cross` pisa la frase del cuerpo de `buscar()`. Son dos
+  overrides distintos: pisar uno no apaga el otro. Y ninguno de los tres es
+  una clave de `docs.config.json` —el `eje` del schema tiene
+  `additionalProperties: false`— sino del objeto que el adaptador
+  `docs.mcp.config.mjs` le pasa a `crearMcp`.
+
+---
+
 ## v0.8.0 — 2026-09-02
 
 - **indice-fuera-del-eje: se borra el bin `docs-indice-fuera-del-eje` y su
