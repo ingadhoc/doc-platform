@@ -40,5 +40,9 @@
     "schema/",
     "CHANGELOG.md",
     "README.md"
-  ]
+  ],
+  "devDependencies": {
+    "mcp-handler": "^2.1.1",
+    "zod": "^4.4.3"
+  }
 }

@@ -1,0 +1,36 @@
+name: tests
+
+# El paquete lo consumen los repos de contenido pineado por tag (ADR 0006 de
+# knowledge-management), así que lo que se rompe acá se rompe en producción de
+# los tres sitios recién cuando alguien sube el pin. El CI corre en cada PR y
+# en `main` para que la rotura se vea antes de publicar el tag, no después.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: node --test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci
+      # `npm test` no basta como check. La franja del handler HTTP se SKIPEA
+      # sola si `mcp-handler` o `zod` no se pudieron importar, y el resumen de
+      # `node --test` igual dice `skipped 0`: 18 tests menos y todo en verde.
+      # Por eso el job mira la salida y falla si la franja no corrió. Las dos
+      # son devDependencies —el consumidor las trae en runtime, este repo las
+      # necesita para probar el transporte—, así que hoy el guard nunca se
+      # dispara; existe para el día que alguien las saque.
+      - name: npm test (sin franjas apagadas)
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/test.log
+          if grep -q 'no testeable' /tmp/test.log; then
+            echo "::error::una franja de tests se apagó por dependencias faltantes"
+            exit 1
+          fi
