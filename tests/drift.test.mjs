@@ -20,11 +20,12 @@ const CHANGELOG = `# CHANGELOG
 
 ## v0.3.0 — 2026-09-15
 ### Seguridad
-- [seguridad] gate: el 503 de audiencia ausente ahora corta también el GET.
+- **[seguridad] gate: el 503 de audiencia ausente ahora corta también el GET.**
 - indice: un fix de ranking.
 
 ## v0.2.0 — 2026-09-01
-- [seguridad] feedback: se dejó de loguear el clientId.
+- **[seguridad] feedback: se dejó de loguear el clientId.** En negrita, como
+  los escribe el CHANGELOG real desde la v0.5.0.
 - mcp-handler: prosa nueva.
 
 ## v0.1.0 — 2026-08-23
