@@ -69,19 +69,6 @@
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
     },
-    "secciones": {
-      "description": "Excepciones de ruteo por sección (primer segmento del árbol fuente). Las secciones DENTRO del eje no se declaran: se derivan del árbol (ADR 0004 §6, la nav se deriva).",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "fueraDelEje": {
-          "description": "Secciones que viven al lado del eje, sin su segmento en la URL, y cuyos archivos no declaran valor de eje en el frontmatter. Sus artículos aplican a TODOS los valores del eje: pasan cualquier filtro y ganan cualquier desambiguación. HOY NO LO DECLARA NINGÚN CORPUS: `relacion` de oba-docs, que era el único, entró al eje en la #73556 (ADR 0010 de knowledge-management). El campo sigue siendo válido y el motor lo sigue aplicando; declararlo sin artículos detrás enciende prosa que le promete al agente contenido que no existe.",
-          "type": "array",
-          "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
-        }
-      }
-    },
     "metadata": {
       "description": "Facetas de dominio por artículo. NO son ejes: un artículo pertenece a un solo valor del eje y a N valores de una faceta. Lo que se declara acá decide qué filtros expone el MCP — una tool que ofrece un filtro sin contenido detrás miente.",
       "type": "object",

@@ -14,6 +14,38 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.9.0 — 2026-09-04
+
+- **mcp-handler: la prosa del comodín la enciende el CONTENIDO medido, no una
+  declaración del config.** `secciones.fueraDelEje` dejó de leerse. En su lugar
+  el motor expone `seccionesConComodin()`, que devuelve las secciones con
+  artículos sin valor de eje. Por qué: una declaración no se entera de que el
+  contenido se movió. Es literalmente lo que pasó — `relacion` entró al eje en
+  la #73556, el campo quedó declarado, y las tools siguieron anunciando
+  artículos `version: null` que ya no existían hasta la v0.8.1.
+- **indice: `seccionesConComodin()`, export nueva.** Mide sobre los ARTÍCULOS,
+  no sobre `mapa[].ejeValores`. El campo `eje` del artículo es contrato del
+  motor —es el que filtra `buscar()` y desambigua `leer()`—, mientras que
+  `mapa` lo arma el build de cada consumidor y los tres lo arman distinto: oba
+  mete el `null` en el Set, odumbo lo filtra con un `if` y sólo emite el campo
+  si el corpus es versionado, y adhoc escribe `ejeValores: [a.eje]` con otra
+  semántica. Derivar de ahí era cambiar una declaración que se pudre por un
+  agregado que ya divergió.
+- **Devuelve vacío sin comodín, y eso incluye dos casos que parecen iguales y
+  no lo son:** con eje `project` un artículo sin valor no es contenido cross,
+  es un artículo mal emitido; y con eje `none` TODOS los artículos vienen sin
+  valor —es el caso de odumbo-docs— y no hay eje del que ser la excepción.
+- **config: `secciones` SALE del contrato. Es el único breaking de esta
+  versión.** `fueraDelEje` era su única propiedad y ya no la lee nadie, así que
+  se va la clave entera: con `additionalProperties: false`, un
+  `docs.config.json` que todavía la declare ahora **falla al validar** en vez
+  de que se la ignore en silencio, que es lo que corresponde cuando lo que
+  declaraba pasó a medirse. Verificado antes de sacarla: no la declara ninguno
+  de los tres corpus. Si tu repo la tiene, borrá esas dos líneas.
+- **Para el consumidor: ninguna otra acción.** `crearMcp()` no cambia de firma
+  y el índice que ya emitís trae el campo `eje` por artículo, que es de donde
+  sale la medición. No hay que regenerar nada.
+
 ## v0.8.2 — 2026-09-04
 
 - **[seguridad] drift-check: la etiqueta `[seguridad]` en negrita no se

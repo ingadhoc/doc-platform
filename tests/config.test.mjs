@@ -34,12 +34,6 @@ const OBA = {
     ],
   },
   audiences: ['publico', 'interno'],
-  // Declarado a propósito aunque desde v0.8.0 ningún corpus lo use: el campo
-  // sigue siendo válido en el contrato y este fixture es lo que lo prueba.
-  // Sacarlo del schema rompería el build de cualquier repo que todavía lo
-  // tenga en su `docs.config.json` — `lib/config.mjs` trata una clave
-  // desconocida como error duro.
-  secciones: { fueraDelEje: ['relacion'] },
   metadata: { modules: true },
   deploy: {
     proyectos: {
@@ -208,6 +202,18 @@ describe('los ocho inválidos a propósito, y el campo que nombran', () => {
       );
     });
   }
+});
+
+describe('lo que se fue del contrato', () => {
+  it('`secciones.fueraDelEje` ya no existe: declararlo es un error, no un campo que se ignora', () => {
+    // Estuvo en el contrato hasta la v0.9.0. Un repo que todavía lo tenga en su
+    // `docs.config.json` tiene que enterarse al validar, y no que se lo ignoren
+    // en silencio: lo que ese campo declaraba ahora lo mide el motor sobre los
+    // artículos emitidos (`indice.seccionesConComodin()`).
+    const { ok, errores } = validarConfig({ ...OBA, secciones: { fueraDelEje: ['relacion'] } });
+    assert.equal(ok, false);
+    assert.match(errores.join(' '), /secciones/);
+  });
 });
 
 describe('la regla del lector: schemaVersion', () => {

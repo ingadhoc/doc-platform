@@ -23,7 +23,7 @@ sin `motivo`, guard apagado sin `motivo`, clave desconocida, id reservado,
 | `versionPath: "{v}"` | *(nada)* | `path` default = `id`, y `"{v}"` era la identidad |
 | `audiences` | `audiences` | igual |
 | `versionedSections: ["manual","guias"]` | *(se borra)* | nunca se leyó; la nav se deriva del árbol (ADR 0004 §6) |
-| `crossVersionSections: ["relacion"]` | `secciones.fueraDelEje: ["relacion"]` | se lee en build.mjs:525, 798, 824 |
+| `crossVersionSections: ["relacion"]` | ~~`secciones.fueraDelEje`~~ — **fuera del contrato desde v0.9.0** | lo que declaraba ahora lo mide `indice.seccionesConComodin()` sobre los artículos |
 | `proyectos` | `deploy.proyectos` | mismos ids, mismo mapa |
 | *(implícito en el código)* | `metadata.modules: true` | 17 archivos de `content/` declaran `modules:` |
 | *(no existía)* | `deploy.guardDeFuga: {activo:true}` | el guard existe (`scripts/guard-fuga.mjs`) y ahora se declara |
@@ -41,7 +41,6 @@ sin `motivo`, guard apagado sin `motivo`, clave desconocida, id reservado,
     ]
   },
   "audiences": ["publico", "interno"],
-  "secciones": { "fueraDelEje": ["relacion"] },
   "metadata": { "modules": true },
   "deploy": {
     "proyectos": {
@@ -52,6 +51,12 @@ sin `motivo`, guard apagado sin `motivo`, clave desconocida, id reservado,
   }
 }
 ```
+
+> El config de este ejemplo llevaba además `"secciones": { "fueraDelEje":
+> ["relacion"] }`. Se sacó de acá porque **desde la v0.9.0 esa clave no existe
+> en el contrato** y un config que la declare no valida — lo que declaraba lo
+> mide `indice.seccionesConComodin()` sobre los artículos. El resto de esta
+> página es la crónica de la unificación y se lee tal como pasó.
 
 **Qué cambia en el código de oba-docs**
 

@@ -32,7 +32,7 @@ import { before, describe, it } from 'node:test';
 
 process.env.DOCS_URL = 'https://docs.ejemplo.ar';
 
-const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, politicaDeEje, procesarTermino, STOPWORDS, terminosDe } =
+const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, politicaDeEje, procesarTermino, seccionesConComodin, STOPWORDS, terminosDe } =
   await import('../lib/mcp/indice.mjs');
 
 /** Cambia el índice bajo el motor: el fixture manda, y el cache se tira. */
@@ -44,6 +44,68 @@ function usarFixture(nombre) {
 const slugs = (r) => r.resultados.map((h) => h.slug);
 
 // ══════════════════════════════════════════════ el eje, como parámetro puro
+
+describe('seccionesConComodin — el contenido cross se MIDE, no se declara', () => {
+  it('eje version: devuelve la sección de los artículos sin valor de eje', () => {
+    usarFixture('eje-version');
+    assert.deepEqual(seccionesConComodin(), ['relacion']);
+  });
+
+  it('eje version sin artículos sin eje: vacío, aunque el comodín esté encendido', () => {
+    // El caso de oba-docs después de la #73556: el motor sigue teniendo
+    // comodín —es una capacidad del eje versión— pero no queda contenido
+    // detrás. Ningún fixture está en ese estado, así que se construye sacando
+    // del índice cargado el único artículo sin eje, que es exactamente la
+    // mudanza que hizo la task: `relacion` pasó a declarar sus versiones.
+    usarFixture('eje-version');
+    const idx = indice();
+    assert.deepEqual(seccionesConComodin(), ['relacion']);
+    idx.articulos = idx.articulos.filter((a) => a.eje != null);
+    assert.deepEqual(seccionesConComodin(), []);
+    // Y el comodín del MOTOR sigue encendido: esto apaga prosa, no capacidad.
+    assert.equal(politicaDeEje(idx.build).comodin, true);
+  });
+
+  it('eje project: vacío — ese eje no tiene comodín, ni siquiera con artículos sin valor', () => {
+    // No alcanza con que el fixture no tenga nulos: eso pasaría igual sin la
+    // condición del comodín. Se le mete uno a mano. `project` no tiene comodín
+    // —`leer()` desambigua en vez de elegir— así que un artículo sin project
+    // no es contenido que aplique a todos: es un artículo mal emitido, y
+    // anunciarlo como excepción del filtro sería mentir en la otra dirección.
+    usarFixture('eje-project');
+    const idx = indice();
+    assert.equal(politicaDeEje(idx.build).comodin, false);
+    assert.deepEqual(seccionesConComodin(), []);
+    idx.articulos.push({ slug: 'huerfano', eje: null, seccion: 'comun', title: 'x', body: 'x' });
+    assert.deepEqual(seccionesConComodin(), []);
+  });
+
+  it('eje none: vacío AUNQUE todos los artículos tengan `eje: null`', () => {
+    // La trampa: en un corpus sin eje todos los artículos vienen sin valor, y
+    // contarlos daría "todo es cross". No lo es — no hay eje del que ser la
+    // excepción, ni filtro que ofrecer. Es el caso de odumbo-docs.
+    usarFixture('eje-none');
+    const idx = indice();
+    assert.equal(
+      idx.articulos.filter((a) => a.eje == null).length,
+      idx.articulos.length,
+      'el fixture de eje none debería tener todos los artículos sin eje',
+    );
+    assert.deepEqual(seccionesConComodin(), []);
+  });
+
+  it('no depende de `mapa`, que cada consumidor arma distinto', () => {
+    // oba mete el null en el Set, odumbo lo filtra con un `if`, adhoc escribe
+    // `ejeValores: [a.eje]`. Un `mapa` que no declara nada no cambia el
+    // resultado: la fuente son los artículos.
+    usarFixture('eje-version');
+    const idx = indice();
+    const antes = seccionesConComodin();
+    idx.mapa = [];
+    assert.deepEqual(seccionesConComodin(), antes);
+    assert.deepEqual(antes, ['relacion']);
+  });
+});
 
 describe('politicaDeEje — el objeto `eje` del contrato, traducido a política', () => {
   it('lee el objeto del schema: tipo, default y valores', () => {
