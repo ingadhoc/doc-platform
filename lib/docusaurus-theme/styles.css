@@ -240,3 +240,26 @@
 .menu__link.pais-UY::after {
   content: 'UY';
 }
+
+/* ── Selector de documentación ─────────────────────────────────────────────
+   El separador de "Otros productos" dentro del dropdown.
+
+   DOS SELECTORES Y NO UNO: en escritorio el item vive en `.dropdown__menu`,
+   pero el dropdown MOBILE renderiza sus hijos en un `<ul class="menu__list">`
+   y ahí nunca hay `.dropdown__menu`. Con un solo selector, en teléfono el
+   encabezado sale como texto pelado — o sea, se lee como una opción rota, que
+   es justo lo que este bloque evita. */
+.dropdown__menu .dropdown__sep,
+.menu__list .dropdown__sep {
+  display: block;
+  padding: 0.6rem 0.5rem 0.25rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+  cursor: default;
+  user-select: none;
+}
