@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "_nota": "Corpus ROTO a propósito: el mismo slug en dos doc sets para el mismo valor de eje. Sin el chequeo de `construir()`, MiniSearch pisa un documento con el otro en silencio y `leer()` devuelve el artículo de la documentación equivocada con `encontrado: true`.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-09-10T09:00:00.000Z",
+    "articulos": 6,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "version",
+      "default": "19",
+      "valores": [
+        {
+          "id": "19",
+          "label": "19.0"
+        },
+        {
+          "id": "18",
+          "label": "18.0"
+        }
+      ]
+    },
+    "metadata": {
+      "modules": false,
+      "types": [],
+      "paises": [],
+      "docSets": [
+        {
+          "id": "manual",
+          "label": "Manual de usuario"
+        },
+        {
+          "id": "novedades",
+          "label": "Novedades de versión"
+        }
+      ]
+    },
+    "manifiesto": null
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "inventario",
+      "label": "Inventario",
+      "count": 2,
+      "ejeValores": [
+        "18",
+        "19"
+      ],
+      "modules": []
+    },
+    {
+      "seccion": "novedades",
+      "categoria": "que-revisar",
+      "label": "Qué revisar",
+      "count": 2,
+      "ejeValores": [
+        "19"
+      ],
+      "modules": []
+    }
+  ],
+  "articulos": [
+    {
+      "id": "19::manual/inventario/tipos-de-operaciones",
+      "slug": "manual/inventario/tipos-de-operaciones",
+      "eje": "19",
+      "title": "Tipos de operaciones",
+      "description": "Configurar el remito en el tipo de operación.",
+      "keywords": [],
+      "seccion": "manual",
+      "docSet": "manual",
+      "url": "/19/manual/inventario/tipos-de-operaciones",
+      "headings": [],
+      "body": "El remito se configura en el tipo de operacion, con su CAI y su numeracion."
+    },
+    {
+      "id": "18::manual/inventario/tipos-de-operaciones",
+      "slug": "manual/inventario/tipos-de-operaciones",
+      "eje": "18",
+      "title": "Tipos de operaciones",
+      "description": "Configurar el talonario del remito.",
+      "keywords": [],
+      "seccion": "manual",
+      "docSet": "manual",
+      "url": "/18/manual/inventario/tipos-de-operaciones",
+      "headings": [],
+      "body": "El remito se configura por talonario, con su secuencia aparte."
+    },
+    {
+      "id": "19::novedades/que-revisar/remitos",
+      "slug": "novedades/que-revisar/remitos",
+      "eje": "19",
+      "title": "Remitos",
+      "description": "Qué cambió en la configuración de remitos al pasar a la 19.",
+      "keywords": [],
+      "seccion": "novedades",
+      "docSet": "novedades",
+      "url": "/19/novedades/que-revisar/remitos",
+      "headings": [],
+      "body": "En la 19 desaparece el talonario: el remito se configura en el tipo de operacion."
+    },
+    {
+      "id": "19::novedades/que-revisar/usuarios",
+      "slug": "novedades/que-revisar/usuarios",
+      "eje": "19",
+      "title": "Usuarios y permisos",
+      "description": "Qué cambió en usuarios y permisos.",
+      "keywords": [],
+      "seccion": "novedades",
+      "docSet": "novedades",
+      "url": "/19/novedades/que-revisar/usuarios",
+      "headings": [],
+      "body": "Aparece el campo Rol y los accesos se agrupan por aplicacion."
+    },
+    {
+      "id": "19::manual/guias/facturar",
+      "slug": "manual/guias/facturar",
+      "eje": "19",
+      "title": "Facturar de punta a punta",
+      "description": "El circuito completo de facturación.",
+      "keywords": [],
+      "seccion": "guias",
+      "docSet": "manual",
+      "url": "/19/manual/guias/facturar",
+      "headings": [],
+      "body": "Del presupuesto al cobro, sin repetir el manual."
+    },
+    {
+      "id": "19::manual/inventario/tipos-de-operaciones",
+      "slug": "manual/inventario/tipos-de-operaciones",
+      "eje": "19",
+      "title": "Tipos de operaciones",
+      "description": "Configurar el remito en el tipo de operación.",
+      "keywords": [],
+      "seccion": "manual",
+      "docSet": "novedades",
+      "url": "/19/manual/inventario/tipos-de-operaciones",
+      "headings": [],
+      "body": "El remito se configura en el tipo de operacion, con su CAI y su numeracion."
+    }
+  ]
+}

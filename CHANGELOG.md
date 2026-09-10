@@ -14,6 +14,46 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.11.0 — 2026-09-10
+
+- **doc sets: varias documentaciones en un mismo corpus, opcional y aditivo.**
+  Un corpus puede declarar `docSets` en su `docs.config.json` (ej. «Manual de
+  usuario» y «Novedades de versión») y servirlas en el mismo sitio, con un
+  selector en el navbar y con el buscador del MCP acotado a la que estés
+  leyendo. Nace del ADR 0011 de `knowledge-management`: el contenido de
+  transición entre versiones y el manual responden preguntas distintas, y
+  mezclarlos hace que un agente cite una nota de cambio como si fuera el
+  procedimiento vigente.
+- **Un corpus que no los declara no se entera de nada.** Sin `docSets`: el
+  schema no lo exige, la política no suma el filtro, el MCP no lo ofrece, el
+  navbar no filtra y el selector no se dibuja. Verificado contra los tres
+  corpus: los 415 casos previos pasan sin tocar una línea de sus configs.
+- **No es un segundo eje.** `diseno-eje.md` §7 anticipó que el día que hiciera
+  falta `project × version` la salida sería `schemaVersion: 2` con `ejes`
+  plural. Esto NO es ese caso y conviene no leerlo así: un doc set no
+  discrimina el mismo contenido por otra dimensión, agrupa secciones distintas.
+  El eje sigue siendo uno por corpus y `TIPOS_DE_EJE` no se toca.
+- **Sin comodín, al revés que `paises`.** Todo artículo pertenece a exactamente
+  un doc set, así que la ausencia del campo no significa «todos»: significa que
+  el build no lo clasificó. Copiar el comodín de `paises` haría que las
+  novedades de versión aparezcan en toda búsqueda del manual, que es justo lo
+  que la feature evita. `tests/doc-sets.test.mjs` lo protege.
+- **`buscar()` avisa cuando mezcla documentaciones**, como ya avisaba cuando
+  mezcla valores del eje, y por el mismo motivo: el error de atribución es caro.
+  Los dos avisos conviven.
+- **`leer()` no cambia.** Un doc set agrupa secciones y la sección es el primer
+  segmento del slug, así que dos doc sets no pueden compartir uno: el `id` sigue
+  siendo `${eje}::${slug}` y la regla de desambiguación sigue siendo una. El
+  índice lo verifica al construirse y falla con la causa (MiniSearch ya
+  rechazaba el id duplicado, pero su mensaje no dice dónde mirar).
+- **navbar: `custom-selectorDeDocumentacion`** y un wrapper de `NavbarItem` que
+  esconde los links de las secciones que no son del doc set activo. Un item sin
+  `docSet:` se dibuja siempre.
+- config: coherencia nueva — ids de doc set repetidos, una sección declarada en
+  dos doc sets, y más de un `default`.
+
+---
+
 ## v0.10.0 — 2026-09-04
 
 - **centinela: `docs-centinela-produccion`, el binario que responde si el sitio

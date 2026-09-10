@@ -69,6 +69,13 @@
       "uniqueItems": true,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
     },
+    "docSets": {
+      "description": "OPCIONAL: varias documentaciones conviviendo en un mismo sitio (ej. «Manual de usuario» y «Novedades de versión»). Es ORTOGONAL al eje: cada doc set se sirve en los valores del eje donde tenga contenido, y el eje sigue siendo uno por corpus. Ausente = un solo doc set implícito, que es como se comportan todos los corpus hasta hoy: el selector no se dibuja, el navbar no filtra y el índice no lleva el campo.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/docSet" }
+    },
     "metadata": {
       "description": "Facetas de dominio por artículo. NO son ejes: un artículo pertenece a un solo valor del eje y a N valores de una faceta. Lo que se declara acá decide qué filtros expone el MCP — una tool que ofrece un filtro sin contenido detrás miente.",
       "type": "object",
@@ -130,6 +137,39 @@
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9.-]*$",
       "not": { "enum": ["api", "agente", "search", "img", "assets", "static"] }
+    },
+    "docSet": {
+      "type": "object",
+      "required": ["id", "label", "secciones"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Identificador del doc set. Es lo que declaran los items del navbar en `docSet:` y lo que viaja al índice como `articulos[].docSet`.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "label": {
+          "description": "Cómo se llama la documentación en el selector. Es lo que lee el cliente: «Manual de usuario», «Novedades de versión».",
+          "type": "string",
+          "minLength": 1
+        },
+        "secciones": {
+          "description": "Las secciones que agrupa, por su primer segmento de path. Un doc set AGRUPA secciones existentes: no crea carpetas ni cambia URLs. Una sección no puede estar en dos doc sets — el artículo pertenece a uno solo, igual que a un valor del eje.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+        },
+        "entrada": {
+          "description": "A qué sección entra el selector al elegir este doc set. Default: la primera de `secciones`. Tiene que ser una de ellas.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "default": {
+          "description": "El doc set que gana cuando la ruta no cae en ninguna sección conocida (la home, /search, un 404). Sin ninguno marcado, gana el primero.",
+          "type": "boolean"
+        }
+      }
     },
     "valorDeEje": {
       "type": "object",
