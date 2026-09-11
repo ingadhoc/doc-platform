@@ -57,4 +57,46 @@ describe('opcionesDelTema', () => {
     assert.throws(() => opcionesDelTema({ docsRouteBasePath: [] }), /no vacía/);
     assert.throws(() => opcionesDelTema({ docsRouteBasePath: '/' }), /no vacía/);
   });
+
+  // ── contextos por doc set ────────────────────────────────────────────────
+  //
+  // Lo que se protege acá es la ADITIVIDAD y la semántica del reparto. Los
+  // contextos estuvieron prohibidos en esta función con evidencia de
+  // producción, y vuelven sólo para el doc set: si alguien los reintroduce
+  // para el eje, estos casos no lo frenan — el que frena es el de cobertura,
+  // que vive en el consumidor porque necesita el build entero.
+
+  it('sin contextos, la config es EXACTAMENTE la de antes', () => {
+    const o = opcionesDelTema();
+    assert.equal('searchContextByPaths' in o, false);
+    assert.equal('hideSearchBarWithNoSearchContext' in o, false);
+    assert.equal('useAllContextsWithNoSearchContext' in o, false);
+  });
+
+  it('con contextos, el doc set no default gana índice propio', () => {
+    const o = opcionesDelTema({ contextos: ['novedades'] });
+    assert.deepEqual(o.searchContextByPaths, ['novedades']);
+  });
+
+  it('el índice raíz se sigue emitiendo: es el del doc set default', () => {
+    // con `hideSearchBarWithNoSearchContext: true` el plugin no lo crea y el
+    // doc set default se queda sin buscador.
+    assert.equal(opcionesDelTema({ contextos: ['novedades'] }).hideSearchBarWithNoSearchContext, false);
+  });
+
+  it('un documento que cayó en un contexto NO vuelve al índice raíz', () => {
+    // es lo que hace que, parado en el manual, no aparezcan las novedades.
+    assert.equal(opcionesDelTema({ contextos: ['novedades'] }).useAllContextsWithNoSearchContext, false);
+  });
+
+  it('no devuelve el array del consumidor: no se puede mutar por referencia', () => {
+    const ctx = ['novedades'];
+    const o = opcionesDelTema({ contextos: ctx });
+    o.searchContextByPaths.push('otro');
+    assert.deepEqual(ctx, ['novedades']);
+  });
+
+  it('basura en `contextos` tira, en vez de emitir un scope silenciosamente roto', () => {
+    assert.throws(() => opcionesDelTema({ contextos: 'novedades' }), /lista de rutas/);
+  });
 });

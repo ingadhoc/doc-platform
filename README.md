@@ -408,7 +408,7 @@ un `default` a un corpus con eje `project`.
 ## Correr los tests
 
 ```bash
-npm install && npm test        # 434 casos
+npm install && npm test        # 440 casos
 ```
 
 `bloques` necesita un repo de contenido (corre su `tools/build.mjs` de verdad
@@ -421,7 +421,7 @@ DOCS_REPO=~/repositorios/oba-docs node --test tests/bloques.test.mjs
 La franja del handler HTTP de `mcp.test.mjs` (18 casos) también se skipea con
 motivo si el checkout no tiene `mcp-handler`/`zod`, que son dependencias del
 consumidor y no de este paquete. Con las dos instaladas, `mcp` da 59; sin
-ellas, `npm test` da 416.
+ellas, `npm test` da 422.
 Un caso sin su capability se skipea explícitamente; no se corre degradado.
 
 ---

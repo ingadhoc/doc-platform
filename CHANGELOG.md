@@ -14,6 +14,26 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.12.0 — 2026-09-10
+
+- **busqueda: el buscador del sitio se puede acotar por doc set.**
+  `opcionesDelTema({ contextos })` recibe las rutas de las documentaciones que
+  no son la default y el plugin les arma índice propio. Parado en el manual se
+  busca en el manual; parado en las novedades, en las novedades — el mismo
+  criterio que ya aplicaba la versión, en el otro eje del navbar. Sin
+  `contextos`, la config es **exactamente** la de antes.
+- **Por qué esto estuvo prohibido y por qué vuelve.** Hasta v0.7.1 los
+  contextos estaban vetados con evidencia: el índice del contexto `19` tenía
+  503 URLs del manual y CERO de `relacion`. La causa no era el mecanismo — era
+  que `relacion` vivía FUERA del eje, así que sus URLs no empezaban con el
+  segmento de versión. El ADR 0010 metió todo el contenido adentro del eje y esa
+  causa desapareció. Queda el modo de falla genérico (un documento que no cae en
+  ningún índice desaparece del buscador en silencio), y contra eso el consumidor
+  verifica **cobertura** en su CI: la suma de los índices tiene que cubrir todo
+  lo publicado.
+
+---
+
 ## v0.11.0 — 2026-09-10
 
 - **doc sets: varias documentaciones en un mismo corpus, opcional y aditivo.**
