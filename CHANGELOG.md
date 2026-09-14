@@ -14,6 +14,39 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.12.1 — 2026-09-14
+
+- **busqueda: el resalte de la búsqueda deja de confundirse con el Ctrl+F del
+  navegador.** Los términos que el buscador pinta en el artículo no tenían
+  ninguna regla de autor: quedaban con el `<mark>` del navegador, y en Chrome
+  ese amarillo es el mismo system-color de su propio buscador. El lector no
+  podía saber de dónde venía el color, y como el tema marca cada aparición del
+  término sin techo y busca por subcadena, leía el artículo como si estuviera
+  todo resaltado. Ahora el resalte usa `--ifm-color-primary` —el que cada sitio
+  declara en su `custom.css`, así que los tres quedan con su identidad— con
+  fondo tenue y una guía abajo en vez de bloque macizo.
+- **busqueda: se evaluó apagar el fuzzy y NO se apaga.** Queda medido en el
+  docstring de `lib/busqueda.cjs` para no volver a intentarlo: contra el índice
+  publicado, apagarlo da resultados idénticos en 12 consultas bien escritas y
+  deja CERO resultados en 5 de 6 con un tipeo (`persepciones`, `facturacon`,
+  `nota de credto`...). Beneficio cero, regresión real.
+- **busqueda: lo que este bump NO arregla, para que nadie lo lea como cerrado.**
+  Sigue en pie que el orden de los resultados no lo decide el score (el tema
+  acumula por consulta y ordena por inserción — de ahí sale el ruido que se le
+  atribuye al fuzzy), que el reductor español sólo alcanza `mercadería` con la
+  tilde puesta (sin ella queda otra clave, y lo que hoy salva esas consultas
+  son los `keywords` sin tilde escritos a mano en el frontmatter, no el motor),
+  y que no hay noción de frase. Ninguna de las tres se arregla con una opción
+  del tema: se midieron todas. Queda en la tarea 73605.
+- **docs: la atribución del motor de búsqueda apuntaba al ADR equivocado.**
+  `lib/busqueda.cjs` y el README citaban el ADR 0007 (que es el aislamiento de
+  `adhoc-docs` en repo y credenciales); el que dice que el motor de búsqueda es
+  de la plataforma es el **ADR 0006**.
+- **chore: el `package-lock.json` estaba en 0.9.0** y sin el bin
+  `docs-centinela-produccion`. Queda al día.
+
+---
+
 ## v0.12.0 — 2026-09-10
 
 - **busqueda: el buscador del sitio se puede acotar por doc set.**

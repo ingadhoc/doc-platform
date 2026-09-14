@@ -58,6 +58,13 @@ describe('opcionesDelTema', () => {
     assert.throws(() => opcionesDelTema({ docsRouteBasePath: '/' }), /no vacía/);
   });
 
+  it('el fuzzy NO se declara: el default del tema (1) es el que queremos', () => {
+    // Se probó apagarlo contra el índice publicado: idéntico en 12 consultas
+    // bien escritas, y cero resultados en 5 de 6 con un tipeo. Declarar la
+    // clave en 0 es la regresión; el detalle está en el docstring del módulo.
+    assert.equal('fuzzyMatchingDistance' in opcionesDelTema(), false);
+  });
+
   // ── contextos por doc set ────────────────────────────────────────────────
   //
   // Lo que se protege acá es la ADITIVIDAD y la semántica del reparto. Los
