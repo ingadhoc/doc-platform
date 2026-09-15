@@ -145,7 +145,7 @@ directorio antes de subirlo.
 
 ## El buscador del sitio
 
-El motor de búsqueda es de la plataforma (ADR 0007), pero su configuración
+El motor de búsqueda es de la plataforma (ADR 0006), pero su configuración
 vivía copiada en el `docusaurus.config.js` de cada repo — y una config copiada
 diverge igual que el código copiado. Divergió, así que ahora vive en
 `lib/busqueda.cjs` y el consumidor la pide entera:

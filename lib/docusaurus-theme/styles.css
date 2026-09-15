@@ -4,8 +4,12 @@
  * así que entran DESPUÉS de infima y ANTES del `custom.css` de cada repo: la
  * identidad de cada sitio (colores, portada) sigue teniendo la última palabra.
  *
- * Todo lo de acá está scopeado al cuerpo del artículo (`.theme-doc-markdown`).
- * Ni el navbar ni el sidebar se tocan.
+ * Casi todo lo de acá está scopeado al cuerpo del artículo
+ * (`.theme-doc-markdown`), y el navbar y el sidebar no se tocan. La única
+ * excepción es el resalte de la búsqueda (§4), que va sin scope a propósito:
+ * mark.js marca todo lo que cuelga del `<article>`, migas de pan incluidas, y
+ * dejar la miga con el amarillo del navegador era justo la confusión que ese
+ * bloque viene a sacar.
  */
 
 /* ── 1. El <Video> ──────────────────────────────────────────────────────── */
@@ -262,4 +266,49 @@
   color: var(--ifm-color-emphasis-600);
   cursor: default;
   user-select: none;
+}
+
+/* ── 4. El resalte de la búsqueda en el artículo ────────────────────────────
+   El buscador del sitio manda los términos elegidos en `?_highlight=` y los
+   pinta con mark.js. Nadie le había dado color: quedaba el `<mark>` del
+   navegador, y en Chrome ese amarillo es EL MISMO system-color del Ctrl+F —
+   el lector no podía distinguir su propia búsqueda del navegador de la del
+   sitio, así que leía la página como si estuviera toda resaltada.
+
+   `[data-markjs]` NO es decorativo: es el atributo que mark.js le pone a cada
+   nodo que crea él. Es lo único que separa el resalte de la búsqueda de un
+   `<mark>` escrito a mano en un artículo y de las marcas del desplegable de
+   resultados, que el tema arma como string sin ese atributo. Un `mark` pelado
+   le pegaría a los tres.
+
+   NO REUSAR `--search-local-highlight-color`. Suena a esto y es otra cosa: es
+   el color del término en la sugerencia Y el fondo del ítem con el cursor
+   encima. Pisarla rompe el desplegable.
+
+   Sin color propio de marca: `--ifm-color-primary` ya lo declara cada sitio en
+   su `custom.css`, así que los tres quedan resaltando con su identidad y este
+   archivo no la elige por ellos.
+
+   FONDO TENUE Y SUBRAYADO, NO BLOQUE MACIZO. El tema marca CADA aparición del
+   término dentro del `<article>`, sin techo, y mark.js busca por subcadena:
+   escribir «merc» pinta el pedazo dentro de «Mercado» y de «mercadería». En
+   el artículo que habla justamente de eso son decenas de marcas. Con un tinte
+   suave y una guía abajo, cuarenta marcas se leen como «acá está lo que
+   buscaste»; con el amarillo macizo se leen como una página prendida fuego.
+
+   Subcadena se queda como está, a propósito: la alternativa del motor exige
+   límites de palabra, y entonces buscar «contacto» y caer en un artículo que
+   dice «contactos» no resaltaría nada. Sobrar es menos malo que no marcar. */
+mark[data-markjs] {
+  /* El gris de Infima es el fallback para los navegadores sin `color-mix()`:
+     ya es consciente del tema, así que degrada a un realce sobrio y nunca a
+     algo ilegible. */
+  background-color: var(--ifm-color-emphasis-200);
+  background-color: color-mix(in srgb, var(--ifm-color-primary) 18%, transparent);
+  /* Imprescindible: el navegador le pone `color: MarkText` (negro). Sobre el
+     tinte del tema oscuro, negro sobre oscuro no se lee. */
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 0.1em;
+  box-shadow: inset 0 -0.18em 0 var(--ifm-color-primary);
 }
