@@ -32,7 +32,7 @@ import { before, describe, it } from 'node:test';
 
 process.env.DOCS_URL = 'https://docs.ejemplo.ar';
 
-const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, politicaDeEje, procesarTermino, seccionesConComodin, STOPWORDS, terminosDe } =
+const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, politicaDeEje, procesarTermino, reducirPlural, seccionesConComodin, STOPWORDS, terminosDe } =
   await import('../lib/mcp/indice.mjs');
 
 /** Cambia el índice bajo el motor: el fixture manda, y el cache se tira. */
@@ -200,6 +200,68 @@ describe('normalización y stopwords (fix #11 de oba-docs)', () => {
     for (const termino of ['no', 'sin', 'sobre']) {
       assert.equal(procesarTermino(termino), termino, termino);
       assert.equal(STOPWORDS.has(termino), false, termino);
+    }
+  });
+
+  it('el plural y el singular caen en la misma clave', () => {
+    // El motor busca con `prefix: true`, y el prefijo cubre UN sentido: la
+    // query `cliente` alcanza el término indexado `clientes` porque el término
+    // empieza con la query, pero `clientes` no alcanza `cliente`, que es más
+    // corto. Llevar las dos formas a la misma clave cubre los dos sentidos.
+    for (const [plural, singular] of [
+      ['clientes', 'cliente'],
+      ['facturas', 'factura'],
+      ['cobros', 'cobro'],
+      ['ordenes', 'orden'],
+      ['percepciones', 'percepcion'],
+      ['retenciones', 'retencion'],
+      ['almacenes', 'almacen'],
+      ['sucursales', 'sucursal'],
+      ['proveedores', 'proveedor'],
+      ['unidades', 'unidad'],
+    ]) {
+      assert.equal(procesarTermino(plural), procesarTermino(singular), `${plural} / ${singular}`);
+    }
+  });
+
+  it('no recorta lo que no es plural', () => {
+    // Las tres guardas, cada una con lo que protege.
+    for (const termino of [
+      // menos de 5 caracteres: recortar destruye el término, y encima acorta la
+      // QUERY, que con prefijo pasa a pescar medio corpus.
+      'mes', 'pais', 'tres',
+      // "-is"/"-us" no son plurales castellanos.
+      'analisis', 'crisis', 'status',
+      // "-ss" es el inglés que hay en el corpus.
+      'access',
+    ]) {
+      assert.equal(reducirPlural(termino), termino, termino);
+    }
+  });
+
+  it('el plural en "-es" sólo se recorta donde el singular es consonante', () => {
+    // La lista cerrada: -ón, -al, -or, -ad, -én, -el/-il/-ol/-ul.
+    assert.equal(reducirPlural('controles'), 'control');
+    assert.equal(reducirPlural('funciones'), 'funcion');
+    assert.equal(reducirPlural('totales'), 'total');
+    // Y lo que NO entra, porque el singular termina en "-e" y ahí el recorte
+    // correcto es el de la "s" sola.
+    assert.equal(reducirPlural('detalles'), 'detalle');
+    assert.equal(reducirPlural('nombres'), 'nombre');
+    assert.equal(reducirPlural('mensajes'), 'mensaje');
+  });
+
+  it('"-ces" → "-z" queda AFUERA a propósito', () => {
+    // Se midió: la regla gana "veces"→"vez" y rompe cinco términos que el
+    // corpus usa de verdad y que hoy funcionan por prefijo.
+    for (const [termino, singular] of [
+      ['enlaces', 'enlace'],
+      ['indices', 'indice'],
+      ['balances', 'balance'],
+      ['avances', 'avance'],
+      ['invoices', 'invoice'],
+    ]) {
+      assert.equal(reducirPlural(termino), singular, termino);
     }
   });
 
@@ -676,6 +738,33 @@ describe('calidad de búsqueda por tipo de query', () => {
     // término no puede aparecer acá, ni por el fallback OR.
     const r = buscar({ q: 'timeout' });
     assert.equal(r.total, 0);
+  });
+});
+
+describe('plurales — la regresión que el buscador del sitio no tenía', () => {
+  before(() => usarFixture('eje-version'));
+
+  it('`cobros` encuentra «Registrar un cobro»', () => {
+    // El caso que nombró jjs al revisar la migración: el buscador del sitio lo
+    // junta con su stemmer español, y este motor no tenía stemming. Sin el
+    // reductor esta consulta daba CERO.
+    const r = buscar({ q: 'cobros', version: '19' });
+    assert.ok(r.total >= 1, 'no devolvió nada');
+    assert.equal(r.modo, 'and', 'pasó por or-fallback: está resolviendo de casualidad');
+    assert.ok(slugs(r).includes('manual/finanzas/cobros-y-pagos/registrar-un-cobro'), slugs(r).join(', '));
+  });
+
+  it('el singular y el plural devuelven lo mismo', () => {
+    // Es el aserto que importa: no que cada forma traiga algo, sino que las dos
+    // converjan. Si divergen, el prefijo está cubriendo un solo sentido otra vez.
+    assert.deepEqual(
+      slugs(buscar({ q: 'cobros', version: '19' })),
+      slugs(buscar({ q: 'cobro', version: '19' })),
+    );
+    assert.deepEqual(
+      slugs(buscar({ q: 'notas de credito', version: '19' })),
+      slugs(buscar({ q: 'nota de credito', version: '19' })),
+    );
   });
 });
 
