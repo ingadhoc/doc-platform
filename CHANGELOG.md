@@ -14,6 +14,42 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.13.0 — 2026-09-15
+
+- **busqueda: el plural y el singular caen en la misma clave.** `procesarTermino`
+  suma un reductor de plurales castellanos, compartido por el índice y la query
+  como el resto de la normalización. Cierra una regresión que bloqueaba la
+  migración del buscador humano al motor propio: `cobros` no encontraba
+  «Registrar un cobro» y `facturas de clientes` no encontraba «Facturas de
+  cliente», mientras el buscador del sitio sí los junta con su stemmer español.
+  Medido contra el corpus publicado de oba-docs, las dos consultas pasan de
+  ausentes a **primeras**.
+- **No es un stemmer, y no queremos que lo sea.** Un stemmer español completo
+  también recorta derivación y conjugación, y ahí fabrica fantasmas (`deseada`
+  → `des` → `de`, que es justamente lo que le pasa al buscador del sitio).
+  Esto cubre los dos mecanismos de plural del castellano y nada más: "+s" tras
+  vocal, y "+es" tras consonante con una lista cerrada de terminaciones.
+- **Medido sobre el vocabulario real** (12.444 términos del corpus publicado):
+  2249 uniones plural/singular, 602 de ellas en los campos con boost; 12
+  matches perdidos, todos formas verbales que nadie tipea buscando un plural
+  (`funcione` → «funciones»); ninguna colisión de vocabulario real. Se
+  descartaron tres variantes más agresivas, cada una con su medición — la peor
+  era `-ces` → `-z`, que gana "veces" y rompe `enlaces`, `indices`, `balances`,
+  `avances` e `invoices`.
+- **El costo que sí tiene, sin taparlo:** la consulta `sobres` pasa a reducirse
+  a `sobre`, que en este corpus no es relleno (8 títulos y 9 `keywords:` lo
+  usan). El arreglo limpio sería mandar `sobre` a STOPWORDS y **no** se hace:
+  quedó afuera a propósito y hay un test que lo fija. Está escrito en el
+  docstring de `reducirPlural`, con la salida si algún día molesta.
+- **No hay que reconstruir ningún índice.** `processTerm` se aplica cuando el
+  motor carga el artefacto, no cuando el preprocesador lo emite: el artefacto
+  no lleva índice serializado. Subir el pin alcanza para que el cambio llegue.
+- **Beneficio lateral para el agente:** `terminosDe` queda reducido también, y
+  el matcheo de los hints contra las ramas del mapa es `includes`, así que con
+  el término en singular pega en más ramas.
+
+---
+
 ## v0.12.1 — 2026-09-14
 
 - **busqueda: el resalte de la búsqueda deja de confundirse con el Ctrl+F del
