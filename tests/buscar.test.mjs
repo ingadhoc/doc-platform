@@ -381,9 +381,110 @@ describe('eje version — fallback OR (fix #12 de oba-docs)', () => {
   });
 
   it('el modo `and` no se contamina: cuando el AND encuentra, no hay nota', () => {
+    // La query tiene que dar 2+ resultados: con uno solo el motor declara
+    // pobreza a propósito (ver el describe de abajo), y este test mide otra
+    // cosa — que el `and` no herede la nota del `or-fallback`.
+    const r = buscar({ q: 'factura', version: '19' });
+    assert.equal(r.modo, 'and');
+    assert.ok(r.total >= 2);
+    assert.equal(r.nota, undefined);
+  });
+});
+
+// ─────────────────────── la pobreza declarada (75201): `and` con un candidato
+
+describe('eje version — UN solo candidato se declara pobre (75201)', () => {
+  before(() => usarFixture('eje-version'));
+
+  it('un único candidato: lo devuelve y avisa que no hay con qué compararlo', () => {
     const r = buscar({ q: 'nota de crédito', version: '19' });
     assert.equal(r.modo, 'and');
+    assert.equal(r.total, 1);
+    // No esconde el resultado: la nota acompaña, no reemplaza.
+    assert.equal(r.resultados.length, 1);
+    assert.match(r.nota, /sólo UNO contiene todos los términos/);
+    // Y le dice qué hacer cuando el artículo no responde, que es el fallo que
+    // reportó la 75201: citarlo igual por ser el más parecido.
+    assert.match(r.nota, /la documentación no lo cubre/);
+  });
+
+  // `total` sale de una búsqueda YA filtrada, y la tool pide filtrar por eje
+  // siempre. Prometer "el corpus tiene uno" es una premisa falsa justo antes
+  // de pedirle al agente que conteste "no está documentado": la respuesta
+  // puede estar bajo otro valor del filtro.
+  it('NO promete que el corpus tenga uno: dice "los que pasan los filtros"', () => {
+    const r = buscar({ q: 'nota de crédito', version: '19' });
+    assert.match(r.nota, /pasan los filtros de esta búsqueda/);
+    assert.doesNotMatch(r.nota, /un solo artículo del corpus/i);
+    // Y ofrece la salida correcta antes de concluir.
+    assert.match(r.nota, /aflojando los filtros/);
+  });
+
+  it('el mismo artículo existe en la otra versión: el filtro es lo que dejó uno', () => {
+    // Prueba que la advertencia de arriba no es teórica en este fixture.
+    const sinFiltro = buscar({ q: 'nota de crédito' });
+    assert.ok(sinFiltro.total > 1, 'sin filtro de eje hay más de uno');
+  });
+
+  it('la nota es DISTINTA de la del or-fallback: los dos modos siguen separados', () => {
+    // Si las dos notas dijeran lo mismo, el agente perdería el contraste que
+    // hoy le dice cuál de las dos búsquedas fue más débil.
+    const r = buscar({ q: 'nota de crédito', version: '19' });
+    assert.doesNotMatch(r.nota, /Ningún artículo contiene TODOS los términos/);
+  });
+
+  it('con 2+ resultados NO declara: la regla es angosta y se queda angosta', () => {
+    // El aserto que impide que esto se convierta en una advertencia en todas
+    // las respuestas. Medido: score, brecha 1º-2º y cobertura del título NO
+    // separan con 2+ resultados, así que no hay nada honesto que declarar ahí.
+    for (const q of ['factura', 'cliente']) {
+      const r = buscar({ q, version: '19' });
+      assert.equal(r.modo, 'and');
+      assert.ok(r.total >= 2, `«${q}» tiene que dar 2+ para medir esto`);
+      assert.equal(r.nota, undefined, `«${q}» no tiene que declarar nada`);
+    }
+  });
+
+  it('el or-fallback con un solo resultado conserva SU nota, no la del `and`', () => {
+    const r = buscar({ q: 'afip tiramisu', version: '19' });
+    assert.equal(r.modo, 'or-fallback');
+    assert.equal(r.total, 1);
+    assert.match(r.nota, /Ningún artículo contiene TODOS los términos/);
+    assert.doesNotMatch(r.nota, /pasan los filtros de esta búsqueda/);
+  });
+
+  // La nota es prosa imperativa para un lector que la lee y puede actuar. Una
+  // persona no lee eso, y para ella la honestidad es la interfaz. Por eso es
+  // una capacidad del perfil y no un `if` sobre el modo: este caso lo alcanzan
+  // los dos llamadores, a diferencia de `or-fallback` y `rescate-de-tipeo`.
+  it('el perfil persona NO recibe la nota, aunque quede un solo candidato', () => {
+    const r = buscar({ q: 'nota de crédito', version: '19', perfil: PERFIL.persona });
+    assert.equal(r.total, 1);
     assert.equal(r.nota, undefined);
+    // Pero el resultado sí llega: lo que se apaga es la prosa, no el dato.
+    assert.equal(r.resultados.length, 1);
+  });
+
+  // Con cero resultados el motor ya declaraba: devuelve hints en vez de una
+  // lista vacía. La nota de pobreza NO se suma ahí — sería redundante — y este
+  // test fija las dos mitades, no sólo la ausencia de la nota.
+  it('cero resultados: sin nota de pobreza, y con los hints que ya declaraban', () => {
+    const r = buscar({ q: 'receta de tiramisu casero', version: '19' });
+    assert.equal(r.total, 0);
+    assert.equal(r.nota, undefined);
+    assert.ok(Array.isArray(r.sugerencias) && r.sugerencias.length > 0, 'trae sugerencias');
+    assert.ok(Array.isArray(r.ramasRelacionadas), 'trae ramasRelacionadas');
+  });
+
+  it('`rescate-de-tipeo` con un solo candidato también declara', () => {
+    // Evidencia MÁS débil que el `and`: la búsqueda exacta dio cero y esto es
+    // un rescate difuso. Se prueba con un perfil que rescata Y lee notas —
+    // `persona` rescata pero no lee, y `agente` lee pero no rescata.
+    const perfil = { ...PERFIL.persona, notaDePobreza: true };
+    const r = buscar({ q: 'concliacion', version: '19', perfil });
+    assert.equal(r.modo, 'rescate-de-tipeo');
+    assert.equal(r.total, 1);
+    assert.match(r.nota, /sólo UNO contiene todos los términos/);
   });
 });
 

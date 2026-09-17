@@ -409,6 +409,19 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.deepEqual(props(result.tools, 'feedback'), ['problema', 'slug', 'version']);
     // La prosa del or-fallback solo sale si el corpus la tiene.
     assert.match(result.tools.find((t) => t.name === 'buscar').description, /or-fallback/);
+    // Y su contracara (75201): el motor no puede detectar el match confiado y
+    // equivocado —score, brecha 1º-2º y cobertura del título NO separan, está
+    // medido—, así que la obligación de verificar pertinencia en `modo: and`
+    // vive acá, en el contrato. Si alguien la saca, el agente vuelve a citar
+    // el artículo más parecido como si respondiera.
+    assert.match(
+      result.tools.find((t) => t.name === 'buscar').description,
+      /no que respondan la pregunta/,
+    );
+    assert.match(
+      result.tools.find((t) => t.name === 'buscar').description,
+      /la documentación no lo cubre/,
+    );
     assert.match(result.tools.find((t) => t.name === 'buscar').description, /CROSS-VERSION/);
     // La frase nombra las secciones declaradas: sin eso el agente no reconoce
     // un hit cross cuando lo ve.
