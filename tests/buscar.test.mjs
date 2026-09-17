@@ -32,7 +32,7 @@ import { before, describe, it } from 'node:test';
 
 process.env.DOCS_URL = 'https://docs.ejemplo.ar';
 
-const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, politicaDeEje, procesarTermino, reducirPlural, seccionesConComodin, STOPWORDS, terminosDe } =
+const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, PERFIL, politicaDeEje, procesarTermino, reducirPlural, seccionesConComodin, STOPWORDS, terminosDe } =
   await import('../lib/mcp/indice.mjs');
 
 /** Cambia el índice bajo el motor: el fixture manda, y el cache se tira. */
@@ -738,6 +738,50 @@ describe('calidad de búsqueda por tipo de query', () => {
     // término no puede aparecer acá, ni por el fallback OR.
     const r = buscar({ q: 'timeout' });
     assert.equal(r.total, 0);
+  });
+});
+
+describe('perfil por llamador — el agente y la persona no miden igual', () => {
+  before(() => usarFixture('eje-version'));
+
+  it('sin perfil corre el del agente: nada de lo que ya existía cambia', () => {
+    // Es lo que hace que este cambio no toque una línea de los consumidores.
+    const r = buscar({ q: 'xyzzy-no-existe conciliacion', version: '19' });
+    assert.deepEqual(r.perfil, PERFIL.agente);
+    assert.equal(r.modo, 'or-fallback', 'el agente conserva su relleno');
+  });
+
+  it('la persona no recibe el relleno OR: cero es cero', () => {
+    // Medido sobre el corpus real: `l10n_ar_afipws timeout` devolvía 391
+    // resultados de algo que no está documentado. Para un agente eso ahorra un
+    // viaje; para alguien mirando un desplegable, los primeros parecen
+    // respuestas.
+    const r = buscar({ q: 'xyzzy-no-existe conciliacion', version: '19', perfil: PERFIL.persona });
+    assert.equal(r.total, 0);
+    assert.equal(r.modo, 'and');
+  });
+
+  it('la persona sí recibe el rescate de tipeo, y queda atribuido', () => {
+    const r = buscar({ q: 'conciliacion bancria', version: '19', perfil: PERFIL.persona });
+    assert.ok(r.total >= 1, 'no rescató el tipeo');
+    assert.equal(r.modo, 'rescate-de-tipeo', 'el modo tiene que decir de dónde salió');
+    assert.ok(slugs(r).some((x) => x.includes('conciliacion-bancaria')), slugs(r).join(', '));
+  });
+
+  it('el rescate es ÚLTIMO RECURSO: no compite con las coincidencias exactas', () => {
+    // El aserto que protege la decisión. Prendido para toda consulta, los
+    // candidatos difusos empujan para abajo a los exactos: medido, rompía tres
+    // casos del golden set de oba-docs.
+    const exacta = { q: 'conciliacion bancaria', version: '19' };
+    const comoAgente = buscar(exacta);
+    const comoPersona = buscar({ ...exacta, perfil: PERFIL.persona });
+    assert.equal(comoPersona.modo, 'and', 'una consulta que resuelve exacta no pasa por el rescate');
+    assert.deepEqual(slugs(comoPersona), slugs(comoAgente), 'el perfil no reordena lo que ya andaba');
+  });
+
+  it('el tipeo NO se rescata para el agente: reformula y reintenta gratis', () => {
+    const r = buscar({ q: 'conciliacion bancria', version: '19' });
+    assert.notEqual(r.modo, 'rescate-de-tipeo');
   });
 });
 
