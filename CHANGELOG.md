@@ -14,6 +14,46 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.14.0 — 2026-09-17
+
+- **busqueda: el motor acepta un perfil por llamador.** `buscar()` toma
+  `perfil`, y el paquete exporta `PERFIL.agente` y `PERFIL.persona`. Nace de la
+  task 75112: este motor lo consulta un agente por MCP y —desde esa task—
+  también una persona en el buscador del sitio, y **miden distinto**. Lo que a
+  uno le sirve al otro le estorba, y está medido:
+  - **Rescate de tipeo.** El fuzzy estaba apagado razonando sobre un LLM, que
+    "reformula limpio y reintenta gratis". Una persona no reformula. Medido
+    contra el índice publicado: `persepciones` daba **cero**. Con el perfil
+    `persona` lo rescata, y con el artículo correcto primero.
+  - **Relleno OR.** Cuando el AND da cero, el motor afloja a OR. Para el agente
+    ahorra un viaje; para una persona, `l10n_ar_afipws timeout` devolvía **409
+    resultados** de algo que no está documentado. Con el perfil `persona` da
+    **cero**, que es la respuesta honesta.
+- **El default es `agente`, así que NINGÚN consumidor cambia de comportamiento.**
+  Los 447 casos que ya existían pasan sin tocar una línea.
+- **El rescate de tipeo es ÚLTIMO RECURSO, y el orden es una decisión.** Corre
+  sólo si la búsqueda exacta dio cero, y **antes** del relleno OR: ante un error
+  de tipeo, "quisiste decir percepciones" le sirve más al lector que "todo lo que
+  comparte alguna palabra". Medido: para `conciliacion bancria` el rescate da 26
+  resultados y cae en el artículo correcto, contra 48 más ruidosos del OR.
+  Prendido para toda consulta —no sólo cuando la exacta da cero— los candidatos
+  difusos empujan para abajo a los exactos y rompía tres casos del golden set de
+  oba-docs.
+- **Un modo nuevo en la respuesta: `rescate-de-tipeo`.** Un consumidor que
+  ramifica por `modo` lo tiene que ver. Los modos `and` y `or-fallback` no
+  cambian.
+- **[cambio observable] sale el export `FUZZY` y sale el campo `fuzzy` de la
+  respuesta de `buscar()`**, reemplazados por `PERFIL` y por `perfil` en la
+  respuesta: con perfiles, un booleano global dejó de tener sentido y el dato
+  útil es cuál corrió. Verificado que ningún consumidor los importaba ni los
+  leía.
+- **Se declara, no se detecta, y lo ata quien inyecta el motor.** El perfil no se
+  adivina por header ni user-agent —frágil en los dos sentidos— y no es un campo
+  de la tool del MCP: si lo fuera, el LLM podría ponerlo mal. El handler recibe
+  el motor inyectado y el sitio pasa `PERFIL.persona` desde su propio llamador.
+
+---
+
 ## v0.13.0 — 2026-09-15
 
 - **busqueda: el plural y el singular caen en la misma clave.** `procesarTermino`
