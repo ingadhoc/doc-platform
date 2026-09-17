@@ -22,6 +22,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
+// Los artefactos de este bloque se construyen con MiniSearch de verdad: un
+// serializado escrito a mano probaría la detección contra una forma inventada,
+// y la forma real (`index` como array de pares) es justo lo que hace que el
+// escaneo de trigramas no lo vea.
+import MiniSearch from 'minisearch';
+
+// El chequeo del guard compara contra el vocabulario que produce ESTE
+// processTerm: los artefactos de los tests se construyen con el mismo, salvo el
+// caso que prueba justamente qué pasa cuando no.
+import { procesarTermino } from '../lib/mcp/indice.mjs';
+
 const GUARD = process.env.DOCS_GUARD_PATH
   ? path.resolve(process.cwd(), process.env.DOCS_GUARD_PATH)
   : fileURLToPath(new URL('../bin/guard-fuga.mjs', import.meta.url));
@@ -367,6 +378,90 @@ describe('escaneo del output', () => {
       }),
       /FUGA/,
     );
+  });
+});
+
+describe('índices serializados: el trigrama no los ve, el vocabulario sí', () => {
+  // En un índice serializado los `storeFields` viajan como texto contiguo —y el
+  // escaneo de trigramas ya los cubre— pero el CUERPO va al `index`, que es un
+  // array de pares [término, datos]: palabras sueltas. Ahí ninguna sonda de tres
+  // palabras puede matchear. Verificado contra el artefacto real de oba-docs: un
+  // índice construido desde el corpus interno le da 3 frases al trigrama y deja
+  // 148 términos del cuerpo que sólo ve el chequeo de vocabulario.
+  //
+  // EL ASERTO ES DE SUBCONJUNTO: todo término del índice tiene que existir en el
+  // vocabulario del corpus público. No "que no aparezca ninguno interno" — eso
+  // aprobaba en silencio un índice emitido con otro `processTerm`.
+  const artefacto = (cuerpo, opciones = {}) => {
+    const m = new MiniSearch({ idField: 'id', fields: ['title', 'body'], storeFields: ['title'],
+      processTerm: procesarTermino, ...opciones });
+    m.addAll([{ id: 'a::1', title: 'articulo publico', body: cuerpo }]);
+    return JSON.stringify(m.toJSON());
+  };
+
+  // El corpus público: define el vocabulario permitido.
+  const CORPUS = JSON.stringify({
+    articulos: [{ slug: 'a', title: 'articulo publico', body: 'dias corridos sin rechazo', headings: [] }],
+  });
+  const MANIF = { ...MANIFIESTO_OK, sondas: ['con alias aliaspruebauno'] };
+  const base = (archivos) => ({ manifiesto: MANIF, indiceAgente: CORPUS, archivos: { 'site/build/index.html': '<p>publico y sano</p>', ...archivos } });
+
+  it('un término que no está en el corpus público CORTA el deploy', () => {
+    const r = correr(base({ 'site/build/navegador/indice.json': artefacto('aliaspruebauno quedo adentro') }));
+    bloqueado(r, /ÍNDICE SERIALIZADO SIN VERIFICAR/);
+    assert.match(r.salida, /aliaspruebauno/);
+    // Y el mensaje distingue lo que SABEMOS interno de lo que no reconocemos.
+    assert.match(r.salida, /del texto borrado/);
+  });
+
+  it('un artefacto con sólo vocabulario público aprueba', () => {
+    const r = correr(base({ 'site/build/navegador/indice.json': artefacto('dias corridos sin rechazo') }));
+    aprobado(r);
+    assert.match(r.salida, /índices serializados: todos sus términos existen/);
+  });
+
+  it('un índice emitido con OTRO processTerm no se aprueba en silencio', () => {
+    // El agujero que la revisión encontró en la primera versión: si el emisor
+    // tokeniza distinto que este motor, sus términos no son los mismos y una
+    // comparación de igualdad no podía matchear nada — el guard decía "limpio"
+    // sin haber verificado. Con el aserto de subconjunto, un emisor ajeno se
+    // delata porque sus términos no existen en nuestro vocabulario.
+    const r = correr(base({
+      'site/build/navegador/indice.json': artefacto('DIAS Corridos', { processTerm: (t) => t }),
+    }));
+    bloqueado(r, /ÍNDICE SERIALIZADO SIN VERIFICAR/);
+  });
+
+  it('los símbolos no parten el término: el CUIT se compara como lo indexó MiniSearch', () => {
+    // El otro agujero: partir por `[^\p{L}\p{N}]` rompe `n°30712345678` en dos
+    // y MiniSearch lo deja entero, así que el número pasaba. El tokenizador sale
+    // de MiniSearch, no de una regex nuestra.
+    const r = correr(base({
+      'site/build/navegador/indice.json': artefacto('cuit n°30712345678 adentro'),
+    }));
+    bloqueado(r, /ÍNDICE SERIALIZADO SIN VERIFICAR/);
+  });
+
+  it('un `index` que no tiene la forma esperada CORTA, no se saltea', () => {
+    // Un archivo que el guard no sabe leer y deja pasar es el agujero que
+    // ESTRICTEZ+ vino a cerrar: si la forma cambia en una versión nueva de
+    // MiniSearch, esto tiene que avisar.
+    const r = correr(base({
+      'site/build/navegador/indice.json': JSON.stringify({ serializationVersion: 2, index: { no: 'soy un array' } }),
+    }));
+    bloqueado(r, /no sé leer este índice/);
+  });
+
+  it('un JSON que no declara serialización no dispara el chequeo', () => {
+    const r = correr(base({ 'site/build/datos.json': JSON.stringify({ index: 'no soy un indice', cualquiera: 1 }) }));
+    aprobado(r);
+    assert.doesNotMatch(r.salida, /índices serializados/);
+  });
+
+  it('sin el corpus público con qué comparar, CORTA con mensaje y no con stack trace', () => {
+    const r = correr({ ...base({ 'site/build/navegador/indice.json': artefacto('dias corridos') }), indiceAgente: '{roto' });
+    bloqueado(r, /no pude leer/);
+    assert.doesNotMatch(r.salida, /at Object\./, 'salió un stack trace crudo');
   });
 });
 

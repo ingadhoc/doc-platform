@@ -14,6 +14,103 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.15.0 — 2026-09-17
+
+- **guard: verifica también los índices serializados, por vocabulario.**
+  **NO lleva la etiqueta `[seguridad]`, y es a propósito.** Esa etiqueta sobre
+  `guard` o `gate` bloquea el CI de los consumidores rezagados, y el bloqueo
+  significa "estás expuesto hasta que lo adoptes". Hoy **ningún consumidor emite
+  un índice serializado**, así que nadie está expuesto: el chequeo es preventivo
+  para un artefacto que todavía no existe. El día que un corpus lo emita, ese
+  cambio viene con su propio bump y ahí sí la etiqueta corresponde.
+- **Qué cubre cada chequeo.** Las sondas son trigramas de palabras contiguas. En
+  un índice serializado de MiniSearch los `storeFields` (title, description,
+  headings, slug, url) viajan como texto contiguo y el escaneo de trigramas YA
+  los cubre —medido: un índice armado desde el corpus interno le dispara 3
+  frases—, pero **el cuerpo no**: va al `index`, que es un array de pares
+  `[término, datos]`, o sea palabras sueltas sin orden. Ninguna sonda de tres
+  palabras puede matchear ahí, y el cuerpo es el grueso del contenido. Los dos
+  chequeos son complementarios.
+- **El aserto es de SUBCONJUNTO: todo término del índice tiene que existir en el
+  vocabulario del corpus público.** Un término de más es contenido que no se
+  publica, o un emisor que no es este motor — las dos cosas cortan el deploy.
+  Medido sobre el artefacto real: **0 términos de más** en el correcto, **148**
+  en uno construido desde el corpus interno (de esos, 138 se identifican como
+  provenientes del texto que el preprocesador borró, y el mensaje lo distingue).
+- **Por qué de subconjunto y no "que no aparezca ningún término interno".** La
+  primera versión restaba el vocabulario público de las sondas y buscaba los
+  términos que quedaban. Andaba, y tenía dos agujeros que cierra el aserto
+  nuevo: (a) aprobaba **en silencio** un índice emitido con otro `processTerm`,
+  porque si el emisor tokeniza distinto ninguna comparación de igualdad podía
+  matchear — la dirección de falla que el guard prohíbe; y (b) el vocabulario
+  removido y el del índice se tokenizaban distinto, porque partir por
+  `[^\p{L}\p{N}]` rompe `n°30712345678` en dos y MiniSearch lo deja entero:
+  `cuit n°30712345678 interno` pasaba y el número suelto bloqueaba. Justo la
+  clase —números, CUITs, IDs— que este chequeo viene a cubrir. **El tokenizador
+  ahora sale de `MiniSearch.getDefault('tokenize')`**, o sea el mismo que usó el
+  índice, y no de una regex nuestra.
+- **Un índice que el guard no sabe leer CORTA, no se saltea.** Si declara
+  `serializationVersion` y su `index` no tiene la forma esperada —por ejemplo
+  porque cambió en una versión nueva de MiniSearch— falla con el motivo. Y si
+  falta el corpus público con qué comparar, falla **con mensaje** y no con un
+  stack trace crudo.
+- **Cubre una clase que el enfoque léxico declara que no ve.** Buena parte de
+  los términos que detecta son números, CUITs, IDs de Drive y hashes —
+  exactamente lo que el docstring del guard anota como su límite (*"lo más caro
+  de fugar es justamente lo que el enfoque léxico no ve"*).
+- **Cero entradas nuevas.** El guard ya recibía el manifiesto de sondas y
+  `api/_generated/index.json` (de hecho ya lo exigía con target docusaurus). Y
+  la normalización sale del `procesarTermino` del motor, así que es **la misma**
+  con la que se construyó el índice: no hay una segunda fuente que pueda
+  divergir.
+- **Se activa solo.** No depende de un nombre de archivo: cualquier `.json` del
+  output que declare `serializationVersion` entra al chequeo. Hoy no hay
+  ninguno; el día que un consumidor emita uno, queda verificado sin tocar el
+  guard.
+- **Costo:** el vocabulario público se tokeniza una sola vez y **sólo si aparece
+  un índice serializado** (~1 s sobre 1087 artículos). Un build que no emite
+  ninguno no paga nada, y el objeto parseado no se retiene más allá del chequeo.
+- **motor: `opcionesDelIndice(build)` se exporta**, para que el preprocesador de
+  un corpus construya EL MISMO índice que este motor lee. Hasta acá los campos,
+  los boosts y los campos guardados eran constantes privadas: para usarlas había
+  que copiarlas, y una configuración copiada diverge igual que el código copiado
+  —es lo que ya pasó con la config del tema en tres repos—. Devuelve el objeto
+  entero y no las constantes sueltas a propósito: exportarlas dejaría el
+  ENSAMBLADO como un segundo lugar donde divergir, y alcanza con olvidarse el
+  `processTerm` para que los dos índices tokenicen distinto, que no falla —
+  devuelve otros resultados. `construir()` ahora la usa, así que hay una sola
+  fuente y no dos que se puedan separar. **No es** el `OPCIONES_DE_INDICE` que se
+  borró en v0.8.0: ese era para reconstruir índices de lunr y tenía cero
+  consumidores.
+- **El chequeo nuevo va por resta de conjuntos, y por eso puede ir por palabra
+  suelta.** Para prosa este guard usa trigramas justamente porque una palabra
+  sola del texto removido aparece legítimamente en texto público. Sobre un índice
+  ese problema no existe: el vocabulario público es un conjunto computable y se
+  resta exacto. Medido sobre oba-docs: 759 términos en el texto removido, 14.921
+  en el corpus público, **139 distintivos**. Sobre el artefacto correcto, 0
+  indexados; sobre uno armado desde el corpus interno, 138.
+- **Cubre una clase que el enfoque léxico declara que no ve.** 60 de esos 139
+  distintivos son números, CUITs, IDs de Drive y hashes — exactamente lo que el
+  docstring del guard anota como su límite (*"lo más caro de fugar es justamente
+  lo que el enfoque léxico no ve"*). Los dos chequeos son complementarios.
+- **Cero entradas nuevas y cero parsers nuevos.** El guard ya recibía el
+  manifiesto de sondas y `api/_generated/index.json` (de hecho ya lo exigía con
+  target docusaurus). La tokenización usa el `procesarTermino` del motor, así que
+  la normalización del chequeo es **la misma** con la que se construyó el índice:
+  no hay una segunda fuente que pueda divergir.
+- **Se activa solo.** No depende de un nombre de archivo: cualquier `.json` del
+  output que tenga `serializationVersion` y un `index` en forma de pares entra al
+  chequeo. Hoy no hay ninguno; el día que un consumidor emita uno, queda
+  verificado sin tocar el guard.
+- **Y sigue la regla dura:** si aparece un índice serializado y falta el corpus
+  público con qué calcular el vocabulario, **corta el deploy**. "No pude
+  verificar es FALLA, no aviso."
+- **Costo:** el vocabulario público se tokeniza una sola vez y **sólo si aparece
+  un índice serializado** (~1 s sobre 1087 artículos). Un build que no emite
+  ninguno no paga nada.
+
+---
+
 ## v0.14.0 — 2026-09-17
 
 - **busqueda: el motor acepta un perfil por llamador.** `buscar()` toma

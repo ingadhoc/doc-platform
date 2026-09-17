@@ -32,8 +32,12 @@ import { before, describe, it } from 'node:test';
 
 process.env.DOCS_URL = 'https://docs.ejemplo.ar';
 
-const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, PERFIL, politicaDeEje, procesarTermino, reducirPlural, seccionesConComodin, STOPWORDS, terminosDe } =
+const { _resetIndice, buscar, indice, leer, mapa, normalizarTermino, opcionesDelIndice, PERFIL, politicaDeEje, procesarTermino, reducirPlural, seccionesConComodin, STOPWORDS, terminosDe } =
   await import('../lib/mcp/indice.mjs');
+
+// Para probar que las opciones exportadas construyen un índice que de verdad
+// busca, y no sólo que el objeto tiene las claves esperadas.
+const { default: MiniSearch } = await import('minisearch');
 
 /** Cambia el índice bajo el motor: el fixture manda, y el cache se tira. */
 function usarFixture(nombre) {
@@ -738,6 +742,45 @@ describe('calidad de búsqueda por tipo de query', () => {
     // término no puede aparecer acá, ni por el fallback OR.
     const r = buscar({ q: 'timeout' });
     assert.equal(r.total, 0);
+  });
+});
+
+describe('opcionesDelIndice — una sola fuente para construir el índice', () => {
+  // Existe para que el preprocesador de un corpus construya EL MISMO índice que
+  // este motor lee, sin copiarse los campos ni los boosts.
+  const BUILD_EJE = { schemaVersion: 1, eje: { tipo: 'version', default: '19', valores: [{ id: '19' }, { id: '18' }] }, metadata: { modules: true, paises: ['AR'] } };
+
+  it('trae el `processTerm`, que es lo que nadie se acuerda de copiar', () => {
+    // Si el llamador ensamblara las opciones a mano y se lo olvidara, el índice
+    // emitido tokenizaría distinto que el que este motor construye. Y eso no
+    // falla: devuelve otros resultados, que es peor.
+    assert.equal(opcionesDelIndice(BUILD_EJE).processTerm, procesarTermino);
+  });
+
+  it('los campos guardados salen de la política del eje, no de una lista fija', () => {
+    const conEje = opcionesDelIndice(BUILD_EJE).storeFields;
+    assert.ok(conEje.includes('eje'), conEje.join(','));
+    assert.ok(conEje.includes('modules') && conEje.includes('paises'), conEje.join(','));
+
+    const sinEje = opcionesDelIndice({ schemaVersion: 1, eje: { tipo: 'none' }, metadata: {} }).storeFields;
+    assert.equal(sinEje.includes('eje'), false, sinEje.join(','));
+  });
+
+  it('no devuelve los objetos internos: el llamador no puede mutarlos', () => {
+    const o = opcionesDelIndice(BUILD_EJE);
+    o.fields.push('inventado');
+    o.searchOptions.boost.title = 999;
+    assert.equal(opcionesDelIndice(BUILD_EJE).fields.includes('inventado'), false);
+    assert.equal(opcionesDelIndice(BUILD_EJE).searchOptions.boost.title, 6);
+  });
+
+  it('construyen un índice que busca de verdad, no sólo un objeto con claves', () => {
+    const m = new MiniSearch(opcionesDelIndice(BUILD_EJE));
+    m.addAll([{ id: '19::a', slug: 'a', title: 'Conciliación bancaria', body: 'texto', eje: '19' }]);
+    // Sin tilde y en plural: prueba de una que el `processTerm` está enganchado.
+    const r = m.search('conciliaciones');
+    assert.equal(r.length, 1, JSON.stringify(r));
+    assert.equal(r[0].slug, 'a');
   });
 });
 
