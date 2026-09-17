@@ -14,6 +14,52 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.16.0 — 2026-09-17
+
+- **busqueda: UN solo candidato se declara pobre.** `buscar()` devuelve una
+  `nota` cuando queda un único resultado: con uno solo no hay con qué
+  compararlo, puede ser la respuesta o el único que menciona esas palabras al
+  pasar. La nota **acompaña** al resultado, no lo esconde. Sale de la tarea
+  75201, y es la única señal de pobreza que se midió y separa: cuesta el 1,5%
+  de las respuestas correctas (7 de 480 medidas sobre el corpus de oba-docs).
+  Tres precisiones que importan al leer la nota:
+  - **Dice "de los que pasan los filtros", no "del corpus".** `total` sale de
+    una búsqueda ya filtrada por eje, sección y dominio, y la tool pide filtrar
+    por eje siempre: el caso normal es que el corpus tenga varios y el filtro
+    deje uno. Por eso la nota pide aflojar los filtros antes de concluir que no
+    está documentado — muchas veces está, en otra versión.
+  - **Corre en `and` y en `rescate-de-tipeo`, no en `or-fallback`.** El último
+    ya trae su propia nota; el rescate difuso es evidencia más débil que el
+    `and`, así que un único candidato ahí merece la misma advertencia.
+  - **Es una capacidad del perfil**, `PERFIL.*.notaDePobreza`: encendida para
+    el agente, apagada para la persona. La nota es prosa imperativa para un
+    lector que la lee y puede actuar; para una persona la honestidad es la
+    interfaz, no un párrafo. Es la primera nota que necesita el interruptor,
+    porque es el primer caso alcanzable por los dos llamadores.
+- **mcp-handler: el contrato de `buscar` dice qué NO significa `modo: and`.**
+  Que la búsqueda vuelva en `and` quiere decir que hay artículos con todos los
+  términos, no que respondan la pregunta — el match es léxico. La
+  `description` ahora pide verificar pertinencia contra la `description` y los
+  `headings` del hit, y —si ninguno de los que ve responde— mirar `hayMas` y
+  `paginas` antes de concluir: la respuesta puede estar en una página que
+  todavía no pidió o bajo otro valor de los filtros. Recién ahí contestar que
+  la documentación no lo cubre, en vez de citar el más parecido. Va en el
+  contrato y **no** en una nota en cada
+  respuesta por dos razones: una advertencia en todas las respuestas es la que
+  nadie lee, y le sacaría el contraste a la nota del `or-fallback`, que hoy sí
+  significa algo.
+- **busqueda: queda escrito en el código lo que el motor NO puede detectar.**
+  No hay umbral que reconozca el match confiado y equivocado con 2+
+  resultados: se midieron el `score` crudo, la BRECHA entre el 1º y el 2º y la
+  COBERTURA de los términos en el título, y las tres se superponen con las
+  respuestas correctas (la brecha suprime el 20,5% de las buenas en su corte
+  más bajo). La razón es de fondo — las tres se calculan del match de palabras,
+  y si el artículo responde la pregunta es una cuestión de significado. La
+  medición completa está en `scripts/golden/consultas.json` de oba-docs, para
+  que nadie la reintente.
+
+---
+
 ## v0.15.0 — 2026-09-17
 
 - **guard: verifica también los índices serializados, por vocabulario.**
@@ -108,6 +154,7 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 - **Costo:** el vocabulario público se tokeniza una sola vez y **sólo si aparece
   un índice serializado** (~1 s sobre 1087 artículos). Un build que no emite
   ninguno no paga nada.
+
 
 ---
 
