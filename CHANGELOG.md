@@ -14,6 +14,18 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.17.0 — 2026-09-18
+
+- **config: el error de `cargarConfig` dice con qué versión se validó.** Un
+  `node_modules` anterior al último bump del pin rechaza una clave que la
+  versión pineada sí admite, y el mensaje —que no nombraba ninguna versión— se
+  leía como un config inválido del repo. Ahora el error cierra con la versión
+  instalada y, cuando no coincide con el tag que el `package.json` del
+  consumidor pinea, lo dice y manda a `npm ci`. Sale de un caso real en
+  `oba-docs`: `docSets` (que entró en v0.11.0) se reportó como no admitida por
+  la v0.13.0 pineada y se escaló como decisión de la plataforma, cuando lo
+  viejo era la instalación local.
+
 ## v0.16.0 — 2026-09-17
 
 - **busqueda: UN solo candidato se declara pobre.** `buscar()` devuelve una
