@@ -278,6 +278,33 @@ describe('cargarConfig', () => {
     assert.throws(() => cargarConfig({ cwd: conArchivo('{ "eje": ') }), /no es JSON válido/);
   });
 
+  it('el error dice con qué versión de la plataforma se validó', () => {
+    const c = clonar(OBA);
+    delete c.eje.default;
+    assert.throws(
+      () => cargarConfig({ cwd: conArchivo(JSON.stringify(c)) }),
+      /Validado con @ingadhoc\/docs-platform/,
+    );
+  });
+
+  it('pin del repo distinto de lo instalado: lo dice y manda a npm ci', () => {
+    const c = clonar(OBA);
+    c.claveQueNoExiste = true;
+    const cwd = conArchivo(JSON.stringify(c));
+    fs.writeFileSync(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ dependencies: { '@ingadhoc/docs-platform': 'github:ingadhoc/doc-platform#v0.0.1' } }),
+    );
+    try {
+      cargarConfig({ cwd });
+      assert.fail('esperaba que tirara');
+    } catch (error) {
+      assert.match(error.message, /clave desconocida/);
+      assert.match(error.message, /pinea v0\.0\.1/);
+      assert.match(error.message, /npm ci/);
+    }
+  });
+
   it('config inválido: TIRA con TODOS los errores juntos, no con el primero', () => {
     const c = clonar(OBA);
     delete c.eje.default;
