@@ -14,6 +14,52 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.18.0 — 2026-09-25
+
+- **busqueda: cada hit de `buscar()` trae `fragmento`, `ancla` y `urlAncla`.**
+  Aditivo: no se quita ni se renombra nada. `fragmento` es un pedazo del
+  CUERPO del artículo (≤ 280 caracteres, cortado en límite de palabra, con "…"
+  en los bordes recortados y sin `**` ni links en crudo) alrededor de donde
+  aparece la consulta; `ancla` es el `{id, text}` del h2/h3 bajo el que cae, y
+  `urlAncla` la `url` con `#id`. Sirven para que el agente cite el lugar exacto
+  y juzgue si el hit responde sin tener que `leer()` el artículo entero.
+  - **Los términos son los que matcheó el motor**, no la query re-procesada:
+    se leen de `match` de MiniSearch, así que la comparación es la misma
+    (minúsculas, sin tildes, plural reducido, prefijo resuelto). Si ningún
+    término matcheó en `body` —el match fue sólo en título, keywords o
+    descripción— los tres campos vienen en `null`. También vienen en `null`
+    si el término sólo aparece en la URL de un link: el fragmento muestra el
+    texto del link, no su destino.
+  - **Elige la ventana que junta más términos distintos**, no la primera
+    aparición a secas: en la FAQ de tuqui-docs, `dos empresas claude` caía en
+    la pregunta que nombra a Claude al pasar y no en la de dos empresas. La
+    ventana que se puntúa es la misma que se devuelve, y siempre contiene el
+    término: si no hay un espacio cerca del borde se corta por caracteres, sin
+    partir nunca un par surrogate.
+  - **El `id` del ancla sale de `headings` del índice**, no se recalcula: lo
+    slugificó el build con las reglas de su sitio.
+  - **Sólo para los hits de la página devuelta**, porque recorre el cuerpo; y
+    sólo si el índice declara `build.conCuerpo: true`. Si no, los tres en `null`.
+    El recorrido es lineal en el largo del cuerpo y en las apariciones del
+    término, y los bloques de cada artículo se calculan una vez por proceso.
+  - **Las respuestas de `buscar()` crecen.** Medido con 15 consultas contra
+    los índices reales: oba-docs +29 % (unos 10 KB más por página de 20 hits;
+    la más grande pasa de 40 a 51,5 KB) y tuqui-docs +39 %. Un consumidor con tope de
+    tamaño por respuesta lo tiene que revisar antes de subir el pin.
+- **indice: `mapa({ seccion })` lista los artículos de una sección.** Sin
+  parámetro la respuesta es idéntica a la de v0.16.0 (hay un test que la
+  compara contra la salida guardada). Con `seccion`: la cabecera de siempre,
+  `seccion` y `articulos: [{slug, title, description, categoria, url}]` en el
+  orden del índice —el que emite el build—, paginados de a 50 con `total`,
+  `page`, `paginas` y `hayMas` como en `buscar()`. Con eje lista un solo
+  valor: el que se pide (`version` / `project`) o, si no se pide, el `default`
+  del corpus, anunciado con `elegidoPor: 'default'`; así el mismo slug no
+  aparece una vez por versión. Cada artículo suma su valor. Una sección que no
+  existe devuelve `articulos: []`, `motivo: 'seccion-inexistente'` y las
+  secciones válidas en `sugerencias`, las más parecidas primero. El tool
+  `mapa` del MCP no cambia: los parámetros los usan por ahora las rutas HTTP
+  de los consumidores.
+
 ## v0.16.0 — 2026-09-17
 
 - **busqueda: UN solo candidato se declara pobre.** `buscar()` devuelve una
