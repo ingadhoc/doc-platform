@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE de fragmento/ancla de buscar() y de mapa({ seccion }). Eje none. Cada artículo cubre un caso: el término bajo el segundo heading (con tilde, plural y markdown alrededor), el cuerpo largo que obliga a recortar, el match sólo en el título y el match antes del primer heading.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-09-25T12:00:00.000Z",
+    "articulos": 4,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "none"
+    },
+    "metadata": {}
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "impuestos",
+      "label": "Impuestos",
+      "count": 2
+    },
+    {
+      "seccion": "recursos",
+      "categoria": "",
+      "label": "Recursos",
+      "count": 2
+    }
+  ],
+  "articulos": [
+    {
+      "id": "*::manual/impuestos/percepciones",
+      "slug": "manual/impuestos/percepciones",
+      "eje": null,
+      "title": "Percepciones",
+      "description": "El circuito de las percepciones.",
+      "seccion": "manual",
+      "url": "/manual/impuestos/percepciones",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "alta",
+          "text": "Alta de la percepción",
+          "level": 2
+        },
+        {
+          "id": "calculo",
+          "text": "Cálculo automático",
+          "level": 2
+        }
+      ],
+      "body": "Intro del circuito completo, sin nada de lo que se busca.\n\n## Alta de la percepción\n\nPrimero se configura el impuesto en la ficha.\n\n## Cálculo automático\n\nCada factura aplica la **alícuota** que corresponda según el [padrón de ARBA](/manual/padron) y guarda las conciliaciones del período.\n"
+    },
+    {
+      "id": "*::manual/impuestos/retenciones",
+      "slug": "manual/impuestos/retenciones",
+      "eje": null,
+      "title": "Retenciones",
+      "description": "Cómo se calculan.",
+      "seccion": "manual",
+      "url": "/manual/impuestos/retenciones",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "detalle",
+          "text": "Detalle",
+          "level": 2
+        }
+      ],
+      "body": "## Detalle\n\nEste párrafo existe para que el cuerpo sea largo y la ventana tenga que recortarse de los dos lados. Este párrafo existe para que el cuerpo sea largo y la ventana tenga que recortarse de los dos lados. Este párrafo existe para que el cuerpo sea largo y la ventana tenga que recortarse de los dos lados. Acá aparece el cheque rechazado, que es lo que se busca. Después del término sigue más texto de relleno, con palabras comunes y ninguna de la consulta, para que el final también se corte.  Después del término sigue más texto de relleno, con palabras comunes y ninguna de la consulta, para que el final también se corte.  Después del término sigue más texto de relleno, con palabras comunes y ninguna de la consulta, para que el final también se corte. \n"
+    },
+    {
+      "id": "*::recursos/reembolsos",
+      "slug": "recursos/reembolsos",
+      "eje": null,
+      "title": "Reembolsos",
+      "description": "",
+      "seccion": "recursos",
+      "url": "/recursos/reembolsos",
+      "keywords": [],
+      "headings": [],
+      "body": "Se devuelve el dinero cuando corresponde.\n"
+    },
+    {
+      "id": "*::recursos/glosario",
+      "slug": "recursos/glosario",
+      "eje": null,
+      "title": "Glosario",
+      "description": "Palabras del manual.",
+      "seccion": "recursos",
+      "url": "/recursos/glosario",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "otros",
+          "text": "Otros",
+          "level": 2
+        }
+      ],
+      "body": "El padrón se actualiza cada mes.\n\n## Otros\n\nNada más por ahora.\n"
+    }
+  ]
+}

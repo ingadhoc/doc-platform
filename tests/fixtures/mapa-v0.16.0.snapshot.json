@@ -1,0 +1,372 @@
+{
+  "eje-version": {
+    "schemaVersion": 1,
+    "buildId": "2026-08-20T09:00:00.000Z",
+    "audiencia": "publico",
+    "generadoEl": "2026-08-20T09:00:00.000Z",
+    "articulos": 9,
+    "metadata": {
+      "modules": true
+    },
+    "eje": {
+      "tipo": "version",
+      "param": "version",
+      "valores": [
+        "19",
+        "18"
+      ],
+      "default": "19",
+      "declarados": [
+        {
+          "id": "19",
+          "label": "19.0"
+        },
+        {
+          "id": "18",
+          "label": "18.0"
+        }
+      ]
+    },
+    "mapa": [
+      {
+        "seccion": "manual",
+        "categoria": "finanzas/facturacion",
+        "modules": [
+          "l10n_ar",
+          "account"
+        ],
+        "count": 4,
+        "ejeValores": [
+          "18",
+          "19"
+        ]
+      },
+      {
+        "seccion": "manual",
+        "categoria": "finanzas/cobros-y-pagos",
+        "modules": [
+          "account"
+        ],
+        "count": 4,
+        "ejeValores": [
+          "18",
+          "19"
+        ]
+      },
+      {
+        "seccion": "relacion",
+        "categoria": "como-te-acompanamos",
+        "modules": [],
+        "count": 1,
+        "ejeValores": []
+      }
+    ]
+  },
+  "eje-project": {
+    "schemaVersion": 1,
+    "buildId": "2026-08-19T21:00:00.000Z",
+    "audiencia": "interno",
+    "generadoEl": "2026-08-19T21:00:00.000Z",
+    "articulos": 7,
+    "metadata": {
+      "types": [
+        "concepto",
+        "referencia",
+        "procedimiento",
+        "troubleshooting",
+        "guia",
+        "indice"
+      ]
+    },
+    "eje": {
+      "tipo": "project",
+      "param": "project",
+      "valores": [
+        "adhoc-way",
+        "oba",
+        "odumbo"
+      ],
+      "declarados": [
+        {
+          "id": "adhoc-way",
+          "label": "Adhoc Way"
+        },
+        {
+          "id": "oba",
+          "label": "Odoo by Adhoc"
+        },
+        {
+          "id": "odumbo",
+          "label": "Odumbo"
+        }
+      ]
+    },
+    "mapa": [
+      {
+        "seccion": "",
+        "categoria": "",
+        "label": "Adhoc Way",
+        "count": 1,
+        "ejeValores": [
+          "adhoc-way"
+        ]
+      },
+      {
+        "seccion": "flujo",
+        "categoria": "",
+        "label": "Flujo de trabajo",
+        "count": 1,
+        "ejeValores": [
+          "adhoc-way"
+        ]
+      },
+      {
+        "seccion": "specs",
+        "categoria": "",
+        "label": "Specs",
+        "count": 1,
+        "ejeValores": [
+          "adhoc-way"
+        ]
+      },
+      {
+        "seccion": "",
+        "categoria": "",
+        "label": "Odoo by Adhoc",
+        "count": 1,
+        "ejeValores": [
+          "oba"
+        ]
+      },
+      {
+        "seccion": "instalacion",
+        "categoria": "",
+        "label": "Instalación",
+        "count": 1,
+        "ejeValores": [
+          "oba"
+        ]
+      },
+      {
+        "seccion": "",
+        "categoria": "",
+        "label": "Odumbo",
+        "count": 1,
+        "ejeValores": [
+          "odumbo"
+        ]
+      },
+      {
+        "seccion": "arquitectura",
+        "categoria": "",
+        "label": "Arquitectura",
+        "count": 1,
+        "ejeValores": [
+          "odumbo"
+        ]
+      }
+    ]
+  },
+  "eje-none": {
+    "schemaVersion": 1,
+    "buildId": "2026-08-20T09:30:00.000Z",
+    "audiencia": "publico",
+    "generadoEl": "2026-08-20T09:30:00.000Z",
+    "articulos": 3,
+    "metadata": {},
+    "eje": {
+      "tipo": "none"
+    },
+    "mapa": [
+      {
+        "seccion": "manual",
+        "categoria": "sla",
+        "count": 2
+      },
+      {
+        "seccion": "manual",
+        "categoria": "tickets",
+        "count": 1
+      }
+    ]
+  },
+  "doc-sets": {
+    "schemaVersion": 1,
+    "buildId": "2026-09-10T09:00:00.000Z",
+    "audiencia": "publico",
+    "generadoEl": "2026-09-10T09:00:00.000Z",
+    "articulos": 5,
+    "metadata": {
+      "modules": false,
+      "types": [],
+      "paises": [],
+      "docSets": [
+        {
+          "id": "manual",
+          "label": "Manual de usuario"
+        },
+        {
+          "id": "novedades",
+          "label": "Novedades de versión"
+        }
+      ]
+    },
+    "eje": {
+      "tipo": "version",
+      "param": "version",
+      "valores": [
+        "19",
+        "18"
+      ],
+      "default": "19",
+      "declarados": [
+        {
+          "id": "19",
+          "label": "19.0"
+        },
+        {
+          "id": "18",
+          "label": "18.0"
+        }
+      ]
+    },
+    "mapa": [
+      {
+        "seccion": "manual",
+        "categoria": "inventario",
+        "label": "Inventario",
+        "count": 2,
+        "ejeValores": [
+          "18",
+          "19"
+        ],
+        "modules": []
+      },
+      {
+        "seccion": "novedades",
+        "categoria": "que-revisar",
+        "label": "Qué revisar",
+        "count": 2,
+        "ejeValores": [
+          "19"
+        ],
+        "modules": []
+      }
+    ]
+  },
+  "paises": {
+    "schemaVersion": 1,
+    "buildId": "2026-08-25T09:00:00.000Z",
+    "audiencia": "publico",
+    "generadoEl": "2026-08-25T09:00:00.000Z",
+    "articulos": 7,
+    "metadata": {
+      "modules": true,
+      "paises": [
+        "AR",
+        "CL",
+        "UY"
+      ]
+    },
+    "eje": {
+      "tipo": "version",
+      "param": "version",
+      "valores": [
+        "19",
+        "18"
+      ],
+      "default": "19",
+      "declarados": [
+        {
+          "id": "19",
+          "label": "19.0"
+        },
+        {
+          "id": "18",
+          "label": "18.0"
+        }
+      ]
+    },
+    "mapa": [
+      {
+        "seccion": "manual",
+        "categoria": "finanzas/cobros-y-pagos",
+        "label": "finanzas/cobros-y-pagos",
+        "modules": [
+          "account"
+        ],
+        "paises": [],
+        "ejeValores": [
+          "19"
+        ],
+        "count": 1
+      },
+      {
+        "seccion": "manual",
+        "categoria": "inventario/rutas-y-envios",
+        "label": "inventario/rutas-y-envios",
+        "modules": [
+          "stock"
+        ],
+        "paises": [
+          "AR"
+        ],
+        "ejeValores": [
+          "19"
+        ],
+        "count": 1
+      },
+      {
+        "seccion": "manual",
+        "categoria": "localizaciones/uruguay",
+        "label": "localizaciones/uruguay",
+        "modules": [
+          "l10n_uy"
+        ],
+        "paises": [
+          "UY"
+        ],
+        "ejeValores": [
+          "19"
+        ],
+        "count": 1
+      },
+      {
+        "seccion": "manual",
+        "categoria": "soluciones-de-pago",
+        "label": "soluciones-de-pago",
+        "modules": [
+          "account"
+        ],
+        "paises": [
+          "UY"
+        ],
+        "ejeValores": [
+          "18",
+          "19"
+        ],
+        "count": 2
+      },
+      {
+        "seccion": "manual",
+        "categoria": "uso-general",
+        "label": "uso-general",
+        "modules": [],
+        "paises": [],
+        "ejeValores": [
+          "19"
+        ],
+        "count": 1
+      },
+      {
+        "seccion": "relacion",
+        "categoria": "como-te-acompanamos",
+        "label": "como-te-acompanamos",
+        "modules": [],
+        "paises": [],
+        "ejeValores": [],
+        "count": 1
+      }
+    ]
+  }
+}
