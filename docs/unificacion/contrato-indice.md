@@ -246,3 +246,54 @@ como segundo nombre de un campo.
 
 El paso 1 es el único que puede correr antes de que exista el paquete, y es el
 que hace que el drift-check bloqueante (spec:79-82) tenga algo que comparar.
+
+## 6. Idiomas — `schemaVersion: 2` (v0.20.0)
+
+La 2 es la 1 más una cosa: un corpus puede venir en varios idiomas. Un índice
+de un solo idioma sigue saliendo en 1 y se lee igual que siempre.
+
+```json
+{
+  "schemaVersion": 2,
+  "build": {
+    "eje": { "tipo": "none" },
+    "idiomas": { "default": "es", "valores": [{ "id": "es", "label": "Español" }, { "id": "en", "label": "English" }] }
+  },
+  "mapa": [{ "idioma": "en", "seccion": "legal", "categoria": "", "label": "Legal", "count": 4 }],
+  "articulos": [
+    { "id": "en:*::legal/privacy", "slug": "legal/privacy", "idioma": "en", "traduccion": "privacy", "…": "…" }
+  ]
+}
+```
+
+1. **`build.idiomas`** declara los idiomas y el `default`. Es excluyente con
+   **`build.idioma`** (string), que un corpus de un idioma puede usar para
+   elegir el analizador; sin ninguno de los dos el corpus es castellano. Los
+   códigos se normalizan (sin espacios, minúsculas, sin región: `ES`, `es-AR`
+   → `es`). En `build.idiomas` un idioma sin analizador en el motor (hoy `es`
+   y `en`) no carga; en `build.idioma` se lee con el castellano, como hacía
+   v0.19.0, que no miraba el campo. "Varios idiomas" es más de uno: un
+   `build.idiomas` con un solo valor se sirve como un índice de ese idioma,
+   sin `idioma` en las respuestas ni en las tools.
+2. **`articulos[].idioma`** es obligatorio con `idiomas` y tiene que estar en
+   `valores`. **`articulos[].traduccion`** es opcional: la clave que comparten
+   las versiones del mismo artículo en cada idioma (en tuqui-docs, el nombre del
+   archivo en `es/`). El grupo es por doc set y clave; adentro, la traducción
+   de un artículo es la del mismo valor del eje, y con eje `version` un
+   artículo fuera del eje empareja con cualquier valor. Una clave con dos
+   artículos del mismo idioma y el mismo valor del eje no carga.
+3. **El `id` lleva el idioma adelante**, `` `${idioma}:${eje ?? '*'}::${slug}` ``:
+   el mismo slug puede existir en dos idiomas (`legal/privacy` en tuqui-docs).
+   El lector sigue sin componerlo, y tira si se repite.
+4. **`mapa[].idioma`**: cada nodo es de un idioma. `mapa()` sirve los del
+   idioma pedido o del `default`.
+5. **Por qué sube el `schemaVersion`.** Un motor ≤ v0.19.0 no lee `idiomas`:
+   indexaría los dos idiomas juntos con el analizador del castellano, y `leer()`
+   de un slug repetido devolvería el primero que encuentre. Sin la versión, eso
+   no falla: responde mal. Con la 2, ese motor tira con "actualizá
+   @ingadhoc/docs-platform". Por el mismo motivo este motor tira si un índice
+   declara `idiomas` en 1. (La 2 no es la que anticipó `diseno-eje.md` §7 para
+   `ejes` plural: si eso llega, será la 3.)
+
+El motor arma un MiniSearch por idioma. Las alternativas (un índice combinado
+con filtro, o buscar en todos y mezclar) se midieron con el banco (`bench/`).

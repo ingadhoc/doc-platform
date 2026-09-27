@@ -20,6 +20,8 @@ Otras opciones de `correr.mjs`:
 - `--md=reporte.md`: el reporte en Markdown.
 - `--verboso`: todos los casos, no sólo los fallos.
 
+En la suite, una corrida puede llevar `idioma` para los índices con idiomas: un código (`"es"`) se pasa en cada consulta, `"caso"` pasa el `idioma` de cada caso, `"mezcla"` busca en todos los idiomas y junta por score relativo (sólo para medir esa alternativa), y sin el campo no se pasa nada (el motor detecta). `tuqui-docs-bilingue.json` lo genera `indices.sh` con `tools/emitir-indice-bilingue.mjs` de tuqui-docs, si el repo lo trae.
+
 El motor se importa por path (`--motor`) y se le cambia el índice con `DOCS_INDICE_PATH` + `_resetIndice()`. Un motor anterior a `PERFIL` (< v0.14.0) sólo corre el perfil `agente`. Una corrida cuyo índice o archivo de casos no existe se saltea y lo dice.
 
 ## Formato único de casos

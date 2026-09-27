@@ -7,6 +7,8 @@
     { "nombre": "odumbo-docs/publico", "indice": "odumbo-docs-publico.json", "casos": null },
     { "nombre": "tuqui-docs/es", "indice": "tuqui-docs-es.json", "casos": "casos/tuqui-docs.json" },
     { "nombre": "tuqui-docs/es-sin-keywords", "indice": "tuqui-docs-es-sin-keywords.json", "casos": "casos/tuqui-docs.json" },
-    { "nombre": "tuqui-docs/en", "indice": "tuqui-docs-en.json", "casos": "casos/tuqui-docs.json", "traducirSlugs": "tuqui-docs-es.json" }
+    { "nombre": "tuqui-docs/en", "indice": "tuqui-docs-en.json", "casos": "casos/tuqui-docs.json", "traducirSlugs": "tuqui-docs-es.json" },
+    { "nombre": "tuqui-docs/bilingue-es", "indice": "tuqui-docs-bilingue.json", "casos": "casos/tuqui-docs.json", "idioma": "es" },
+    { "nombre": "tuqui-docs/bilingue-sin-idioma", "indice": "tuqui-docs-bilingue.json", "casos": "casos/tuqui-docs.json" }
   ]
 }

@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 2,
+  "_nota": "Corpus en DOS idiomas (schemaVersion 2, build.idiomas). Cada artículo trae su idioma y su clave de traducción. legal/privacy existe con el MISMO slug en los dos idiomas (como en tuqui-docs), casos/cheques-propios no tiene traducción, y delete-account empareja con eliminar-cuenta aunque el nombre difiera.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-09-27T09:00:00.000Z",
+    "articulos": 7,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "none"
+    },
+    "metadata": {
+      "modules": false
+    },
+    "idiomas": {
+      "default": "es",
+      "valores": [
+        {
+          "id": "es",
+          "label": "Español"
+        },
+        {
+          "id": "en",
+          "label": "English"
+        }
+      ]
+    }
+  },
+  "mapa": [
+    {
+      "idioma": "es",
+      "seccion": "casos",
+      "categoria": "",
+      "label": "Casos",
+      "count": 3
+    },
+    {
+      "idioma": "es",
+      "seccion": "legal",
+      "categoria": "",
+      "label": "Legal",
+      "count": 1
+    },
+    {
+      "idioma": "en",
+      "seccion": "use-cases",
+      "categoria": "",
+      "label": "Use cases",
+      "count": 2
+    },
+    {
+      "idioma": "en",
+      "seccion": "legal",
+      "categoria": "",
+      "label": "Legal",
+      "count": 1
+    }
+  ],
+  "articulos": [
+    {
+      "id": "es:*::casos/deuda-clientes",
+      "slug": "casos/deuda-clientes",
+      "eje": null,
+      "idioma": "es",
+      "traduccion": "deuda-clientes",
+      "title": "Deuda de clientes",
+      "description": "Qué clientes te deben y desde cuándo.",
+      "keywords": [],
+      "seccion": "casos",
+      "url": "/es/deuda-clientes",
+      "headings": [
+        {
+          "id": "qué-clientes-deben",
+          "text": "Qué clientes deben",
+          "level": 2
+        }
+      ],
+      "body": "# Deuda de clientes\n\nTuqui arma el listado de deudores.\n\n## Qué clientes deben\n\nLas facturas vencidas de cada cliente, agrupadas por antigüedad."
+    },
+    {
+      "id": "es:*::casos/eliminar-cuenta",
+      "slug": "casos/eliminar-cuenta",
+      "eje": null,
+      "idioma": "es",
+      "traduccion": "eliminar-cuenta",
+      "title": "Eliminar la cuenta",
+      "description": "Cómo dar de baja tu cuenta y tus datos.",
+      "keywords": [],
+      "seccion": "casos",
+      "url": "/es/eliminar-cuenta",
+      "headings": [],
+      "body": "# Eliminar la cuenta\n\nDesde la configuración podés borrar la cuenta."
+    },
+    {
+      "id": "es:*::casos/cheques-propios",
+      "slug": "casos/cheques-propios",
+      "eje": null,
+      "idioma": "es",
+      "traduccion": "cheques-propios",
+      "title": "Cheques propios",
+      "description": "Los cheques que emitiste y cuándo vencen.",
+      "keywords": [],
+      "seccion": "casos",
+      "url": "/es/cheques-propios",
+      "headings": [],
+      "body": "# Cheques propios\n\nEl listado de cheques emitidos, por fecha de pago."
+    },
+    {
+      "id": "es:*::legal/privacy",
+      "slug": "legal/privacy",
+      "eje": null,
+      "idioma": "es",
+      "traduccion": "privacy",
+      "title": "Política de privacidad",
+      "description": "Qué datos personales guardamos.",
+      "keywords": [],
+      "seccion": "legal",
+      "url": "/es/privacy",
+      "headings": [],
+      "body": "# Política de privacidad\n\nGuardamos sólo los datos personales necesarios."
+    },
+    {
+      "id": "en:*::use-cases/customer-debt",
+      "slug": "use-cases/customer-debt",
+      "eje": null,
+      "idioma": "en",
+      "traduccion": "deuda-clientes",
+      "title": "Customer debt",
+      "description": "Which customers owe you and since when.",
+      "keywords": [],
+      "seccion": "use-cases",
+      "url": "/en/customer-debt",
+      "headings": [
+        {
+          "id": "which-customers-owe",
+          "text": "Which customers owe",
+          "level": 2
+        }
+      ],
+      "body": "# Customer debt\n\nTuqui builds the list of debtors.\n\n## Which customers owe\n\nThe overdue invoices of each customer, grouped by age."
+    },
+    {
+      "id": "en:*::use-cases/delete-account",
+      "slug": "use-cases/delete-account",
+      "eje": null,
+      "idioma": "en",
+      "traduccion": "eliminar-cuenta",
+      "title": "Delete your account",
+      "description": "How to close your account and delete your data.",
+      "keywords": [],
+      "seccion": "use-cases",
+      "url": "/en/delete-account",
+      "headings": [],
+      "body": "# Delete your account\n\nFrom the settings you can delete the account."
+    },
+    {
+      "id": "en:*::legal/privacy",
+      "slug": "legal/privacy",
+      "eje": null,
+      "idioma": "en",
+      "traduccion": "privacy",
+      "title": "Privacy policy",
+      "description": "Which personal data we keep.",
+      "keywords": [],
+      "seccion": "legal",
+      "url": "/en/privacy",
+      "headings": [],
+      "body": "# Privacy policy\n\nWe only keep the personal data we need."
+    }
+  ]
+}
