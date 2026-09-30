@@ -1,0 +1,12 @@
+{
+  "_": "Cada corrida = un índice + un archivo de casos. `indice` se resuelve contra --indices (o BENCH_INDICES). `traducirSlugs`: índice cuyo `url` (sin el primer segmento) traduce los `esperado` al índice medido.",
+  "corridas": [
+    { "nombre": "oba-docs/publico", "indice": "oba-docs-publico.json", "casos": "casos/oba-docs.json" },
+    { "nombre": "oba-docs/interno", "indice": "oba-docs-interno.json", "casos": "casos/oba-docs.json" },
+    { "nombre": "adhoc-docs/interno", "indice": "adhoc-docs-interno.json", "casos": "casos/adhoc-docs.json" },
+    { "nombre": "odumbo-docs/publico", "indice": "odumbo-docs-publico.json", "casos": null },
+    { "nombre": "tuqui-docs/es", "indice": "tuqui-docs-es.json", "casos": "casos/tuqui-docs.json" },
+    { "nombre": "tuqui-docs/es-sin-keywords", "indice": "tuqui-docs-es-sin-keywords.json", "casos": "casos/tuqui-docs.json" },
+    { "nombre": "tuqui-docs/en", "indice": "tuqui-docs-en.json", "casos": "casos/tuqui-docs.json", "traducirSlugs": "tuqui-docs-es.json" }
+  ]
+}

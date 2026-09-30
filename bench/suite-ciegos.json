@@ -1,0 +1,13 @@
+{
+  "_": "Set de AJUSTE: casos a ciegas que nombran el archivo fuente; con estos se eligen las variantes del motor. `casos` es el archivo que genera `normalizar.mjs` desde `evals/busqueda/` de cada repo de contenido (ver README). `archivoASlug` es la regla del emisor de cada sitio (ver resolverArchivos en correr.mjs). `familias` limita la corrida.",
+  "corridas": [
+    { "nombre": "oba-docs/publico", "indice": "oba-docs-publico.json", "casos": "casos/ciegos/oba-docs.json", "archivoASlug": "content" },
+    { "nombre": "oba-docs/interno", "indice": "oba-docs-interno.json", "casos": "casos/ciegos/oba-docs.json", "archivoASlug": "content" },
+    { "nombre": "odumbo-docs/publico", "indice": "odumbo-docs-publico.json", "casos": "casos/ciegos/odumbo-docs.json", "archivoASlug": "content" },
+    { "nombre": "odumbo-docs/interno", "indice": "odumbo-docs-interno.json", "casos": "casos/ciegos/odumbo-docs.json", "archivoASlug": "content" },
+    { "nombre": "adhoc-docs/interno", "indice": "adhoc-docs-interno.json", "casos": "casos/ciegos/adhoc-docs.json", "archivoASlug": "content-readme" },
+    { "nombre": "tuqui-docs/es", "indice": "tuqui-docs-es.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url" },
+    { "nombre": "tuqui-docs/es-sin-keywords", "indice": "tuqui-docs-es-sin-keywords.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url" },
+    { "nombre": "tuqui-docs/en", "indice": "tuqui-docs-en.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url", "familias": ["ingles"] }
+  ]
+}

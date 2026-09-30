@@ -14,6 +14,94 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.19.0 — 2026-09-27
+
+- **busqueda: la señal de "no hay nada bueno" para el agente.** Aditivo: no
+  se quita ni se renombra nada, y `modo` sigue teniendo los mismos tres
+  valores. Hasta acá la única pista de pertinencia del relleno OR era el
+  `modo: "or-fallback"`, y no discriminaba: medido sobre los golden sets y los
+  casos a ciegas de los cuatro sitios, cae ahí el 76 % de las preguntas en
+  lenguaje natural que SÍ tienen respuesta en el top 3. Ahora:
+  - **Cada hit trae `cobertura`** (0 a 1, con dos decimales): qué parte del
+    peso de los términos de la query cubre, con el peso de cada término = su
+    idf sobre los artículos que pasan los filtros. Vale 1 en `and` y en
+    `rescate-de-tipeo`; en `or-fallback` va de 0,01 a 0,99, nunca se muestra
+    como 0 ni como 1. Un término cuenta como cubierto por la palabra o por su
+    raíz (la raíz, sólo si coincide en el campo de raíces: un prefijo de la
+    búsqueda normal no la acredita), y una palabra que es a la vez la raíz de
+    otro término de la query cubre los dos (`orden ordenar` resuelve en `and`
+    con «Orden»).
+  - **En `or-fallback`, `terminosAusentes`**: los términos de la query que no
+    aparecen en ningún artículo filtrado (`cfdi`, `sifen`, `whatsapp`…).
+  - **`resultadosDebiles: true`** cuando ningún resultado cubre el 33 %
+    (`COBERTURA_DEBIL`): se mira la cobertura MÁXIMA de todos los resultados
+    —no la del 1º, que puede cubrir poco con el que cubre más en el 2º
+    puesto—, y se compara la misma cobertura redondeada que muestra el hit.
+    Trae una `nota` propia que dice cuánto cubre el que más cubre y nombra los
+    ausentes. El umbral se eligió con los casos a ciegas: marca 11 de sus 16
+    consultas sin respuesta y el 13 % de las que sí la tienen en el top 3; con
+    los golden sets sumados, 16 de 34 y el 10 %. De las 18 que no marca, 6
+    resuelven en `and` (la señal no corre ahí, igual que antes) y el resto
+    tiene la palabra en algún artículo. En un segundo set de validación (132
+    casos que no se usaron para ajustar) marca 4 de 12 sin respuesta y el 9 %
+    de las resueltas, hasta el 22 % en tuqui-docs: por eso la nota pide
+    verificar y reformular, no declinar.
+  - La `description` de la tool `buscar` lo explica en una oración.
+- **busqueda: el relleno OR rankea por lo que cubre, no por cuánto cubre.**
+  MiniSearch multiplica el puntaje por la CANTIDAD de términos que el artículo
+  tiene, así que "no", "puede" o "cada" —en el 70-90 % del corpus— valían lo
+  mismo que "cfdi", y las páginas largas y genéricas ganaban
+  (`integraciones/proxy-blocking` y `legal/terms` en el top 3 de preguntas sin
+  relación en tuqui-docs). En `or-fallback` ese multiplicador pasa a ser la
+  `cobertura`. **El `score` de un hit cambia de escala, en `or-fallback` y
+  también en `and`** (se suma el campo de raíces y se deshace el multiplicador
+  de MiniSearch); quien lo compare entre versiones lo tiene que saber.
+- **busqueda: en `and` el orden relativo también puede cambiar**, aunque todos
+  cubran 1: las raíces suman puntaje y el prefijo de términos cortos ya no
+  suma. Medido contra v0.18.0 en oba-docs (golden set y casos a ciegas,
+  versión 19): de las 21 consultas que resuelven en `and` en las dos
+  versiones, 8 cambian el orden de los hits que tienen en común y ninguna
+  cambia el primero. Y `and` puede traer menos hits: `l10n_ar` pasa de 24 a
+  14, porque «ar» ya no expande por prefijo.
+- **busqueda: el prefijo sólo para términos de 4 letras o más**
+  (`LARGO_MINIMO_PREFIJO`). Un término corto expandía a cientos de palabras
+  ("i" → 635 en oba-docs, "in" → 414) y el puntaje de cada una se sumaba. Lo
+  que se pierde es el prefijo de 3 letras (el único caso a ciegas que dependía
+  de él bajaba del 1º al 6º con este cambio solo; con la cobertura pesada por
+  idf vuelve al 1º).
+- **busqueda: flexión liviana en un campo aparte.** Un campo `raices`, de peso
+  0,5 (menos que el cuerpo), con la raíz (`raizDe`) de título, keywords,
+  headings y descripción: `anulé`, `anular` y `anulación` llegan a `anul`. La
+  raíz pesa menos que la misma palabra escrita igual, pero suma y puede
+  reordenar hits (ver arriba). **No es el stemmer que se descartó en
+  v0.13.0**, que iba en `processTerm` y competía con lo exacto.
+  Con el cuerpo adentro se midió peor y quedó afuera. Consecuencia en el
+  contrato: `modo: "and"` ahora quiere decir que el artículo tiene todos los
+  términos **o su raíz** (`registré un cobro` resuelve en `and`; antes caía a
+  `or-fallback`). La familia `flexion` de los casos a ciegas pasa de 63 % a
+  89 % en el top 3 y `exacto` queda en 100 %.
+- **busqueda: una sola búsqueda OR en lugar de AND y después OR.** El `and` son
+  los resultados del OR que cubren todos los términos (la palabra o su raíz).
+  Los hints de cero resultados ("sacando el filtro X hay N") cuentan con esa
+  misma recuperación, raíces incluidas. La latencia por consulta queda igual (mediana 7,0 ms en
+  oba-docs, 1,8 ms en tuqui-docs).
+- **busqueda: `buscar()` sin `q` devuelve cero resultados** con el hint de
+  la consulta vacía, en vez de tirar desde MiniSearch.
+- **El costo, medido.** La carga del índice de oba-docs (1091 artículos) pasa
+  de ~800 a ~950 ms por el campo nuevo, y el índice en memoria de 37,8 a 39,8
+  MB. El `index.json` que emite el build no cambia: el campo se arma al
+  cargar. Un índice construido afuera con `opcionesDelIndice()` y los
+  artículos crudos no tiene raíces —el campo se calcula en el lector—; hoy no
+  hay ninguno.
+- **Lo que se midió y NO entró**, para que no se reintente sin datos nuevos
+  (medido con el banco, `bench/`): el rescate de tipeo en el agente (con todo
+  difuso rompe la familia `natural`, de 83 % a 69 %; limitado a consultas de 1
+  o 2 términos gana un solo caso, `persepciones`, y contradice la decisión con
+  test de que el agente reformula); ordenar el
+  relleno primero por cobertura (baja 10 puntos); stopwords nuevas (`pero`,
+  `ya`, `si`, `puede`, `cada`…), que no suman una vez que el relleno pesa por
+  idf.
+
 ## v0.18.0 — 2026-09-25
 
 - **busqueda: cada hit de `buscar()` trae `fragmento`, `ancla` y `urlAncla`.**
