@@ -14,6 +14,67 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.20.0 — 2026-09-27
+
+- **indice: un índice puede traer varios idiomas (`build.idiomas`,
+  schemaVersion 2).** Aditivo: un índice sin idiomas se comporta exactamente
+  como en v0.19.0 (verificado con el banco: la salida completa de `buscar`,
+  `leer` y `mapa` es idéntica byte a byte en los índices de los cuatro sitios,
+  el de tuqui-docs en castellano), y el parámetro `idioma` se ignora. Nadie tiene que tocar
+  nada para subir el pin.
+  - **Contrato.** `build.idiomas: { default, valores: [{id, label}] }`; cada
+    artículo trae `idioma` y, si tiene traducción, `traduccion` (una clave que
+    comparten sus versiones en cada idioma). El `id` lleva el idioma adelante
+    (`es:*::slug`) porque el mismo slug puede existir en dos idiomas. Un
+    índice con idiomas sale en **schemaVersion 2**: un motor ≤ v0.19.0 lo
+    rechaza con "actualizá @ingadhoc/docs-platform" en vez de indexar los dos
+    idiomas mezclados. Este motor lee 1 y 2, y tira si un índice declara
+    idiomas en 1.
+  - **Un MiniSearch por idioma**, cada uno con su analizador y sólo sus
+    documentos: el castellano de un índice bilingüe rankea igual que un índice
+    sólo en castellano. El ranking de v0.19.0 corre entero sobre el idioma
+    elegido: su MiniSearch, su analizador, y el idf de la `cobertura` contado
+    sobre los artículos de ese idioma. `buscar({ q, idioma })`, `leer({ slug, idioma })` y
+    `mapa({ idioma })`; cada hit trae `idioma` y `traducciones: { en: { slug,
+    url } }`. Sin `idioma`, `buscar()` lo detecta por las palabras vacías de
+    la query y, si no hay señal, usa el `default`; la respuesta dice cuál
+    corrió en `idioma` / `idiomaElegidoPor` (`pedido` | `deteccion` |
+    `default` | `default-tras-deteccion`). La detección mira sólo palabras
+    enteras —un identificador o una sigla (`in_invoice`, `on-premise`, `S.A.`)
+    no cuenta— y pide una señal mínima (`SENAL_MINIMA_IDIOMA`: las palabras
+    vacías de 1 o 2 letras valen media); si el idioma detectado da cero
+    resultados y el `default` no, se usa el `default` y la respuesta trae
+    `idiomaDetectado` y `mensajeIdioma`. El `idioma` pedido se normaliza igual
+    que los del índice (`EN`, ` en`, `en-US` → `en`).
+  - **`leer()` y los idiomas.** Con el slug de otro idioma devuelve su
+    traducción y lo anuncia (`idiomaElegidoPor: 'traduccion'`); la traducción
+    es la del grupo del artículo (mismo doc set y valor del eje; desde un
+    artículo fuera del eje, la de la versión pedida o la del `default`), nunca
+    otra con el mismo slug. Sin `idioma`, un slug que está en varios idiomas
+    resuelve primero el eje: el del `default` si ahí el eje se resuelve, y si
+    no, el primero en que se resuelva (`idiomaElegidoPor: 'eje'`). Un `idioma`
+    que el índice no tiene da `idioma-inexistente` antes de mirar el slug, y
+    las sugerencias de un slug inexistente son del idioma pedido.
+  - **Analizador inglés mínimo** (`STOPWORDS_EN`, `reducirPluralEn`,
+    `procesarTerminoEn`), sin stemmer, con el mismo criterio que el
+    castellano, que no cambia. Un índice de un idioma puede elegirlo con
+    `build.idioma: 'en'`; sin el campo sigue siendo castellano, y con un
+    código sin analizador (`pt`) también, como en v0.19.0. **El inglés
+    no tiene campo `raices`**: la raíz de v0.19.0 es castellana, y una
+    variante mínima inglesa no movió ningún acierto en los casos en inglés.
+    El prefijo desde 4 letras vale para los dos.
+  - **Cambia un resultado de un índice existente:** el `index.json` en inglés
+    de tuqui-docs (`--idioma=en`, que no está desplegado) declara
+    `build.idioma: 'en'` y ahora se indexa con el analizador inglés. Con
+    preguntas en inglés, contra v0.19.0: @1 90 % → 80 %, @3 95 % → 95 %
+    (contra v0.18.0, @3 85 % → 95 %); con preguntas en castellano contra ese
+    índice empeora, que es lo esperable: el analizador tiene que ser el de la
+    pregunta. Medido con el banco (`bench/`).
+- **mcp: las tools `buscar`, `leer` y `mapa` aceptan `idioma` cuando el índice
+  trae varios idiomas.** Lo decide el índice (`mapa().idiomas`), como
+  `paises` y `docSet`: en un índice de un idioma el parámetro no aparece en el
+  schema, y si igual llega no pasa al motor.
+
 ## v0.19.0 — 2026-09-27
 
 - **busqueda: la señal de "no hay nada bueno" para el agente.** Aditivo: no

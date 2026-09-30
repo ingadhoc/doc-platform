@@ -564,6 +564,37 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.deepEqual(props(r2.tools, 'leer'), ['page', 'slug', 'version']);
   });
 
+  it('`idioma` lo enciende el ÍNDICE: sin idiomas no aparece, con idiomas llega al motor', async () => {
+    const sin = montar(CONFIG_OBA);
+    const { result: r1 } = await leerRpc(await sin.handler(rpc('tools/list', {}, 'tok-tuqui')));
+    for (const tool of ['buscar', 'leer', 'mapa']) assert.equal(props(r1.tools, tool).includes('idioma'), false, tool);
+    // Y si igual llega (un cliente con el schema viejo en caché), no pasa al motor.
+    await leerRpc(await sin.handler(rpc('tools/call', { name: 'buscar', arguments: { q: 'entorno', idioma: 'en' } }, 'tok-tuqui')));
+    assert.equal('idioma' in sin.fake.llamadas.filter((l) => l[0] === 'buscar').at(-1)[1], false);
+
+    const base = crearIndiceFake({ tipo: 'none' });
+    const idiomas = { default: 'es', valores: [{ id: 'es', label: 'Español' }, { id: 'en', label: 'English' }] };
+    const conIdiomas = { ...base, mapa: (args) => ({ ...base.mapa(args), idiomas, idioma: args?.idioma ?? 'es' }) };
+    const con = montar(CONFIG_ODUMBO, { indice: conIdiomas });
+    const { result: r2 } = await leerRpc(await con.handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.deepEqual(props(r2.tools, 'buscar'), ['idioma', 'page', 'q', 'seccion']);
+    assert.deepEqual(props(r2.tools, 'leer'), ['idioma', 'page', 'slug']);
+    assert.deepEqual(props(r2.tools, 'mapa'), ['idioma']);
+    assert.match(describeParam(r2.tools, 'buscar', 'idioma'), /`en` = English/);
+
+    await leerRpc(await con.handler(rpc('tools/call', { name: 'buscar', arguments: { q: 'entorno', idioma: 'en' } }, 'tok-tuqui')));
+    assert.equal(con.fake.llamadas.filter((l) => l[0] === 'buscar').at(-1)[1].idioma, 'en');
+    const { result: r3 } = await leerRpc(await con.handler(rpc('tools/call', { name: 'mapa', arguments: { idioma: 'en' } }, 'tok-tuqui')));
+    assert.equal(JSON.parse(r3.content[0].text).idioma, 'en');
+
+    // Un solo idioma no es "varios": el mismo criterio que el motor
+    // (`politicaDeIdioma().multi`), así que la tool no ofrece el parámetro.
+    const uno = { default: 'es', valores: [{ id: 'es', label: 'Español' }] };
+    const conUno = montar(CONFIG_ODUMBO, { indice: { ...base, mapa: (args) => ({ ...base.mapa(args), idiomas: uno }) } });
+    const { result: r4 } = await leerRpc(await conUno.handler(rpc('tools/list', {}, 'tok-tuqui')));
+    for (const tool of ['buscar', 'leer', 'mapa']) assert.equal(props(r4.tools, tool).includes('idioma'), false, tool);
+  });
+
   it('el eje declarado se APAGA si el índice dice que el corpus no lo tiene', async () => {
     // La config dice QUÉ eje; el índice dice SI hay, y su palabra manda: un
     // build emitido con `eje.tipo: "none"` no puede dejar la tool ofreciendo

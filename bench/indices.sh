@@ -39,6 +39,15 @@ cp "$W/repos/adhoc-snap/api/_generated/index.json" "$W/indices/adhoc-docs-intern
 cp "$W/repos/tuqui-docs/dist/agente/index.json" "$W/indices/tuqui-docs-es.json"
 cp "$W/repos/tuqui-docs/dist/agente-en/index.json" "$W/indices/tuqui-docs-en.json"
 
+# El índice bilingüe (es + en en un solo archivo, schemaVersion 2), con el emisor
+# del propio repo. Si su origin/main todavía no lo trae, esas corridas se saltean.
+if [ -f "$W/repos/tuqui-docs/tools/emitir-indice-bilingue.mjs" ]; then
+  (cd "$W/repos/tuqui-docs" && node tools/emitir-indice-bilingue.mjs --salida=dist/agente-bilingue)
+  cp "$W/repos/tuqui-docs/dist/agente-bilingue/index.json" "$W/indices/tuqui-docs-bilingue.json"
+else
+  echo "tuqui-docs sin tools/emitir-indice-bilingue.mjs: sin índice bilingüe"
+fi
+
 # Variante sin el sidecar de keywords: otra copia, sin tools/keywords-es.json.
 extraer tuqui-docs tuqui-docs-sinkw
 mv "$W/repos/tuqui-docs-sinkw/tools/keywords-es.json" "$W/repos/keywords-es.apartado.json"

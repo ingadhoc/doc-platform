@@ -175,7 +175,7 @@ describe('la regla del lector: el índice declara su schemaVersion', () => {
 
   it('un emisor más nuevo TIRA y dice qué actualizar', () => {
     usarFixture('schema-version-futura');
-    assert.throws(() => indice(), /lee hasta 1: actualizá @ingadhoc\/docs-platform/);
+    assert.throws(() => indice(), /lee hasta 2: actualizá @ingadhoc\/docs-platform/);
   });
 
   it('la copia estática (sin `body`) no se sirve como si fuera el índice de la función', () => {

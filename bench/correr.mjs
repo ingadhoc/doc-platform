@@ -98,7 +98,7 @@ for (const corrida of corridas) {
 
   for (const perfil of perfiles) {
     const t1 = performance.now();
-    const casos = set.casos.map((c) => evaluar(c, perfil, traducir, existentes, deArchivo));
+    const casos = set.casos.map((c) => evaluar(c, perfil, traducir, existentes, deArchivo, corrida.idioma));
     const ms = performance.now() - t1;
     const resumen = resumir(casos);
     salida.corridas.push({
@@ -152,8 +152,56 @@ function resolverArchivos(regla, idx, existentes) {
   return (archivos) => archivos.map(reglas[regla]).filter((s) => existentes.has(s));
 }
 
-function evaluar(caso, perfil, traducir, existentes, deArchivo) {
-  const r = motor.buscar({ q: caso.q, ...(caso.filtros ?? {}), ...(motor.PERFIL ? { perfil: motor.PERFIL[perfil] } : {}) });
+/**
+ * El `idioma` de la corrida (`suite.json`): sin campo no se pasa nada; un
+ * código (`"es"`) se pasa siempre; `"caso"` pasa el `idioma` de cada caso, que
+ * es lo que haría un agente que sabe en qué idioma le preguntaron; `"mezcla"`
+ * busca en todos los idiomas del índice y junta (ver `buscarMezclado`); y
+ * `"docSet"` pasa el idioma del caso como filtro `docSet`, para medir un
+ * índice combinado que usa el doc set como faceta de idioma.
+ */
+function buscarConIdioma(args, caso, modo) {
+  if (modo == null) return motor.buscar(args);
+  if (modo === 'caso') return motor.buscar({ ...args, idioma: caso.idioma });
+  if (modo === 'docSet') return motor.buscar({ ...args, docSet: caso.idioma });
+  if (modo === 'mezcla') return buscarMezclado(args);
+  return motor.buscar({ ...args, idioma: modo });
+}
+
+/**
+ * Buscar en todos los idiomas y mezclar: el score de cada idioma se divide por
+ * el mejor de su lista (los de dos MiniSearch no son comparables en crudo), se
+ * ordena por ese score relativo y un artículo cuya traducción ya entró no se
+ * repite. Sólo para medir la alternativa; el motor no la ofrece.
+ */
+function buscarMezclado(args) {
+  const idiomas = motor.indice().idiomas?.ids ?? [];
+  const listas = idiomas.map((idioma) => motor.buscar({ ...args, idioma }));
+  const todos = listas.flatMap((r) => {
+    const tope = r.resultados[0]?.score || 1;
+    return r.resultados.map((h) => ({ ...h, relativo: h.score / tope, and: r.modo === 'and' }));
+  });
+  // Un match con TODOS los términos le gana a uno del relleno OR del otro idioma.
+  todos.sort((a, b) => b.and - a.and || b.relativo - a.relativo);
+  const vistos = new Set();
+  const resultados = [];
+  for (const h of todos) {
+    const clave = `${h.idioma}:${h.slug}`;
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    for (const [idioma, t] of Object.entries(h.traducciones ?? {})) vistos.add(`${idioma}:${t.slug}`);
+    resultados.push(h);
+  }
+  const modo = listas.some((r) => r.modo === 'and') ? 'and' : listas.find((r) => r.total)?.modo ?? 'and';
+  return { resultados, modo, total: resultados.length, nota: modo === 'or-fallback' ? 'x' : null };
+}
+
+function evaluar(caso, perfil, traducir, existentes, deArchivo, idioma) {
+  const r = buscarConIdioma(
+    { q: caso.q, ...(caso.filtros ?? {}), ...(motor.PERFIL ? { perfil: motor.PERFIL[perfil] } : {}) },
+    caso,
+    idioma,
+  );
   const slugs = [...new Set(r.resultados.map((x) => x.slug))];
   const nota = r.nota ? (r.modo === 'or-fallback' ? 'or-fallback' : 'pobreza') : null;
   const out = {

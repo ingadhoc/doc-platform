@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 99,
   "_nota": "FIXTURE del modo de falla: el emisor es más nuevo que el lector. El lector TIRA y dice qué actualizar (contrato-indice.md §4); un emisor más VIEJO del mismo major se acepta.",
   "build": {
     "audiencia": "publico",
