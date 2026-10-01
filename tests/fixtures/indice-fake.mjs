@@ -42,8 +42,8 @@ export function crearIndiceFake({ tipo = 'version', tirar = null, comodin = true
     return { articulos: CORPUS_ACTIVO.length };
   }
 
-  function mapa() {
-    llamadas.push(['mapa', {}]);
+  function mapa(args) {
+    llamadas.push(['mapa', args ?? {}]);
     return {
       schemaVersion: 1,
       buildId: '2026-08-20T00:00:00.000Z',
