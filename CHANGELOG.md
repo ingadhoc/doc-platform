@@ -14,6 +14,58 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.21.0 — 2026-10-01
+
+- **mcp: las `description` de `buscar`, `leer` y `mapa` dicen lo esencial en
+  los primeros 600 caracteres.** Hay clientes que las cortan (Tuqui, a 600, en
+  el último espacio antes del tope), y la de `buscar` tenía ~2.500: el corte
+  caía antes de lo que el agente tiene que saber. Ahora arranca con qué hace la
+  tool, que un hit no es fuente hasta leerlo, que `or-fallback` y
+  `resultadosDebiles` piden verificar o reformular, que declinar es correcto y,
+  si el corpus tiene eje o países, que filtre cuando la pregunta los nombra. El
+  detalle va después, más corto (~1.600 caracteres en la combinación más
+  cargada); la prosa de `paises` y `docSet` queda sólo en la description de su
+  parámetro, que no se corta. Un test arma las descripciones para cada
+  combinación de facetas, les aplica el corte de Tuqui y falla si alguna frase
+  esencial queda afuera. Las `instructions` del server son de cada repo: hoy
+  las tres miden menos de 600 (oba 309, odumbo 311, adhoc 554).
+- **mcp: `mapa` acepta `seccion`, `page` y el eje.** Con `seccion` devuelve los
+  artículos de esa sección con su `description`, paginados, como
+  `mapa({ seccion })` del motor desde v0.18.0 (antes la tool no tenía
+  parámetros, salvo `idioma`). Sin argumentos, la respuesta es la de siempre.
+  `seccion` se describe con `config.filtros.seccion`, igual que en `buscar`, y
+  un corpus con `filtros.seccion: false` no la ofrece en ninguna de las dos.
+- **indice + mcp: `leer({ slug, ancla })` devuelve sólo esa sección**: del
+  heading al siguiente de igual o mayor nivel, con `title`, `url`, `ancla` y
+  `urlAncla`, y en `headings` los de adentro de la sección. Acepta el `id`,
+  `#id` o la `urlAncla` entera. Fences y headings se leen con la regla de los
+  builds: un fence cierra sólo con su mismo carácter y un largo igual o mayor,
+  y un `## ` sin texto no es heading; el fragmento de `buscar()` usa la misma
+  lectura. Un ancla que el artículo no tiene no es error: `encontrado: false`,
+  `motivo: 'ancla-inexistente'`, las anclas que hay en `anclas` y el mismo
+  contexto que una lectura normal (valor del eje, `elegidoPor`, idioma y su
+  aviso). Los avisos se suman en `mensaje`, no se pisan. Sin `ancla`, igual
+  que antes. Con el top 1 de los casos a ciegas, la respuesta de `leer`
+  pasa de p50 8–9 KB (p90 hasta 62 KB) a p50 ~2 KB (p90 ≤ 3,6 KB), y todas
+  las anclas de los hits se aislaron. **Opcional para el consumidor**: la ruta
+  HTTP `GET /api/leer` vive en cada repo (tuqui-docs); para ofrecerlo, pasar
+  `ancla: url.searchParams.get('ancla')` a `leer()`.
+- **indice: `buscar()` devuelve 10 hits por página (eran 20) y cada hit trae
+  sólo los headings principales.** Los del primer nivel bajo el título (h2, o
+  h3 si no hay h2), hasta `HEADINGS_POR_HIT` (8); `headingsOmitidos` cuenta los
+  que no vienen y `leer()` sigue trayendo todos. El deep-link de lo que matcheó
+  ya viaja en `ancla`/`urlAncla`. Los headings eran entre el 25 y el 63 % de
+  la respuesta. Medido con el banco contra v0.20.0: el tamaño de la respuesta
+  baja a menos de la mitad en todos los sitios (casos a ciegas, p50: oba
+  47 → 19 KB, odumbo 48 → 18 KB, adhoc 75 → 17 KB, tuqui 26 → 13 KB). El
+  ranking no cambia: @1 y @3 iguales en las tres suites. El MRR baja hasta
+  0,004 porque el banco lo cuenta sobre la primera página, y los casos que
+  estaban en los puestos 11 a 17 ahora están en la página 2.
+- bench: `correr.mjs` mide el tamaño de la respuesta de `buscar()` por caso
+  (bytes del JSON que manda la tool MCP) y lo resume en promedio, p50 y p90,
+  con tokens aproximados (bytes / 3,5); `--comparar` lo muestra antes y
+  después.
+
 ## v0.20.0 — 2026-09-27
 
 - **indice: un índice puede traer varios idiomas (`build.idiomas`,

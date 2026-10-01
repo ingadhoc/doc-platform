@@ -1,0 +1,455 @@
+{
+  "schemaVersion": 1,
+  "_nota": "FIXTURE de la superficie para agentes (v0.21.0): leer() por ancla, headings por hit y página de buscar(). Eje none. Los de `bordes/` cubren fences anidados y un heading vacío.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-10-01T12:00:00.000Z",
+    "articulos": 19,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "none"
+    },
+    "metadata": {}
+  },
+  "mapa": [
+    {
+      "seccion": "manual",
+      "categoria": "bancos",
+      "label": "Bancos",
+      "count": 3
+    },
+    {
+      "seccion": "recursos",
+      "categoria": "",
+      "label": "Recursos",
+      "count": 13
+    },
+    {
+      "seccion": "bordes",
+      "categoria": "",
+      "label": "Bordes",
+      "count": 3
+    }
+  ],
+  "articulos": [
+    {
+      "id": "*::manual/bancos/conciliacion",
+      "slug": "manual/bancos/conciliacion",
+      "eje": null,
+      "title": "Conciliación bancaria",
+      "description": "Cómo conciliar el banco.",
+      "seccion": "manual",
+      "url": "/manual/bancos/conciliacion",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "conciliacion-bancaria",
+          "text": "Conciliación bancaria",
+          "level": 1
+        },
+        {
+          "id": "configurar-el-banco",
+          "text": "Configurar el banco",
+          "level": 2
+        },
+        {
+          "id": "diarios",
+          "text": "Diarios",
+          "level": 3
+        },
+        {
+          "id": "extractos",
+          "text": "Extractos",
+          "level": 3
+        },
+        {
+          "id": "conciliar",
+          "text": "Conciliar",
+          "level": 2
+        },
+        {
+          "id": "detalle-fino",
+          "text": "Detalle fino",
+          "level": 4
+        },
+        {
+          "id": "cerrar-el-periodo",
+          "text": "Cerrar el período",
+          "level": 2
+        }
+      ],
+      "body": "# Conciliación bancaria\n\nIntro del circuito.\n\n## Configurar el banco\n\nSe da de alta la cuenta.\n\n### Diarios\n\nUn diario por cuenta.\n\n```bash\n## esto es código, no un heading\n```\n\n### Extractos\n\nSe importan en OFX.\n\n## Conciliar\n\nSe aparean movimientos y extractos.\n\n#### Detalle fino\n\nSigue dentro de Conciliar.\n\n## Cerrar el período\n\nSe bloquea la fecha.\n"
+    },
+    {
+      "id": "*::manual/bancos/tesoreria",
+      "slug": "manual/bancos/tesoreria",
+      "eje": null,
+      "title": "Tesorería",
+      "description": "Los pasos de tesorería.",
+      "seccion": "manual",
+      "url": "/manual/bancos/tesoreria",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "paso-1",
+          "text": "Paso 1",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-1",
+          "text": "Nota paso-1",
+          "level": 3
+        },
+        {
+          "id": "paso-2",
+          "text": "Paso 2",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-2",
+          "text": "Nota paso-2",
+          "level": 3
+        },
+        {
+          "id": "paso-3",
+          "text": "Paso 3",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-3",
+          "text": "Nota paso-3",
+          "level": 3
+        },
+        {
+          "id": "paso-4",
+          "text": "Paso 4",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-4",
+          "text": "Nota paso-4",
+          "level": 3
+        },
+        {
+          "id": "paso-5",
+          "text": "Paso 5",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-5",
+          "text": "Nota paso-5",
+          "level": 3
+        },
+        {
+          "id": "paso-6",
+          "text": "Paso 6",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-6",
+          "text": "Nota paso-6",
+          "level": 3
+        },
+        {
+          "id": "paso-7",
+          "text": "Paso 7",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-7",
+          "text": "Nota paso-7",
+          "level": 3
+        },
+        {
+          "id": "paso-8",
+          "text": "Paso 8",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-8",
+          "text": "Nota paso-8",
+          "level": 3
+        },
+        {
+          "id": "paso-9",
+          "text": "Paso 9",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-9",
+          "text": "Nota paso-9",
+          "level": 3
+        },
+        {
+          "id": "paso-10",
+          "text": "Paso 10",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-10",
+          "text": "Nota paso-10",
+          "level": 3
+        },
+        {
+          "id": "paso-11",
+          "text": "Paso 11",
+          "level": 2
+        },
+        {
+          "id": "nota-paso-11",
+          "text": "Nota paso-11",
+          "level": 3
+        }
+      ],
+      "body": "## Paso 1\n\nTexto del paso con tesoreria.\n\n### Nota paso-1\n\nMás tesoreria.\n\n## Paso 2\n\nTexto del paso con tesoreria.\n\n### Nota paso-2\n\nMás tesoreria.\n\n## Paso 3\n\nTexto del paso con tesoreria.\n\n### Nota paso-3\n\nMás tesoreria.\n\n## Paso 4\n\nTexto del paso con tesoreria.\n\n### Nota paso-4\n\nMás tesoreria.\n\n## Paso 5\n\nTexto del paso con tesoreria.\n\n### Nota paso-5\n\nMás tesoreria.\n\n## Paso 6\n\nTexto del paso con tesoreria.\n\n### Nota paso-6\n\nMás tesoreria.\n\n## Paso 7\n\nTexto del paso con tesoreria.\n\n### Nota paso-7\n\nMás tesoreria.\n\n## Paso 8\n\nTexto del paso con tesoreria.\n\n### Nota paso-8\n\nMás tesoreria.\n\n## Paso 9\n\nTexto del paso con tesoreria.\n\n### Nota paso-9\n\nMás tesoreria.\n\n## Paso 10\n\nTexto del paso con tesoreria.\n\n### Nota paso-10\n\nMás tesoreria.\n\n## Paso 11\n\nTexto del paso con tesoreria.\n\n### Nota paso-11\n\nMás tesoreria."
+    },
+    {
+      "id": "*::manual/bancos/cheques",
+      "slug": "manual/bancos/cheques",
+      "eje": null,
+      "title": "Cheques",
+      "description": "Cheques de tesoreria.",
+      "seccion": "manual",
+      "url": "/manual/bancos/cheques",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "uno",
+          "text": "Uno",
+          "level": 3
+        },
+        {
+          "id": "dos",
+          "text": "Dos",
+          "level": 3
+        }
+      ],
+      "body": "# Cheques\n\n### Uno\n\nCheque uno, tesoreria.\n\n### Dos *(sin publicar igual)*\n\nCheque dos.\n"
+    },
+    {
+      "id": "*::recursos/tesoreria-1",
+      "slug": "recursos/tesoreria-1",
+      "eje": null,
+      "title": "Tesorería 1",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-1",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 1"
+    },
+    {
+      "id": "*::recursos/tesoreria-2",
+      "slug": "recursos/tesoreria-2",
+      "eje": null,
+      "title": "Tesorería 2",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-2",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 2"
+    },
+    {
+      "id": "*::recursos/tesoreria-3",
+      "slug": "recursos/tesoreria-3",
+      "eje": null,
+      "title": "Tesorería 3",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-3",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 3"
+    },
+    {
+      "id": "*::recursos/tesoreria-4",
+      "slug": "recursos/tesoreria-4",
+      "eje": null,
+      "title": "Tesorería 4",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-4",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 4"
+    },
+    {
+      "id": "*::recursos/tesoreria-5",
+      "slug": "recursos/tesoreria-5",
+      "eje": null,
+      "title": "Tesorería 5",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-5",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 5"
+    },
+    {
+      "id": "*::recursos/tesoreria-6",
+      "slug": "recursos/tesoreria-6",
+      "eje": null,
+      "title": "Tesorería 6",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-6",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 6"
+    },
+    {
+      "id": "*::recursos/tesoreria-7",
+      "slug": "recursos/tesoreria-7",
+      "eje": null,
+      "title": "Tesorería 7",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-7",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 7"
+    },
+    {
+      "id": "*::recursos/tesoreria-8",
+      "slug": "recursos/tesoreria-8",
+      "eje": null,
+      "title": "Tesorería 8",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-8",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 8"
+    },
+    {
+      "id": "*::recursos/tesoreria-9",
+      "slug": "recursos/tesoreria-9",
+      "eje": null,
+      "title": "Tesorería 9",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-9",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 9"
+    },
+    {
+      "id": "*::recursos/tesoreria-10",
+      "slug": "recursos/tesoreria-10",
+      "eje": null,
+      "title": "Tesorería 10",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-10",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 10"
+    },
+    {
+      "id": "*::recursos/tesoreria-11",
+      "slug": "recursos/tesoreria-11",
+      "eje": null,
+      "title": "Tesorería 11",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-11",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 11"
+    },
+    {
+      "id": "*::recursos/tesoreria-12",
+      "slug": "recursos/tesoreria-12",
+      "eje": null,
+      "title": "Tesorería 12",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-12",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 12"
+    },
+    {
+      "id": "*::recursos/tesoreria-13",
+      "slug": "recursos/tesoreria-13",
+      "eje": null,
+      "title": "Tesorería 13",
+      "description": "Relleno.",
+      "seccion": "recursos",
+      "url": "/recursos/tesoreria-13",
+      "keywords": [],
+      "headings": [],
+      "body": "tesoreria número 13"
+    },
+    {
+      "id": "*::bordes/fence-largo",
+      "slug": "bordes/fence-largo",
+      "eje": null,
+      "title": "Bordes bordes/fence-largo",
+      "description": "Bordes del cuerpo.",
+      "seccion": "bordes",
+      "url": "/bordes/fence-largo",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "a",
+          "text": "A",
+          "level": 2
+        },
+        {
+          "id": "b",
+          "text": "B",
+          "level": 2
+        }
+      ],
+      "body": "## A\n\n````md\n```bash\n## B\n```\n````\n\ntexto de A\n\n## B\n\ntexto de B"
+    },
+    {
+      "id": "*::bordes/fence-mezclado",
+      "slug": "bordes/fence-mezclado",
+      "eje": null,
+      "title": "Bordes bordes/fence-mezclado",
+      "description": "Bordes del cuerpo.",
+      "seccion": "bordes",
+      "url": "/bordes/fence-mezclado",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "a",
+          "text": "A",
+          "level": 2
+        },
+        {
+          "id": "b",
+          "text": "B",
+          "level": 2
+        }
+      ],
+      "body": "## A\n\n~~~\n```\n## B\n~~~\n\nsigue A\n\n## B\n\ntexto de B"
+    },
+    {
+      "id": "*::bordes/heading-vacio",
+      "slug": "bordes/heading-vacio",
+      "eje": null,
+      "title": "Bordes bordes/heading-vacio",
+      "description": "Bordes del cuerpo.",
+      "seccion": "bordes",
+      "url": "/bordes/heading-vacio",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "a",
+          "text": "A",
+          "level": 2
+        },
+        {
+          "id": "b",
+          "text": "B",
+          "level": 2
+        }
+      ],
+      "body": "## A\n\naa\n\n## \n\nsigue A\n\n## B\n\nbb"
+    }
+  ]
+}

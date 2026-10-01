@@ -25,6 +25,9 @@ const args = Object.fromEntries(
 const desdeCwd = (p) => (isAbsolute(p) ? p : resolve(process.cwd(), p));
 const pct = (x) => (x == null ? '—' : `${(x * 100).toFixed(0)}%`);
 const num = (x) => (x == null ? '—' : x.toFixed(3));
+const kb = (x) => (x == null ? '—' : `${(x / 1024).toFixed(1)} KB`);
+// Tokens aproximados: bytes / 3,5, la misma cuenta para las dos versiones que se comparan.
+const tokens = (bytes) => (bytes == null ? null : Math.round(bytes / 3.5));
 
 // ─────────────────────────────────────────────────────────────── comparar
 
@@ -203,6 +206,8 @@ function evaluar(caso, perfil, traducir, existentes, deArchivo, idioma) {
     idioma,
   );
   const slugs = [...new Set(r.resultados.map((x) => x.slug))];
+  // Lo que viaja al agente: la tool MCP devuelve `JSON.stringify(payload, null, 2)`.
+  const bytes = Buffer.byteLength(JSON.stringify(r, null, 2), 'utf8');
   const nota = r.nota ? (r.modo === 'or-fallback' ? 'or-fallback' : 'pobreza') : null;
   const out = {
     id: caso.id,
@@ -215,6 +220,7 @@ function evaluar(caso, perfil, traducir, existentes, deArchivo, idioma) {
     // Señal de "no hay nada bueno" (v0.19.0). Un motor anterior no la tiene: queda en false.
     debil: r.resultadosDebiles === true,
     top3: slugs.slice(0, 3),
+    bytes,
   };
   if (caso.brechaConocida) out.brechaConocida = true;
 
@@ -267,8 +273,18 @@ function resumir(casos, conFamilias = true) {
     debilDeclinar: declinar.length ? `${declinar.filter((c) => c.debil).length}/${declinar.length}` : null,
     debilRanking: tasa(ranking.filter((c) => c.rank >= 1 && c.rank <= 3), (c) => c.debil),
     noMedibles,
+    ...tamano(casos),
     ...(conFamilias ? { familias: porFamilia(casos) } : {}),
   };
+}
+
+/** Tamaño de la respuesta de `buscar()` sobre todos los casos medibles: promedio, p50 y p90. */
+function tamano(casos) {
+  const b = casos.map((c) => c.bytes).filter((x) => x != null).sort((x, y) => x - y);
+  if (!b.length) return { bytes: null };
+  const percentil = (p) => b[Math.min(b.length - 1, Math.ceil(p * b.length) - 1)];
+  const prom = Math.round(b.reduce((a, x) => a + x, 0) / b.length);
+  return { bytes: { prom, p50: percentil(0.5), p90: percentil(0.9), tokensProm: tokens(prom), tokensP90: tokens(percentil(0.9)) } };
 }
 
 function porFamilia(casos) {
@@ -301,6 +317,7 @@ function imprimir(nombre, perfil, s, casos, idx, tCarga, ms) {
     `   @1 ${pct(s.acierto1)}  @3 ${pct(s.acierto3)}  MRR ${num(s.mrr)}  ok@tope ${pct(s.okTope)}  ` +
       `cero ${pct(s.cero)}  or ${pct(s.orFallback)}  rescate ${pct(s.rescate)}  declina ${s.declara ?? '—'}  ` +
       `débil decl ${s.debilDeclinar ?? '—'} rank ${pct(s.debilRanking)}` +
+      (s.bytes ? `  tamaño prom ${kb(s.bytes.prom)} p50 ${kb(s.bytes.p50)} p90 ${kb(s.bytes.p90)} (~${s.bytes.tokensProm}/${s.bytes.tokensP90} tokens)` : '') +
       (s.noMedibles ? `  no-medibles ${s.noMedibles}` : ''),
   );
   if (args.familias) {
@@ -319,12 +336,12 @@ function aMarkdown(run) {
   out.push(`motor: \`${run.motor}\` · fecha ${run.fecha}`, '');
   for (const perfil of run.perfiles) {
     out.push(`### Perfil \`${perfil}\``, '');
-    out.push('| corrida | arts | casos (rank/decl/reg) | @1 | @3 | MRR | ok@tope | cero | or-fallback | rescate | declina | débil decl | débil rank@3 |');
-    out.push('|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
+    out.push('| corrida | arts | casos (rank/decl/reg) | @1 | @3 | MRR | ok@tope | cero | or-fallback | rescate | declina | débil decl | débil rank@3 | bytes prom | p50 | p90 | tokens prom | p90 |');
+    out.push('|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
     for (const c of filas.filter((f) => f.perfil === perfil)) {
       const s = c.resumen;
       out.push(
-        `| ${c.nombre} | ${c.indice.articulos} | ${s.casos} (${s.ranking}/${s.declinar}/${s.regresion}) | ${pct(s.acierto1)} | ${pct(s.acierto3)} | ${num(s.mrr)} | ${pct(s.okTope)} | ${pct(s.cero)} | ${pct(s.orFallback)} | ${pct(s.rescate)} | ${s.declara ?? '—'} | ${s.debilDeclinar ?? '—'} | ${pct(s.debilRanking)} |`,
+        `| ${c.nombre} | ${c.indice.articulos} | ${s.casos} (${s.ranking}/${s.declinar}/${s.regresion}) | ${pct(s.acierto1)} | ${pct(s.acierto3)} | ${num(s.mrr)} | ${pct(s.okTope)} | ${pct(s.cero)} | ${pct(s.orFallback)} | ${pct(s.rescate)} | ${s.declara ?? '—'} | ${s.debilDeclinar ?? '—'} | ${pct(s.debilRanking)} | ${s.bytes?.prom ?? '—'} | ${s.bytes?.p50 ?? '—'} | ${s.bytes?.p90 ?? '—'} | ${s.bytes?.tokensProm ?? '—'} | ${s.bytes?.tokensP90 ?? '—'} |`,
       );
     }
     if (args.familias) {
@@ -339,7 +356,7 @@ function aMarkdown(run) {
       }
     }
     for (const c of run.corridas.filter((f) => f.sinCasos || f.salteada)) {
-      out.push(`| ${c.nombre} | ${c.articulos ?? '—'} | ${c.sinCasos ? 'sin casos' : c.salteada} | | | | | | | | | | |`);
+      out.push(`| ${c.nombre} | ${c.articulos ?? '—'} | ${c.sinCasos ? 'sin casos' : c.salteada} | | | | | | | | | | | | | | | |`);
     }
     out.push('');
   }
@@ -372,9 +389,12 @@ function comparar(a, b) {
     if (!sa) continue;
     const campos = ['acierto1', 'acierto3', 'mrr', 'okTope', 'cero', 'orFallback', 'rescate', 'declara', 'debilDeclinar', 'debilRanking'];
     const cambios = campos.filter((f) => JSON.stringify(sa[f]) === JSON.stringify(sb[f]) ? false : true);
-    if (!cambios.length) continue;
     const fmt = (f, v) => (f === 'declara' || f === 'debilDeclinar' ? v : f === 'mrr' ? num(v) : pct(v));
-    console.log(`${k}: ${cambios.map((f) => `${f} ${fmt(f, sa[f])}→${fmt(f, sb[f])}`).join('  ')}`);
+    const tam = sa.bytes && sb.bytes
+      ? `  tamaño prom ${kb(sa.bytes.prom)}→${kb(sb.bytes.prom)} p50 ${kb(sa.bytes.p50)}→${kb(sb.bytes.p50)} p90 ${kb(sa.bytes.p90)}→${kb(sb.bytes.p90)}`
+      : '';
+    if (!cambios.length && !tam) continue;
+    console.log(`${k}: ${cambios.map((f) => `${f} ${fmt(f, sa[f])}→${fmt(f, sb[f])}`).join('  ')}${tam}`);
   }
 
   let n = 0;

@@ -352,8 +352,9 @@ describe('feedback', () => {
  * ausente.
  */
 let crearMcp = null;
+let LARGO_ESENCIAL = null;
 try {
-  ({ crearMcp } = await import('../lib/mcp/mcp-handler.mjs'));
+  ({ crearMcp, LARGO_ESENCIAL } = await import('../lib/mcp/mcp-handler.mjs'));
 } catch (error) {
   console.error(`[test] handler HTTP no testeable: ${error.message}`);
 }
@@ -405,7 +406,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     const { result } = await leerRpc(r);
     assert.deepEqual(result.tools.map((t) => t.name).sort(), ['buscar', 'feedback', 'leer', 'mapa']);
     assert.deepEqual(props(result.tools, 'buscar'), ['modules', 'page', 'q', 'seccion', 'version']);
-    assert.deepEqual(props(result.tools, 'leer'), ['page', 'slug', 'version']);
+    assert.deepEqual(props(result.tools, 'leer'), ['ancla', 'page', 'slug', 'version']);
     assert.deepEqual(props(result.tools, 'feedback'), ['problema', 'slug', 'version']);
     // La prosa del or-fallback solo sale si el corpus la tiene.
     assert.match(result.tools.find((t) => t.name === 'buscar').description, /or-fallback/);
@@ -449,7 +450,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.doesNotMatch(buscar.description, /`relacion\/`/);
     // Y la costura queda limpia donde estaba la frase: el filtro duro empalma
     // con lo que sigue, sin oración colgada ni espacio doble.
-    assert.match(buscar.description, /artículos de la 18\. Devuelve hasta /);
+    assert.match(buscar.description, /artículos de la 18\. Cada hit trae /);
     assert.doesNotMatch(buscar.description, / {2}/);
     // Lo que NO cambia: el resto de la prosa del eje versión.
     assert.match(buscar.description, /`version` manda/);
@@ -514,7 +515,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.deepEqual(props(result.tools, 'buscar'), ['page', 'project', 'q', 'seccion']);
     // El eje `project` no tiene comodín: nada de "todas las versiones" acá.
     assert.doesNotMatch(describeParam(result.tools, 'buscar', 'project'), /todas las/);
-    assert.deepEqual(props(result.tools, 'leer'), ['page', 'project', 'slug']);
+    assert.deepEqual(props(result.tools, 'leer'), ['ancla', 'page', 'project', 'slug']);
     const buscar = result.tools.find((t) => t.name === 'buscar');
     // El motor ahora es UNO: la prosa del or-fallback (la mejor descripción de
     // tool de los tres, que sólo tenía oba) vale para los tres corpus. Era
@@ -524,7 +525,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     // es una propiedad del eje versión.
     assert.doesNotMatch(buscar.description, /CROSS/);
     assert.match(buscar.description, /`project` manda/);
-    assert.match(result.tools.find((t) => t.name === 'leer').description, /tampoco elige por su cuenta/);
+    assert.match(result.tools.find((t) => t.name === 'leer').description, /no elige por su cuenta/);
     assert.equal(result.tools.find((t) => t.name === 'mapa').title, 'Mapa de la documentación interna');
   });
 
@@ -535,7 +536,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     // filtro que devolvería siempre cero es el bug que su propio comentario
     // condenaba para el eje.
     assert.deepEqual(props(result.tools, 'buscar'), ['page', 'q', 'seccion']);
-    assert.deepEqual(props(result.tools, 'leer'), ['page', 'slug']);
+    assert.deepEqual(props(result.tools, 'leer'), ['ancla', 'page', 'slug']);
     assert.doesNotMatch(result.tools.find((t) => t.name === 'mapa').description, /valores de/);
   });
 
@@ -555,13 +556,14 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     const { result: r2 } = await leerRpc(await con.handler(rpc('tools/list', {}, 'tok-tuqui')));
     assert.deepEqual(props(r2.tools, 'buscar'), ['modules', 'page', 'paises', 'q', 'seccion', 'version']);
     // Las tres cosas que el LLM no puede deducir del nombre del parámetro:
-    // que es duro, que EXCLUYE, y que la ausencia significa "todos".
-    const desc = r2.tools.find((t) => t.name === 'buscar').description;
+    // que es duro, que EXCLUYE, y que la ausencia significa "todos". Viven en
+    // la description del parámetro, que no se corta.
+    const desc = describeParam(r2.tools, 'buscar', 'paises');
     assert.match(desc, /El filtro es duro y excluye/);
     assert.match(desc, /Un artículo sin país aplica a todos y se devuelve siempre/);
     // El país NO es un eje: no aparece en `leer()` ni en `feedback()`, que son
     // las tools cuyo parámetro identifica UN artículo.
-    assert.deepEqual(props(r2.tools, 'leer'), ['page', 'slug', 'version']);
+    assert.deepEqual(props(r2.tools, 'leer'), ['ancla', 'page', 'slug', 'version']);
   });
 
   it('`idioma` lo enciende el ÍNDICE: sin idiomas no aparece, con idiomas llega al motor', async () => {
@@ -578,8 +580,8 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     const con = montar(CONFIG_ODUMBO, { indice: conIdiomas });
     const { result: r2 } = await leerRpc(await con.handler(rpc('tools/list', {}, 'tok-tuqui')));
     assert.deepEqual(props(r2.tools, 'buscar'), ['idioma', 'page', 'q', 'seccion']);
-    assert.deepEqual(props(r2.tools, 'leer'), ['idioma', 'page', 'slug']);
-    assert.deepEqual(props(r2.tools, 'mapa'), ['idioma']);
+    assert.deepEqual(props(r2.tools, 'leer'), ['ancla', 'idioma', 'page', 'slug']);
+    assert.deepEqual(props(r2.tools, 'mapa'), ['idioma', 'page', 'seccion']);
     assert.match(describeParam(r2.tools, 'buscar', 'idioma'), /`en` = English/);
 
     await leerRpc(await con.handler(rpc('tools/call', { name: 'buscar', arguments: { q: 'entorno', idioma: 'en' } }, 'tok-tuqui')));
@@ -602,6 +604,101 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     const { handler } = montar(CONFIG_OBA, { indice: crearIndiceFake({ tipo: 'none' }) });
     const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
     assert.equal(props(result.tools, 'buscar').includes('version'), false);
+  });
+
+  /**
+   * El corte de Tuqui: el último espacio antes del tope, más una elipsis
+   * (`_truncate_description` de `tool_compaction.py`). Lo que queda después
+   * del corte el agente no lo ve.
+   */
+  const cortar = (texto, tope) => {
+    if (texto.length <= tope) return texto;
+    const corte = texto.lastIndexOf(' ', tope - 1);
+    return `${texto.slice(0, corte > 0 ? corte : tope)}…`;
+  };
+
+  it('lo esencial de cada tool entra antes del corte de la description, con cualquier faceta', async () => {
+    const base = crearIndiceFake({ tipo: 'version' });
+    const sinEje = crearIndiceFake({ tipo: 'none' });
+    const idiomas = { default: 'es', valores: [{ id: 'es', label: 'Español' }, { id: 'en', label: 'English' }] };
+    const docSets = [{ id: 'manual', label: 'Manual de uso' }, { id: 'novedades', label: 'Novedades de versión' }];
+    // La combinación más cargada que puede armar un corpus: eje con comodín,
+    // países, doc sets e idiomas. Si entra ésta, entran las demás.
+    const todo = {
+      ...base,
+      mapa: (args) => ({
+        ...base.mapa(args),
+        metadata: { modules: true, paises: ['AR', 'CL', 'UY', 'MX', 'PE', 'CO'], docSets },
+        idiomas,
+      }),
+    };
+    const casos = [
+      ['oba', CONFIG_OBA, undefined],
+      ['adhoc', CONFIG_ADHOC, undefined],
+      ['odumbo', CONFIG_ODUMBO, undefined],
+      ['odumbo con idiomas', CONFIG_ODUMBO, { ...sinEje, mapa: (a) => ({ ...sinEje.mapa(a), idiomas }) }],
+      ['oba con todas las facetas', CONFIG_OBA, todo],
+    ];
+    for (const [nombre, config, indice] of casos) {
+      const { handler, esenciales } = montar(config, { indice });
+      const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+      for (const [tool, frases] of Object.entries(esenciales)) {
+        const { description } = result.tools.find((t) => t.name === tool);
+        const visible = cortar(description, LARGO_ESENCIAL);
+        assert.ok(description.startsWith(frases.join(' ')), `${nombre}/${tool}: lo esencial va primero`);
+        for (const frase of frases) {
+          assert.ok(visible.includes(frase), `${nombre}/${tool}: queda después del corte: «${frase}»`);
+        }
+        // Lo esencial nombra filtros que el schema ofrece, nunca uno que no está.
+        const params = Object.keys(result.tools.find((t) => t.name === tool).inputSchema.properties);
+        for (const [, nombrado] of frases.join(' ').matchAll(/filtrá por ((?:`\w+`(?: o )?)+)/g)) {
+          for (const [, p] of nombrado.matchAll(/`(\w+)`/g)) assert.ok(params.includes(p), `${nombre}/${tool}: filtro ${p}`);
+        }
+      }
+    }
+  });
+
+  it('lo esencial de `buscar` pide filtrar por los ejes que el corpus tiene, y sólo por esos', async () => {
+    const base = crearIndiceFake({ tipo: 'version' });
+    const conPaises = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'] } }) };
+    const esencial = async (config, indice) => montar(config, { indice }).esenciales.buscar.join(' ');
+    assert.match(await esencial(CONFIG_OBA, conPaises), /filtrá por `version` o `paises`/);
+    assert.match(await esencial(CONFIG_ADHOC), /filtrá por `project`\./);
+    assert.doesNotMatch(await esencial(CONFIG_ODUMBO), /filtrá por/);
+    for (const senal of ['or-fallback', 'resultadosDebiles', '`leer`', 'declinar es correcto']) {
+      assert.ok((await esencial(CONFIG_ODUMBO)).includes(senal), senal);
+    }
+  });
+
+  it('tools/call mapa con `seccion` pasa sección, página y eje al motor; sin nada, el mapa de siempre', async () => {
+    const { handler, fake } = montar(CONFIG_OBA);
+    await leerRpc(await handler(rpc('tools/call', { name: 'mapa', arguments: { seccion: 'flujo', page: 2, version: '18' } }, 'tok-tuqui')));
+    assert.deepEqual(fake.llamadas.filter((l) => l[0] === 'mapa').at(-1)[1], { seccion: 'flujo', page: 2, version: '18' });
+    await leerRpc(await handler(rpc('tools/call', { name: 'mapa', arguments: {} }, 'tok-tuqui')));
+    assert.deepEqual(fake.llamadas.filter((l) => l[0] === 'mapa').at(-1)[1], {});
+    const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.deepEqual(props(result.tools, 'mapa'), ['page', 'seccion', 'version']);
+  });
+
+  it('el `seccion` de `mapa` se describe como el de `buscar`, y no se ofrece si el corpus lo apaga', async () => {
+    const { handler } = montar(CONFIG_ADHOC);
+    const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.match(describeParam(result.tools, 'mapa', 'seccion'), /^Sección dentro del project/);
+    assert.doesNotMatch(describeParam(result.tools, 'mapa', 'seccion'), /primer segmento/);
+
+    const sin = montar({ ...CONFIG_ODUMBO, filtros: { ...CONFIG_ODUMBO.filtros, seccion: false } });
+    const { result: r2 } = await leerRpc(await sin.handler(rpc('tools/list', {}, 'tok-tuqui')));
+    assert.deepEqual(props(r2.tools, 'mapa'), []);
+    assert.equal(props(r2.tools, 'buscar').includes('seccion'), false);
+    assert.doesNotMatch(r2.tools.find((t) => t.name === 'mapa').description, /`seccion`/);
+    await leerRpc(await sin.handler(rpc('tools/call', { name: 'mapa', arguments: { seccion: 'flujo' } }, 'tok-tuqui')));
+    assert.deepEqual(sin.fake.llamadas.filter((l) => l[0] === 'mapa').at(-1)[1], {});
+  });
+
+  it('tools/call leer pasa el `ancla` al motor', async () => {
+    const { handler, fake } = montar(CONFIG_ODUMBO);
+    await leerRpc(await handler(rpc('tools/call', { name: 'leer', arguments: { slug: 'index', ancla: 'entorno' } }, 'tok-tuqui')));
+    assert.equal(fake.llamadas.filter((l) => l[0] === 'leer').at(-1)[1].ancla, 'entorno');
   });
 
   it('audiencia pública: sin auth, y SIN la tool feedback', async () => {
