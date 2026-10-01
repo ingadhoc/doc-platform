@@ -14,6 +14,32 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.22.0 — 2026-10-01
+
+- **indice: el sitio declara su país por defecto y la búsqueda sin país lo
+  prefiere.** `metadata.paisPorDefecto` (opcional, uno de `metadata.paises`)
+  viaja al índice. Sin `paises` en los filtros, los artículos de otro país
+  bajan a la mitad del puntaje (no se excluyen): los que no son del país que
+  nombra la consulta o, si no nombra ninguno, del país por defecto. Las páginas
+  universales no se tocan, y con `paises` explícito todo sigue igual. Qué
+  término nombra un país sale del corpus, no de una lista del motor: uno que
+  está en al menos la mitad de los artículos de ese país y cuyos artículos son
+  al menos en la mitad de ese país (en oba-docs: «chile», «sii», «dte», «caf»,
+  «uruguay», «dgi», «cfe», «argentina», «arca», «afip»…). La respuesta trae
+  `paisesAplicados` y `paisElegidoPor` (`consulta` | `defecto`), y la
+  description del parámetro `paises` lo explica cuando el índice declara el
+  país. **Sin la declaración, nada cambia**: medido con el banco, 0 casos se
+  mueven en las tres suites de los cuatro sitios. Con `AR` en oba-docs y la
+  guía de facturación electrónica de Chile en el corpus, «facturación
+  electrónica» (con y sin tilde) vuelve a traer la página argentina al top 5
+  (puesto 6 → 4) y las consultas que nombran Chile siguen trayendo la guía
+  primera. Costo: un término propio de un país que no llega al corte (una
+  marca local, un concepto fiscal, una flexión o un tipeo) no nombra el país,
+  así que se prefiere el país por defecto; si la consulta también matchea
+  páginas universales o del país por defecto, las del otro país bajan.
+- **config: `metadata.paisPorDefecto`** en el schema, y tiene que ser uno de
+  `metadata.paises`.
+
 ## v0.21.0 — 2026-10-01
 
 - **mcp: las `description` de `buscar`, `leer` y `mapa` dicen lo esencial en

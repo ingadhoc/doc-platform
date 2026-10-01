@@ -97,6 +97,11 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^[A-Z]{2}$" }
+        },
+        "paisPorDefecto": {
+          "description": "OPCIONAL: el país de la mayoría de los lectores, uno de `paises`. Viaja al índice y, sin `paises` en los filtros, la búsqueda baja (no excluye) los artículos de otro país, salvo que la consulta nombre uno. Ausente ⇒ la búsqueda no reordena por país.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
         }
       }
     },

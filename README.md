@@ -280,6 +280,16 @@ El filtro del MCP lo enciende `metadata.paises` del `docs.config.json` (el
 vocabulario del corpus, ISO alpha-2 en mayúsculas). Su semántica es dura y
 asimétrica a propósito: **el tag excluye, la ausencia nunca oculta**.
 
+`metadata.paisPorDefecto` (opcional, uno de `paises`) es el país de la mayoría
+de los lectores. El build lo copia a la metadata del índice y, cuando la
+búsqueda no trae `paises`, los artículos de otro país bajan en el orden (no se
+excluyen): se prefiere el país que nombra la consulta o, si no nombra ninguno,
+el del sitio. Un término nombra un país si está en al menos la mitad de los
+artículos de ese país y al menos la mitad de los artículos que lo tienen son de
+ese país; sale del corpus, no de una lista. La respuesta lo dice en
+`paisesAplicados` y `paisElegidoPor` (`consulta` o `defecto`). Sin la
+declaración, la búsqueda no reordena por país.
+
 ### Dos cosas que no se pueden cambiar sin romper los tres sitios
 
 - **La carpeta se llama `lib/docusaurus-theme/`.** El webpack de Docusaurus no
