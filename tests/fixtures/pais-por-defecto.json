@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "_nota": "Corpus sintético para el país por defecto: tres países con tres artículos cada uno y dos universales. «chile», «sii», «dgi» y «arca» están en todos los artículos de su país y casi sólo ahí; «timbraje» está en uno solo.",
+  "build": {
+    "audiencia": "publico",
+    "generatedAt": "2026-10-01T09:00:00.000Z",
+    "articulos": 11,
+    "conCuerpo": true,
+    "eje": {
+      "tipo": "version",
+      "default": "19",
+      "valores": [
+        {
+          "id": "19",
+          "label": "19.0"
+        }
+      ]
+    },
+    "metadata": {
+      "modules": true,
+      "paises": [
+        "AR",
+        "CL",
+        "UY"
+      ],
+      "paisPorDefecto": "AR"
+    }
+  },
+  "mapa": [],
+  "articulos": [
+    {
+      "id": "19::guias/factura-electronica-en-chile",
+      "slug": "guias/factura-electronica-en-chile",
+      "eje": "19",
+      "title": "Factura electrónica en Chile",
+      "description": "Factura electrónica en Chile.",
+      "seccion": "guias",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/guias/factura-electronica-en-chile",
+      "keywords": [
+        "factura electronica",
+        "sii"
+      ],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Factura electrónica en Chile\n\n## Pasos\n\nEmitir la factura electrónica con el SII de Chile, factura electrónica paso a paso.\n",
+      "paises": [
+        "CL"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/chile/folios",
+      "slug": "manual/localizaciones/chile/folios",
+      "eje": "19",
+      "title": "Folios del SII",
+      "description": "Folios del SII.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/chile/folios",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Folios del SII\n\n## Pasos\n\nPedir folios al SII para la factura electrónica en Chile. El timbraje es único.\n",
+      "paises": [
+        "CL"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/chile/certificado",
+      "slug": "manual/localizaciones/chile/certificado",
+      "eje": "19",
+      "title": "Certificado del SII",
+      "description": "Certificado del SII.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/chile/certificado",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Certificado del SII\n\n## Pasos\n\nEl certificado que pide el SII de Chile para la factura electrónica.\n",
+      "paises": [
+        "CL"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/argentina/factura-electronica",
+      "slug": "manual/localizaciones/argentina/factura-electronica",
+      "eje": "19",
+      "title": "Factura electrónica: lo que hay que saber",
+      "description": "Factura electrónica: lo que hay que saber.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/argentina/factura-electronica",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Factura electrónica: lo que hay que saber\n\n## Pasos\n\nLa factura electrónica en Argentina se autoriza en ARCA.\n",
+      "paises": [
+        "AR"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/argentina/puntos-de-venta",
+      "slug": "manual/localizaciones/argentina/puntos-de-venta",
+      "eje": "19",
+      "title": "Puntos de venta",
+      "description": "Puntos de venta.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/argentina/puntos-de-venta",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Puntos de venta\n\n## Pasos\n\nLos puntos de venta de ARCA en Argentina para la factura electrónica.\n",
+      "paises": [
+        "AR"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/argentina/padron",
+      "slug": "manual/localizaciones/argentina/padron",
+      "eje": "19",
+      "title": "Padrón de ARCA",
+      "description": "Padrón de ARCA.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/argentina/padron",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Padrón de ARCA\n\n## Pasos\n\nConsultar el padrón de ARCA en Argentina.\n",
+      "paises": [
+        "AR"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/uruguay/cfe",
+      "slug": "manual/localizaciones/uruguay/cfe",
+      "eje": "19",
+      "title": "Comprobantes de la DGI",
+      "description": "Comprobantes de la DGI.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/uruguay/cfe",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Comprobantes de la DGI\n\n## Pasos\n\nLa factura electrónica de Uruguay es un CFE de la DGI.\n",
+      "paises": [
+        "UY"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/uruguay/rut",
+      "slug": "manual/localizaciones/uruguay/rut",
+      "eje": "19",
+      "title": "Inscripción en la DGI",
+      "description": "Inscripción en la DGI.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/uruguay/rut",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Inscripción en la DGI\n\n## Pasos\n\nInscribirse en la DGI de Uruguay.\n",
+      "paises": [
+        "UY"
+      ]
+    },
+    {
+      "id": "19::manual/localizaciones/uruguay/ambiente",
+      "slug": "manual/localizaciones/uruguay/ambiente",
+      "eje": "19",
+      "title": "Ambiente de pruebas de la DGI",
+      "description": "Ambiente de pruebas de la DGI.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/uruguay/ambiente",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Ambiente de pruebas de la DGI\n\n## Pasos\n\nProbar contra la DGI de Uruguay antes de emitir.\n",
+      "paises": [
+        "UY"
+      ]
+    },
+    {
+      "id": "19::manual/finanzas/facturas-de-cliente",
+      "slug": "manual/finanzas/facturas-de-cliente",
+      "eje": "19",
+      "title": "Facturas de cliente",
+      "description": "Facturas de cliente.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/finanzas/facturas-de-cliente",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Facturas de cliente\n\n## Pasos\n\nCrear la factura y validarla. Si la base es de Chile, Uruguay o Argentina, la factura electrónica se autoriza al validar.\n"
+    },
+    {
+      "id": "19::manual/localizaciones/index",
+      "slug": "manual/localizaciones/index",
+      "eje": "19",
+      "title": "Localizaciones",
+      "description": "Localizaciones.",
+      "seccion": "manual",
+      "modules": [
+        "account"
+      ],
+      "url": "/19/manual/localizaciones/index",
+      "keywords": [],
+      "headings": [
+        {
+          "id": "pasos",
+          "text": "Pasos",
+          "level": 2
+        }
+      ],
+      "body": "# Localizaciones\n\n## Pasos\n\nQué cubre cada localización: Argentina, Chile y Uruguay.\n"
+    }
+  ]
+}

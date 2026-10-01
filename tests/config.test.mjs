@@ -254,6 +254,15 @@ describe('coherencia entre campos (lo que un JSON Schema no puede expresar)', ()
     const { errores } = validarConfig(c);
     assert.ok(errores.some((e) => /ids repetidos \(19\)/.test(e)), errores.join('\n'));
   });
+
+  it('`metadata.paisPorDefecto` tiene que ser uno de `metadata.paises`', () => {
+    const c = clonar(OBA);
+    c.metadata = { modules: true, paises: ['AR', 'CL'], paisPorDefecto: 'AR' };
+    assert.deepEqual(validarConfig(c).errores, []);
+    c.metadata.paisPorDefecto = 'UY';
+    const { errores } = validarConfig(c);
+    assert.ok(errores.some((e) => /paisPorDefecto: "UY" no está en `metadata.paises`/.test(e)), errores.join('\n'));
+  });
 });
 
 describe('cargarConfig', () => {
