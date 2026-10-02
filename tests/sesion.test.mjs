@@ -145,6 +145,11 @@ describe('cookieDeSesion', () => {
     assert.match(cookie, /SameSite=Lax/);
     assert.match(cookie, /Max-Age=60/);
   });
+
+  it('sin dominio es del host; con dominio la ven también sus subdominios', () => {
+    assert.doesNotMatch(cookieDeSesion('v'), /Domain=/);
+    assert.match(cookieDeSesion('v', { dominio: 'wiki.adhoc.inc' }), /; Domain=wiki\.adhoc\.inc;/);
+  });
 });
 
 describe('el propósito — una firma válida no dice para qué se emitió', () => {

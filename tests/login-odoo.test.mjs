@@ -215,6 +215,181 @@ describe('destinoSeguro — que el login no sea un trampolín', () => {
       assert.equal(destinoSeguro(afuera), '/', `no bloqueó: ${afuera}`);
     }
   });
+
+  it('un tab o un salto de línea no esconden otro host', () => {
+    // El browser saca tabs y saltos de línea de la URL antes de resolverla:
+    // `/\t/otro.com` llega como `//otro.com`. Mirar el prefijo no alcanza.
+    for (const afuera of ['/\t/sitio-de-otro.com', '/\n/sitio-de-otro.com', '/\r\\sitio-de-otro.com']) {
+      assert.equal(destinoSeguro(afuera), '/', `no bloqueó: ${JSON.stringify(afuera)}`);
+    }
+  });
+
+  it('normalizar los segmentos de punto no deja una ruta que empiece con //', () => {
+    // `/.//otro.com` se normaliza a `//otro.com`: devolverla tal cual sería el
+    // trampolín que esta función existe para evitar.
+    for (const afuera of ['/.//sitio-de-otro.com', '/a/..//sitio-de-otro.com', '/%2e%2e//sitio-de-otro.com', '/./\\sitio-de-otro.com']) {
+      assert.equal(destinoSeguro(afuera), '/', `no bloqueó: ${JSON.stringify(afuera)}`);
+    }
+  });
+
+  it('con dominio de sesión, acepta volver al dominio y a sus subdominios', () => {
+    const dominio = 'wiki.adhoc.inc';
+    assert.equal(destinoSeguro('https://wiki.adhoc.inc/x?q=1', dominio), 'https://wiki.adhoc.inc/x?q=1');
+    assert.equal(
+      destinoSeguro('https://pr-12.wiki.adhoc.inc/19/manual', dominio),
+      'https://pr-12.wiki.adhoc.inc/19/manual',
+    );
+    assert.equal(destinoSeguro('/19/manual', dominio), '/19/manual');
+  });
+
+  it('y nada más', () => {
+    const dominio = 'wiki.adhoc.inc';
+    for (const afuera of [
+      'https://wiki.adhoc.inc.sitio-de-otro.com/',
+      'https://otrowiki.adhoc.inc/',
+      'https://adhoc.inc/',
+      'https://sitio-de-otro.com\\@pr-1.wiki.adhoc.inc/',
+      'https://sitio-de-otro.com/@pr-1.wiki.adhoc.inc',
+      'https://usuario:clave@pr-1.wiki.adhoc.inc/',
+      'https://pr-1.wiki.adhoc.inc:8443/',
+      'http://pr-1.wiki.adhoc.inc/',
+      'javascript:alert(1)//pr-1.wiki.adhoc.inc',
+      'https://sitio-de-otro.com/',
+    ]) {
+      assert.equal(destinoSeguro(afuera, dominio), '/', `no bloqueó: ${afuera}`);
+    }
+    // Sin dominio configurado, una URL absoluta no pasa aunque sea del sitio.
+    assert.equal(destinoSeguro('https://pr-12.wiki.adhoc.inc/x'), '/');
+  });
+});
+
+describe('los previews con la sesión del dominio (DOCS_DOMINIO_SESION)', () => {
+  const CON_DOMINIO = { ...ENV, DOCS_DOMINIO_SESION: 'wiki.adhoc.inc' };
+  const OK_TOKEN = { cuerpo: { access_token: 'tok-de-odoo', odoo_user_id: 1866 } };
+  const OK_QUIEN = { cuerpo: { id: 1866, email: 'vib@example.com', name: 'Virginia (vib)' } };
+  const volverDelIntento = (cookie) =>
+    verificarSesion(cookie.slice(cookie.indexOf('=') + 1, cookie.indexOf(';')), ENV.DOCS_SESION_SECRET, {
+      proposito: PROPOSITO_INTENTO,
+    }).then((datos) => datos.volver);
+
+  it('el login de un preview manda al de producción, con la vuelta al preview', async () => {
+    const r = await manejarLogin(
+      get('/api/auth/login?volver=%2F19%2Fmanual%3Fq%3D1', undefined, 'pr-12.wiki.adhoc.inc'),
+      CON_DOMINIO,
+    );
+    assert.equal(r.status, 302);
+    const destino = new URL(r.headers.get('location'));
+    assert.equal(destino.origin, 'https://wiki.adhoc.inc');
+    assert.equal(destino.pathname, '/api/auth/login');
+    assert.equal(destino.searchParams.get('volver'), 'https://pr-12.wiki.adhoc.inc/19/manual?q=1');
+    // El preview no arranca un login propio: ni intento, ni Odoo.
+    assert.equal(r.headers.get('set-cookie'), null);
+  });
+
+  it('el preview no necesita las variables de Odoo para eso', async () => {
+    const r = await manejarLogin(
+      get('/api/auth/login?volver=%2Fx', undefined, 'pr-12.wiki.adhoc.inc'),
+      { DOCS_DOMINIO_SESION: 'wiki.adhoc.inc' },
+    );
+    assert.equal(r.status, 302);
+    assert.equal(
+      new URL(r.headers.get('location')).searchParams.get('volver'),
+      'https://pr-12.wiki.adhoc.inc/x',
+    );
+  });
+
+  it('un volver malicioso en el preview no viaja a producción', async () => {
+    const r = await manejarLogin(
+      get('/api/auth/login?volver=%2F%2Fsitio-de-otro.com', undefined, 'pr-12.wiki.adhoc.inc'),
+      CON_DOMINIO,
+    );
+    assert.equal(
+      new URL(r.headers.get('location')).searchParams.get('volver'),
+      'https://pr-12.wiki.adhoc.inc/',
+    );
+  });
+
+  it('producción guarda la vuelta absoluta al preview en el intento', async () => {
+    const volver = 'https://pr-12.wiki.adhoc.inc/19/manual';
+    const r = await manejarLogin(
+      get(`/api/auth/login?volver=${encodeURIComponent(volver)}`, undefined, 'wiki.adhoc.inc'),
+      CON_DOMINIO,
+    );
+    const destino = new URL(r.headers.get('location'));
+    assert.equal(destino.pathname, '/oauth2/authorize');
+    // Odoo vuelve a producción, que es lo registrado.
+    assert.equal(destino.searchParams.get('redirect_uri'), 'https://wiki.adhoc.inc/api/auth/callback');
+    assert.equal(await volverDelIntento(r.headers.get('set-cookie')), volver);
+  });
+
+  it('producción no acepta volver a un host ajeno', async () => {
+    const r = await manejarLogin(
+      get(
+        `/api/auth/login?volver=${encodeURIComponent('https://wiki.adhoc.inc.sitio-de-otro.com/')}`,
+        undefined,
+        'wiki.adhoc.inc',
+      ),
+      CON_DOMINIO,
+    );
+    assert.equal(await volverDelIntento(r.headers.get('set-cookie')), '/');
+  });
+
+  it('el callback deja la sesión en el dominio y borra antes la del host', async () => {
+    const volver = 'https://pr-12.wiki.adhoc.inc/19/manual';
+    const { resultado: r } = await conFetch([OK_TOKEN, OK_QUIEN], async () =>
+      manejarCallback(
+        get('/api/auth/callback?code=c&state=abc', await intento('abc', volver), 'wiki.adhoc.inc'),
+        CON_DOMINIO,
+      ),
+    );
+    assert.equal(r.status, 302);
+    assert.equal(r.headers.get('location'), volver);
+    const sesiones = r.headers.getSetCookie().filter((c) => c.startsWith(`${COOKIE_SESION}=`));
+    // Primero el borrado de la cookie vieja del host: si conviviera con la nueva,
+    // el browser mandaría las dos y podría ganar la vieja.
+    assert.equal(sesiones.length, 2);
+    assert.match(sesiones[0], /Max-Age=0/);
+    assert.doesNotMatch(sesiones[0], /Domain=/);
+    assert.match(sesiones[1], /; Domain=wiki\.adhoc\.inc;/);
+    const valor = sesiones[1].slice(sesiones[1].indexOf('=') + 1, sesiones[1].indexOf(';'));
+    assert.equal((await verificarSesion(valor, ENV.DOCS_SESION_SECRET)).sub, 1866);
+  });
+
+  it('salir borra las dos cookies, la del host y la del dominio', async () => {
+    const r = await manejarLogout(
+      get('/api/auth/logout?volver=%2Fx', undefined, 'pr-12.wiki.adhoc.inc'),
+      CON_DOMINIO,
+    );
+    const sesiones = r.headers.getSetCookie().filter((c) => c.startsWith(`${COOKIE_SESION}=`));
+    assert.equal(sesiones.length, 2);
+    assert.ok(sesiones.every((c) => c.includes('Max-Age=0')));
+    assert.ok(sesiones.some((c) => c.includes('Domain=wiki.adhoc.inc')));
+    assert.ok(sesiones.some((c) => !c.includes('Domain=')));
+  });
+
+  it('en un host fuera del dominio, todo sigue como sin la variable', async () => {
+    // Un `Domain` ajeno al host hace que el browser descarte la cookie: el login
+    // quedaría roto en silencio. Y un host ajeno no se manda a producción.
+    const host = 'adhoc-docs-git-mi-rama-adhoc3.vercel.app';
+    const login = await manejarLogin(get('/api/auth/login?volver=%2Fx', undefined, host), CON_DOMINIO);
+    assert.equal(new URL(login.headers.get('location')).pathname, '/oauth2/authorize');
+
+    const { resultado: r } = await conFetch([OK_TOKEN, OK_QUIEN], async () =>
+      manejarCallback(get('/api/auth/callback?code=c&state=abc', await intento('abc'), host), CON_DOMINIO),
+    );
+    const sesiones = r.headers.getSetCookie().filter((c) => c.startsWith(`${COOKIE_SESION}=`));
+    assert.equal(sesiones.length, 1);
+    assert.doesNotMatch(sesiones[0], /Domain=/);
+  });
+
+  it('sin la variable, la cookie sigue siendo del host', async () => {
+    const { resultado: r } = await conFetch([OK_TOKEN, OK_QUIEN], async () =>
+      manejarCallback(get('/api/auth/callback?code=c&state=abc', await intento('abc'), 'wiki.adhoc.inc'), ENV),
+    );
+    const sesiones = r.headers.getSetCookie().filter((c) => c.startsWith(`${COOKIE_SESION}=`));
+    assert.equal(sesiones.length, 1);
+    assert.doesNotMatch(sesiones[0], /Domain=/);
+  });
 });
 
 describe('paso 2 — la vuelta de Odoo', () => {

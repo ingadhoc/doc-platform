@@ -75,6 +75,7 @@ siempre.
 | `DOCS_ODOO_CLIENT_ID` | El `identifier` del client. |
 | `DOCS_ODOO_CLIENT_SECRET` | Su secreto. Nunca sale de la función. |
 | `DOCS_ODOO_SCOPE` | El `code` del scope filtrado. **Sin default a propósito**: un valor por descarte sería una regla de acceso inventada por el paquete. |
+| `DOCS_DOMINIO_SESION` | Opcional. El dominio de producción (`wiki.adhoc.inc`) cuando los previews viven en subdominios suyos. Ver «Los previews de PR». |
 
 No hay variable con la URL del sitio: el `redirect_uri` sale del host del
 request. Ver más abajo.
@@ -136,12 +137,38 @@ registrado **falla con un error de Odoo a la vista**. Es la dirección correcta:
 la alternativa —un valor fijo— hacía que quien abriera un preview se logueara y
 terminara en producción sin enterarse de que nunca lo vio.
 
+`oauth_provider` valida la lista exacta y no soporta comodines, así que no hay
+forma de registrar todos los previews de una. La salida es que el preview no
+haga su propio login.
+
+### Con `DOCS_DOMINIO_SESION`: el preview usa la sesión de producción
+
+Si los previews viven en subdominios de producción (`pr-12.wiki.adhoc.inc` con
+`DOCS_DOMINIO_SESION=wiki.adhoc.inc`):
+
+1. La cookie de sesión sale con `Domain=wiki.adhoc.inc`: la ven producción y
+   todos sus subdominios. Quien ya entró a la wiki abre el preview directo.
+2. Sin sesión, el gate del preview manda a **su** `/api/auth/login`, que no
+   habla con Odoo: redirige a `https://wiki.adhoc.inc/api/auth/login` con la
+   URL del preview en `volver`.
+3. Producción hace el login de siempre, con su `redirect_uri`, deja la cookie
+   del dominio y vuelve al preview.
+
+La vuelta se valida: una ruta del sitio o una URL `https` del dominio o de un
+subdominio suyo, sin usuario ni puerto. Cualquier otra cosa va a la portada.
+Que todos los subdominios sean nuestros es la condición para usar la variable:
+cualquiera de ellos ve la cookie.
+
+En un host fuera del dominio (la URL `vercel.app` del mismo preview), todo
+sigue como sin la variable. Los subdominios los pone el CI del repo de contenido
+(`vercel alias set`), sobre un CNAME comodín al proyecto.
+
+### Sin la variable
+
 Para revisar un preview interno autenticado, agregá su **branch alias** —el que
 Vercel deja estable por rama, `<proyecto>-git-<rama>-<team>.vercel.app`— como un
-`redirect_uri` más del client, y borralo cuando la rama se mergea. Una fila.
-`oauth_provider` valida la lista exacta y no soporta comodines, así que no hay
-forma de habilitarlos todos de una: es a demanda, y está bien que se vea quién
-puede autenticar.
+`redirect_uri` más del client, y borralo cuando la rama se mergea. Una fila, a
+demanda, y está bien que se vea quién puede autenticar.
 
 Ojo con el `Host`: quien llame puede mandar el que quiera, pero lo único que
 consigue es que Odoo le rechace el login. Nosotros no validamos ese header —
@@ -149,11 +176,12 @@ para eso está la lista del client.
 
 ## Cómo se prueba un cambio de auth
 
-**Ningún preview de PR ejerce el login.** En `oba-docs` el deployment preview
-del sitio interno no se hace (el contenido se revisa en el público, que no tiene
-gate) y en `adhoc-docs` el preview existe pero no tiene las variables de un
-sitio con login configurado. El CI compila el sitio interno, que es otra cosa:
-verifica que el build sale, no que se pueda entrar.
+**Ningún preview de PR ejerce el login de Odoo.** En `oba-docs` el deployment
+preview del sitio interno no se hace (el contenido se revisa en el público, que
+no tiene gate) y en `adhoc-docs` el preview delega el login en producción (ver
+arriba): lo que corre en el preview es el redirect, no el código del PR. El CI
+compila el sitio interno, que es otra cosa: verifica que el build sale, no que
+se pueda entrar.
 
 Consecuencia: **un cambio de auth se prueba contra el deployment real**, después
 de mergear, o disparando a mano el build del sitio interno. No hay atajo, y
@@ -187,6 +215,11 @@ curl -si "$S/api/auth/login?volver=%2F19%2Fmanual" | grep -i '^location'
 # El bypass: la cookie que la puerta reparte sin credencial NO abre el gate
 INT=$(curl -si "$S/api/auth/login?volver=%2F" | sed -n 's/^[Ss]et-[Cc]ookie: docs_login=\([^;]*\).*/\1/p')
 curl -so /dev/null -w '%{http_code}\n' -H 'Accept: text/html' -H "Cookie: docs_sesion=$INT" "$S/19/manual"   # 302, nunca 200
+
+# Con DOCS_DOMINIO_SESION: el preview manda al login de producción, y la vuelta no sale del dominio
+curl -si "https://pr-12.wiki.adhoc.inc/api/auth/login?volver=%2Fx" | grep -i '^location'      # wiki.adhoc.inc/api/auth/login?volver=https://pr-12…
+curl -si "$S/api/auth/logout?volver=https%3A%2F%2Fotro.com" | grep -i '^location'              # /
+curl -si "$S/api/auth/logout?volver=%2F%09%2Fotro.com" | grep -i '^location'                   # /
 
 # Nada de esto se tiene que haber movido
 curl -so /dev/null -w 'buscador %{http_code}\n' "$S/search-index.json"                      # 401 sin challenge
