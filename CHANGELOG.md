@@ -14,6 +14,23 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.23.0 — 2026-10-02
+
+- **login-odoo: los previews de PR se abren con la sesión de producción.** Con
+  `DOCS_DOMINIO_SESION` (por ejemplo `wiki.adhoc.inc`), la cookie de sesión se
+  emite con `Domain=` y la ven los subdominios, como `pr-12.wiki.adhoc.inc`. El
+  login de un subdominio no habla con Odoo: manda al login del dominio con la
+  vuelta al preview, y el dominio completa el login con su `redirect_uri` ya
+  registrado. Ya no hay que registrar en Odoo el alias de cada rama. El callback
+  borra antes la cookie vieja del host, y el logout borra las dos. Sin la
+  variable, o en un host fuera del dominio, todo sigue como antes.
+- **[seguridad] login-odoo: `destinoSeguro` resuelve la URL como el browser.**
+  Miraba el prefijo, y `?volver=/%09/otro.com` pasaba: el browser saca el tab y
+  lee `//otro.com`, un redirect abierto después del login o del logout. Con un
+  salto de línea, el logout respondía 500. Ahora la vuelta se parsea con `URL`
+  y sale normalizada. Con dominio de sesión acepta también una URL `https` de
+  ese dominio o de un subdominio suyo, sin usuario ni puerto; nada más.
+
 ## v0.21.0 — 2026-10-01
 
 - **mcp: las `description` de `buscar`, `leer` y `mapa` dicen lo esencial en
