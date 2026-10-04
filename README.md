@@ -82,6 +82,21 @@ export default function middleware(request) {
 El `&&` no es cosmético: es lo que aborta el deploy cuando el guard sale con 1.
 No lo cambies por `;`.
 
+## Deploy desde Actions
+
+`.github/actions/deploy-prebuilt` construye el sitio en el runner con
+`vercel build` (el guard de fuga corre adentro, en el `buildCommand`) y lo sube
+con `vercel deploy --prebuilt`: Vercel no vuelve a construir. Se consume por
+ref de GitHub, pineada al mismo tag que el paquete:
+
+```yaml
+- uses: ingadhoc/doc-platform/.github/actions/deploy-prebuilt@vX.Y.Z
+```
+
+Inputs, invariantes y el flujo de producción en dos pasos (deploy con
+`skip-domain` y `vercel promote` después de los checks), en su
+[README](.github/actions/deploy-prebuilt/README.md).
+
 ## El centinela de producción
 
 `docs-centinela-produccion` responde una sola pregunta: **¿el sitio publicado
@@ -106,6 +121,10 @@ Va en dos lugares del workflow del consumidor:
 El job del punto 2 va **fuera** del `concurrency` del deploy, a propósito: su
 trabajo es mirar la cola desde afuera, y colgarlo del mismo lock que se traba
 lo dejaría esperando junto con todo lo demás.
+
+El deployment que mira es el que sirve el dominio (`targets.production` del
+proyecto), no el último de producción: con deploy y promote separados, el
+último puede estar armado y sin promover.
 
 Los ids salen de `VERCEL_PROJECT_ID`, `VERCEL_ORG_ID` y `VERCEL_TOKEN`, que el
 job ya tiene para deployar: no hay una segunda copia que se pueda

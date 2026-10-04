@@ -1,0 +1,129 @@
+name: deploy-prebuilt
+description: >-
+  Construye el sitio con `vercel build` en el runner y lo sube con
+  `vercel deploy --prebuilt`. Vercel no vuelve a construir.
+
+inputs:
+  vercel-token:
+    description: Token del team de Vercel.
+    required: true
+  project-id:
+    description: Id del proyecto de Vercel (prj_…). El guard de fuga resuelve la audiencia por este id.
+    required: true
+  org-id:
+    description: Id del team de Vercel.
+    required: false
+    default: team_rjcdQb3W3oISVDmQtFDjY6zH
+  target:
+    description: preview | production
+    required: true
+  skip-domain:
+    description: Con target production, deploya sin mover el dominio (se promueve después con `vercel promote`).
+    required: false
+    default: 'false'
+  commit-sha:
+    description: Commit que se publica. Va como meta `commitSha`.
+    required: true
+  commit-ref:
+    description: Rama que se publica. Va como meta `commitRef`.
+    required: true
+  pr-id:
+    description: Número de PR, si lo hay. Va como meta `prId`.
+    required: false
+    default: ''
+
+outputs:
+  url:
+    description: URL del deployment.
+    value: ${{ steps.deploy.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    # The only place where project and team are set for the whole job. The
+    # token never goes to GITHUB_ENV: each step that needs it gets it by env.
+    - name: Fijar proyecto de Vercel
+      shell: bash
+      env:
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_ORG: ${{ inputs.org-id }}
+        IN_TARGET: ${{ inputs.target }}
+        IN_SKIP: ${{ inputs.skip-domain }}
+      run: |
+        set -euo pipefail
+        [ -n "$IN_TOKEN" ] || { echo "::error::falta vercel-token"; exit 1; }
+        [[ "$IN_PROJECT" =~ ^prj_[A-Za-z0-9]+$ ]] || { echo "::error::project-id inválido: '$IN_PROJECT'"; exit 1; }
+        [[ "$IN_ORG" =~ ^team_[A-Za-z0-9]+$ ]] || { echo "::error::org-id inválido: '$IN_ORG'"; exit 1; }
+        case "$IN_TARGET" in preview|production) ;; *) echo "::error::target tiene que ser preview o production, no '$IN_TARGET'"; exit 1 ;; esac
+        case "$IN_SKIP" in true|false) ;; *) echo "::error::skip-domain tiene que ser true o false, no '$IN_SKIP'"; exit 1 ;; esac
+        if [ "$IN_SKIP" = true ] && [ "$IN_TARGET" != production ]; then
+          echo "::error::skip-domain solo tiene sentido con target production"; exit 1
+        fi
+        {
+          echo "VERCEL_PROJECT_ID=$IN_PROJECT"
+          echo "VERCEL_ORG_ID=$IN_ORG"
+        } >> "$GITHUB_ENV"
+
+    - name: vercel pull
+      shell: bash
+      env:
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        # A job-level env can shadow what GITHUB_ENV set: fail instead of building another project.
+        [ "$VERCEL_PROJECT_ID" = "$IN_PROJECT" ] || { echo "::error::VERCEL_PROJECT_ID del entorno ($VERCEL_PROJECT_ID) no es el project-id ($IN_PROJECT)"; exit 1; }
+        npx --yes vercel@59 pull --yes --environment="$IN_TARGET" --token="$IN_TOKEN"
+
+    - name: vercel build
+      shell: bash
+      env:
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        [ "$VERCEL_PROJECT_ID" = "$IN_PROJECT" ] || { echo "::error::el proyecto cambió antes del build"; exit 1; }
+        prod=()
+        [ "$IN_TARGET" = production ] && prod=(--prod)
+        # No token here: installCommand and buildCommand run third-party code
+        # (npm lifecycle scripts, Docusaurus), and the build works from what
+        # `vercel pull` left in .vercel/.
+        if [ -n "${VERCEL_TOKEN:-}" ]; then echo "VERCEL_TOKEN en el entorno del step: presente, se quita para el build"; else echo "VERCEL_TOKEN en el entorno del step: ausente"; fi
+        inicio=$(date +%s)
+        env -u VERCEL_TOKEN npx --yes vercel@59 build "${prod[@]}" --yes
+        echo "build: $(( $(date +%s) - inicio ))s"
+
+    - name: vercel deploy --prebuilt
+      id: deploy
+      shell: bash
+      env:
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_TARGET: ${{ inputs.target }}
+        IN_SKIP: ${{ inputs.skip-domain }}
+        IN_SHA: ${{ inputs.commit-sha }}
+        IN_REF: ${{ inputs.commit-ref }}
+        IN_PR: ${{ inputs.pr-id }}
+      run: |
+        set -euo pipefail
+        # `deploy --prebuilt` does not check which project the output was built
+        # for, and the leak guard ran against the build project: both must match.
+        [ "$VERCEL_PROJECT_ID" = "$IN_PROJECT" ] || { echo "::error::el proyecto cambió entre el build y el deploy"; exit 1; }
+        linkeado=$(node -p "require('./.vercel/project.json').projectId")
+        [ "$linkeado" = "$IN_PROJECT" ] || { echo "::error::.vercel/project.json apunta a $linkeado, no a $IN_PROJECT"; exit 1; }
+
+        args=(deploy --prebuilt --yes --archive=tgz -m "commitSha=$IN_SHA" -m "commitRef=$IN_REF")
+        [ -n "$IN_PR" ] && args+=(-m "prId=$IN_PR")
+        [ "$IN_TARGET" = production ] && args+=(--prod)
+        [ "$IN_SKIP" = true ] && args+=(--skip-domain)
+
+        # Without .git the CLI cannot infer githubCommit* metas, which make
+        # Vercel block deploys from commit authors without a team seat.
+        rm -rf .git
+        inicio=$(date +%s)
+        url=$(npx --yes vercel@59 "${args[@]}" --token="$IN_TOKEN")
+        echo "deploy: $(( $(date +%s) - inicio ))s"
+        echo "url: $url"
+        echo "url=$url" >> "$GITHUB_OUTPUT"

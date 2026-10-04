@@ -14,6 +14,21 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.24.0 — 2026-10-04
+
+- **deploy-prebuilt: composite action para construir en Actions y deployar
+  sin que Vercel vuelva a construir.** `.github/actions/deploy-prebuilt` corre
+  `vercel pull`, `vercel build` (con el guard de fuga adentro, como hoy),
+  borra `.git` y sube con `vercel deploy --prebuilt` y las metas `commitSha`,
+  `commitRef` y `prId`. Fija el proyecto una sola vez y falla si cambia entre
+  el build y el deploy. El token no se exporta al job: lo reciben por
+  `--token` solo `pull` y `deploy`, y el build corre sin él. Con `skip-domain` deja producción armada para
+  promoverla después de los checks. Se consume por ref de GitHub, no por npm.
+- **centinela: lee el deployment que sirve el dominio** (`targets.production`
+  del proyecto) y no el último deployment de producción READY. Con deploy y
+  promote separados, el último puede estar sin promover. En el esquema de hoy
+  (`vercel deploy --prod`) los dos son el mismo.
+
 ## v0.23.0 — 2026-10-02
 
 - **login-odoo: los previews de PR se abren con la sesión de producción.** Con

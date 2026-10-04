@@ -17,6 +17,7 @@ import {
   OK,
   correrCentinela,
   evaluar,
+  leerDeploymentReal,
   metasDeGitHub,
   shaDe,
 } from '../lib/centinela-produccion.mjs';
@@ -160,5 +161,50 @@ describe('la corrida', () => {
       await correrCentinela({ ...credenciales, ...silencio, leerDeployment: async () => limpio(SHA) }),
       NO_SE_PUDO,
     );
+  });
+});
+
+describe('qué deployment lee: el que sirve el dominio', () => {
+  const silencio = { log: () => {}, error: () => {} };
+  const credenciales = { proyecto: 'prj_x', team: 'team_x', token: 't' };
+
+  // Respuesta de `GET /v9/projects/:id` recortada a lo que importa.
+  const proyecto = (targets) => async (url, opciones) => {
+    assert.match(url, /\/v9\/projects\/prj_x\?teamId=team_x$/);
+    assert.equal(opciones.headers.Authorization, 'Bearer t');
+    return { ok: true, json: async () => ({ id: 'prj_x', targets }) };
+  };
+
+  it('devuelve `targets.production`, no el último deployment armado', async () => {
+    const servido = limpio(SHA);
+    const leido = await leerDeploymentReal({
+      ...credenciales,
+      fetchImpl: proyecto({ production: servido, preview: limpio(VIEJO) }),
+    });
+    assert.equal(leido, servido);
+  });
+
+  it('sin `targets.production` no da OK: es 2 y lo dice', async () => {
+    const errores = [];
+    const codigo = await correrCentinela({
+      ...credenciales,
+      log: () => {},
+      error: (m) => errores.push(m),
+      esperado: SHA,
+      leerDeployment: (o) => leerDeploymentReal({ ...o, fetchImpl: proyecto({ preview: limpio(SHA) }) }),
+    });
+    assert.equal(codigo, NO_SE_PUDO);
+    assert.match(errores.join('\n'), /targets\.production/);
+  });
+
+  it('un HTTP de error es 2', async () => {
+    const codigo = await correrCentinela({
+      ...credenciales,
+      ...silencio,
+      esperado: SHA,
+      leerDeployment: (o) =>
+        leerDeploymentReal({ ...o, fetchImpl: async () => ({ ok: false, status: 403, statusText: 'Forbidden' }) }),
+    });
+    assert.equal(codigo, NO_SE_PUDO);
   });
 });
