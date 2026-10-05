@@ -1,0 +1,88 @@
+name: centinela
+description: >-
+  ¿Producción está al día con la rama? Corre `bin/centinela-produccion.mjs`
+  desde esta action, sin checkout ni `npm`: el token no convive con código del
+  repo. El commit esperado y su fecha salen de la API de GitHub.
+
+inputs:
+  vercel-token:
+    description: Token de Vercel con lectura del proyecto. Solo lo recibe el centinela, por entorno.
+    required: true
+  project-id:
+    description: Id del proyecto de Vercel (prj_…).
+    required: true
+  org-id:
+    description: Id del team de Vercel.
+    required: false
+    default: team_rjcdQb3W3oISVDmQtFDjY6zH
+  rama:
+    description: Rama cuyo HEAD tiene que estar publicado.
+    required: false
+    default: main
+  tolerancia:
+    description: Minutos que puede tardar un deploy antes de que sea atraso. Vacío = el default del centinela.
+    required: false
+    default: ''
+  fallar:
+    description: "'true' deja el step en rojo si el centinela no sale 0; 'false' solo emite `codigo` y `reporte`."
+    required: false
+    default: 'true'
+  github-token:
+    description: Token de GitHub para leer el HEAD de la rama.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  codigo:
+    description: 0 al día, 1 hay que actuar, 2 no se pudo averiguar.
+    value: ${{ steps.chequeo.outputs.codigo }}
+  reporte:
+    description: La salida del centinela.
+    value: ${{ steps.chequeo.outputs.reporte }}
+
+runs:
+  using: composite
+  steps:
+    - name: Comparar producción contra la rama
+      id: chequeo
+      shell: bash
+      env:
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_ORG: ${{ inputs.org-id }}
+        IN_RAMA: ${{ inputs.rama }}
+        IN_TOLERANCIA: ${{ inputs.tolerancia }}
+        IN_FALLAR: ${{ inputs.fallar }}
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        # The step shell is `bash -e`: turn it off so a non-zero exit of the
+        # sentinel still prints its output and writes `codigo` and `reporte`.
+        set +e -uo pipefail
+        [ -n "$IN_TOKEN" ] || { echo "::error::falta vercel-token"; exit 1; }
+        [[ "$IN_PROJECT" =~ ^prj_[A-Za-z0-9]+$ ]] || { echo "::error::project-id inválido: '$IN_PROJECT'"; exit 1; }
+        [[ "$IN_ORG" =~ ^team_[A-Za-z0-9]+$ ]] || { echo "::error::org-id inválido: '$IN_ORG'"; exit 1; }
+        [[ "$IN_RAMA" =~ ^[A-Za-z0-9._/-]{1,200}$ ]] || { echo "::error::rama inválida: '$IN_RAMA'"; exit 1; }
+        [[ "$IN_TOLERANCIA" =~ ^[0-9]{0,5}$ ]] || { echo "::error::tolerancia inválida: '$IN_TOLERANCIA'"; exit 1; }
+        args=()
+        if head=$(gh api "repos/$GITHUB_REPOSITORY/commits/$IN_RAMA" --jq '.sha + " " + .commit.committer.date'); then
+          args+=(--sha="${head%% *}" --desde="${head#* }")
+        fi
+        [ -n "$IN_TOLERANCIA" ] && args+=(--tolerancia="$IN_TOLERANCIA")
+        cd "$RUNNER_TEMP"
+        if [ ${#args[@]} -eq 0 ] || [[ "${args[0]}" != --sha=* ]]; then
+          salida="? No se pudo leer el HEAD de $IN_RAMA en GitHub."
+          codigo=2
+        else
+          salida=$(VERCEL_TOKEN="$IN_TOKEN" node "$GITHUB_ACTION_PATH/../../../bin/centinela-produccion.mjs" \
+            --proyecto="$IN_PROJECT" --team="$IN_ORG" "${args[@]}" 2>&1)
+          codigo=$?
+        fi
+        echo "$salida"
+        {
+          echo "codigo=$codigo"
+          echo 'reporte<<FIN_REPORTE_CENTINELA'
+          echo "$salida"
+          echo 'FIN_REPORTE_CENTINELA'
+        } >> "$GITHUB_OUTPUT"
+        if [ "$IN_FALLAR" = true ]; then exit "$codigo"; fi
+        exit 0

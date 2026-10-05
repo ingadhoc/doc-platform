@@ -1,0 +1,8 @@
+{
+  "name": "prebuilt-deploy-cli",
+  "private": true,
+  "description": "Vercel CLI pinned for prebuilt-deploy. Installed outside the repo, with --ignore-scripts.",
+  "dependencies": {
+    "vercel": "59.26.0"
+  }
+}

@@ -82,6 +82,26 @@ export default function middleware(request) {
 El `&&` no es cosmético: es lo que aborta el deploy cuando el guard sale con 1.
 No lo cambies por `;`.
 
+## Deploy desde Actions
+
+`.github/actions/prebuilt-build` construye el sitio en el runner con
+`vercel build --standalone` (el guard de fuga corre adentro, en el
+`buildCommand`), corre los chequeos del sitio y sube la salida como artifact,
+sin token. `.github/actions/prebuilt-deploy`, en otro job, baja ese artifact y
+lo sube con `vercel deploy --prebuilt`, sin checkout ni código del repo: el
+token de Vercel nunca convive con el código del repo. Vercel no vuelve a
+construir. Se consumen por ref de GitHub, pineadas al mismo tag que el
+paquete:
+
+```yaml
+- uses: ingadhoc/doc-platform/.github/actions/prebuilt-build@vX.Y.Z    # job build
+- uses: ingadhoc/doc-platform/.github/actions/prebuilt-deploy@vX.Y.Z   # job deploy
+- uses: ingadhoc/doc-platform/.github/actions/centinela@vX.Y.Z         # cron y push a main
+```
+
+Inputs, invariantes y modelo de amenaza, en su
+[README](.github/actions/README.md).
+
 ## El centinela de producción
 
 `docs-centinela-produccion` responde una sola pregunta: **¿el sitio publicado
@@ -90,26 +110,26 @@ publicado — el 04/09/2026 `docs.adhoc.inc` estuvo cinco horas atrás de `main`
 con todos los checks en verde y nadie se enteró hasta que alguien preguntó por
 qué su PR no se veía publicado.
 
-Va en dos lugares del workflow del consumidor:
+Va en dos lugares del workflow del consumidor, siempre desde las actions y no
+con `npx`: el token no corre en un job con código del repo.
 
-```yaml
-# 1. Después de deployar: que el dominio haya quedado en ESTE commit.
-#    Sin tolerancia — el deploy ya terminó, no hay nada que esperar.
-- run: npx docs-centinela-produccion --sha="${{ github.sha }}" --tolerancia=0
-
-# 2. En cada push a main y desde un cron: que producción no se haya quedado
-#    atrás. Sin --sha compara contra el HEAD del checkout, y usa la antigüedad
-#    de ese commit para no confundir un atraso con un deploy en curso.
-- run: npx docs-centinela-produccion
-```
+1. Después de deployar, dentro de `prebuilt-deploy`: que el dominio haya
+   quedado en ESTE commit, con `--tolerancia=0`.
+2. En cada push a main y desde un cron, con la action `centinela`: que
+   producción no se haya quedado atrás. El commit esperado es el HEAD de la
+   rama según la API de GitHub, y su fecha (`--desde`) evita confundir un
+   atraso con un deploy en curso.
 
 El job del punto 2 va **fuera** del `concurrency` del deploy, a propósito: su
 trabajo es mirar la cola desde afuera, y colgarlo del mismo lock que se traba
 lo dejaría esperando junto con todo lo demás.
 
-Los ids salen de `VERCEL_PROJECT_ID`, `VERCEL_ORG_ID` y `VERCEL_TOKEN`, que el
-job ya tiene para deployar: no hay una segunda copia que se pueda
-desincronizar. Exit **1** = hay que actuar; **2** = no se pudo averiguar (un
+El deployment que mira es el que sirve el dominio (`targets.production` del
+proyecto), no el último de producción: después de un rollback, o de un
+deployment armado sin dominio, el último no es el que se sirve.
+
+Las actions le pasan el proyecto y el team por argumento (`--proyecto`,
+`--team`) y el token por `VERCEL_TOKEN`. Exit **1** = hay que actuar; **2** = no se pudo averiguar (un
 500 de Vercel no es producción atrasada, y el workflow del consumidor abre
 issue con el 1 y no con el 2).
 
