@@ -483,6 +483,31 @@ describe('falsos positivos: cada uno bloqueó (o habría bloqueado) un deploy re
     }));
   });
 
+  it('una palabra pública que TERMINA con la primera palabra de la sonda no dispara', () => {
+    // Sonda `a esta página`, de la línea interna «Huecos del manual que afectan
+    // a esta página»; texto público «lo que explica esta página». Sin límite de
+    // palabra, `explica esta página` contiene la sonda y frena el deploy.
+    // El caso junta las dos estrictezas de una vez: la primera palabra de la
+    // sonda es de UNA letra —lo más fácil de encontrar a mitad de palabra— y la
+    // última lleva tilde, que es donde el `\b` de JavaScript no sirve.
+    aprobado(correr({
+      manifiesto: { ...MANIFIESTO_OK, sondas: ['a esta página'] },
+      archivos: { 'site/build/x.html': '<p>lo que explica esta página y nada más</p>' },
+    }));
+  });
+
+  it('y la MISMA sonda, como frase propia, sigue siendo fuga', () => {
+    // Lo que de verdad protege el caso de arriba: el límite de palabra no puede
+    // comprar el falso positivo a cambio de dejar de ver la frase de verdad.
+    bloqueado(
+      correr({
+        manifiesto: { ...MANIFIESTO_OK, sondas: ['a esta página'] },
+        archivos: { 'site/build/x.html': '<p>huecos del manual que afectan a esta página</p>' },
+      }),
+      /FUGA/,
+    );
+  });
+
   it('un backslash literal no ciega el escaneo del resto del archivo', () => {
     // El anti-patrón: reemplazar escapes con regex sobre el texto crudo borra
     // la letra que sigue a un backslash LITERAL (`C:\temp` → `c emp`).
@@ -546,6 +571,35 @@ describe('los límites de bloque cortan, los inline no (deploy de Finanzas, 3726
         'site/build/search-index.json': JSON.stringify([
           { t: 'tarjetas a cobrar' },
           { t: 'pago del servicio' },
+        ]),
+      },
+    }));
+  });
+
+  // MEDIDO, NO ASUMIDO, sobre el `search-index.json` PUBLICADO de un corpus
+  // real: el tema de búsqueda no serializa el HTML, serializa TEXTO CONDENSADO
+  // —junta cada bloque con UN espacio y colapsa los blancos—, así que para
+  // cuando el JSON llega al guard los tags que marcaban el corte ya no están.
+  // El cruce medido: un párrafo que termina en un link cuyo texto cierra con
+  // «…las facturas A» y el bloque siguiente que arranca «Esta página cubre…»
+  // quedan pegados en una sola string, y de ahí sale ` a esta página `, que no
+  // escribió nadie. Es el mismo modo de falla que los casos de arriba, pero en
+  // el único artefacto donde el guard no puede cortar por su cuenta.
+  //
+  // Y la sonda existe porque el `publicado` del preprocesador tampoco lo ve:
+  // se calcula sobre el MARKDOWN, donde entre la «a» y el «esta» está el
+  // destino del link (`…-facturas-a.md`) inyectando palabras que el HTML no
+  // tiene. Por eso queda como `todo` y no como aserto: el corte no se puede
+  // recuperar de un texto ya condensado, y lo que cierra el agujero sin
+  // aflojar el guard es que el preprocesador del consumidor no trate el
+  // destino de un link como texto publicado.
+  it('un cruce de bloques dentro de una string del search-index NO matchea', { todo: 'no se puede cortar un texto ya condensado: lo cierra el `publicado` del preprocesador, que hoy cuenta el destino del link como texto' }, () => {
+    aprobado(correr({
+      manifiesto: { ...MANIFIESTO_OK, sondas: ['a esta página'] },
+      archivos: {
+        'site/build/index.html': '<p>ok</p>',
+        'site/build/search-index.json': JSON.stringify([
+          { t: 'consultá configurar la leyenda de las facturas a Esta página cubre el circuito completo' },
         ]),
       },
     }));
