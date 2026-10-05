@@ -1,22 +1,17 @@
 #!/usr/bin/env node
 /**
- * CLI del centinela de producción (`docs-centinela-produccion`). Va en el CI
- * de los repos CONSUMIDORES, en dos lugares:
- *
- *   # 1. Después de deployar: que el dominio haya quedado en ESTE commit.
- *   - run: npx docs-centinela-produccion --sha="${{ github.sha }}" --tolerancia=0
- *
- *   # 2. En un cron y en cada push a main: que producción no se haya quedado
- *   #    atrás. Sin --sha, el commit esperado es el HEAD del checkout.
- *   - run: npx docs-centinela-produccion
+ * CLI del centinela de producción (`docs-centinela-produccion`). Los repos
+ * consumidores no lo corren con `npx`: lo corren las actions `prebuilt-deploy`
+ * (después de deployar, `--sha=<commit> --tolerancia=0`) y `centinela` (en un
+ * cron y en cada push a main, `--sha=<HEAD> --desde=<fecha>`), con `node` y
+ * sin checkout, para que el token no corra junto al código del repo.
  *
  * Wrapper a propósito: la decisión vive en `lib/centinela-produccion.mjs`
  * (testeable, con la red inyectable) y acá está lo único que un bin tiene que
  * hacer — resolver los parámetros y traducir el resultado a exit code.
  *
- * Los ids de Vercel salen del entorno que el job ya tiene para deployar
- * (`VERCEL_PROJECT_ID`, `VERCEL_ORG_ID`, `VERCEL_TOKEN`), así que no hay una
- * segunda copia de esos ids que se pueda desincronizar del deploy.
+ * El proyecto y el team llegan por `--proyecto` y `--team` (o por
+ * `VERCEL_PROJECT_ID` y `VERCEL_ORG_ID`); el token, por `VERCEL_TOKEN`.
  *
  * Exit 1 = hay que actuar (producción atrasada, o el bloqueo por seats
  * rearmado). Exit 2 = no se pudo averiguar; el workflow lo deja rojo pero no
@@ -38,6 +33,8 @@ if (argv.includes('--help') || argv.includes('-h')) {
     `docs-centinela-produccion — ¿el sitio publicado está en el commit que dice la rama?
 
   --sha=<commit>      commit esperado (default: el HEAD del repo)
+  --desde=<fecha>     fecha ISO del commit esperado, para medir su antigüedad
+                      sin repo (con --sha; sin esto, la antigüedad es 0)
   --tolerancia=<min>  cuánto puede tardar un deploy antes de que sea atraso
                       (default: ${TOLERANCIA_MIN}; usar 0 después de deployar)
   --proyecto=<id>     projectId de Vercel   (default: $VERCEL_PROJECT_ID)
@@ -56,6 +53,16 @@ const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 
 
 let esperado = arg('sha', null);
 let edadMin = 0;
+
+const desde = arg('desde', null);
+if (desde) {
+  const ms = Date.parse(desde);
+  if (!esperado || Number.isNaN(ms)) {
+    console.error(`? --desde necesita --sha y una fecha válida (llegó "${desde}").`);
+    process.exit(NO_SE_PUDO);
+  }
+  edadMin = (Date.now() - ms) / 60_000;
+}
 
 // Sin `--sha` el commit esperado es el HEAD del checkout, y su antigüedad es la
 // que decide si esto es un atraso o un deploy todavía en curso. Un `git` que no

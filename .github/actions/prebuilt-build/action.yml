@@ -1,0 +1,127 @@
+name: prebuilt-build
+description: >-
+  Construye el sitio en el runner con `vercel build --standalone` (el guard de
+  fuga corre adentro), corre los chequeos del sitio sobre la salida, la
+  empaqueta y la sube como artifact. Sin token: la configuración del proyecto
+  sale de los inputs. No publica nada: eso lo hace `prebuilt-deploy`, en otro
+  job.
+
+inputs:
+  project-id:
+    description: Id del proyecto de Vercel (prj_…). El guard de fuga resuelve la audiencia esperada por este id.
+    required: true
+  org-id:
+    description: Id del team de Vercel.
+    required: false
+    default: team_rjcdQb3W3oISVDmQtFDjY6zH
+  target:
+    description: preview | production
+    required: true
+  node-version:
+    description: La `nodeVersion` del proyecto en Vercel (por ejemplo `24.x`). Fija el runtime de las funciones.
+    required: true
+  env:
+    description: >-
+      Variables NO sensibles del build, una `CLAVE=valor` por línea (por
+      ejemplo `DOCS_AUDIENCE=publico`). Van a `.vercel/.env.<target>.local`.
+    required: false
+    default: ''
+  verificar:
+    description: Comando de chequeo sobre `.vercel/output/static`, después del build y antes de empaquetar. Si falla, no hay artifact.
+    required: false
+    default: ''
+  artifact-name:
+    description: Nombre del artifact.
+    required: false
+    default: salida-vercel
+
+outputs:
+  artifact-id:
+    description: Id del artifact con `salida.tar`. Es lo único que recibe `prebuilt-deploy`.
+    value: ${{ steps.subir.outputs.artifact-id }}
+
+runs:
+  using: composite
+  steps:
+    # Everything Vercel needs comes from literal inputs: no `vercel pull`, no
+    # token in this job.
+    - name: Configuración del proyecto
+      shell: bash
+      env:
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_ORG: ${{ inputs.org-id }}
+        IN_TARGET: ${{ inputs.target }}
+        IN_NODE: ${{ inputs.node-version }}
+        IN_ENV: ${{ inputs.env }}
+      run: |
+        set -euo pipefail
+        [[ "$IN_PROJECT" =~ ^prj_[A-Za-z0-9]+$ ]] || { echo "::error::project-id inválido: '$IN_PROJECT'"; exit 1; }
+        [[ "$IN_ORG" =~ ^team_[A-Za-z0-9]+$ ]] || { echo "::error::org-id inválido: '$IN_ORG'"; exit 1; }
+        [[ "$IN_NODE" =~ ^[0-9]{2}\.x$ ]] || { echo "::error::node-version inválido: '$IN_NODE'"; exit 1; }
+        case "$IN_TARGET" in preview|production) ;; *) echo "::error::target tiene que ser preview o production, no '$IN_TARGET'"; exit 1 ;; esac
+        rm -rf .vercel
+        mkdir -p .vercel
+        jq -n --arg p "$IN_PROJECT" --arg o "$IN_ORG" --arg n "$IN_NODE" \
+          '{projectId: $p, orgId: $o, settings: {framework: null, rootDirectory: null, nodeVersion: $n}}' \
+          > .vercel/project.json
+        envfile=".vercel/.env.$IN_TARGET.local"
+        {
+          echo "VERCEL=1"
+          echo "VERCEL_ENV=$IN_TARGET"
+          echo "VERCEL_TARGET_ENV=$IN_TARGET"
+        } > "$envfile"
+        while IFS= read -r linea; do
+          [ -z "${linea//[[:space:]]/}" ] && continue
+          [[ "$linea" =~ ^[A-Z][A-Z0-9_]*=[A-Za-z0-9._:/@-]*$ ]] || { echo "::error::línea de env inválida: '$linea'"; exit 1; }
+          case "$linea" in VERCEL*) echo "::error::las VERCEL* las pone la action: '$linea'"; exit 1 ;; esac
+          echo "$linea" >> "$envfile"
+        done <<< "$IN_ENV"
+        echo "project.json: $(jq -c . .vercel/project.json)"
+        echo "variables en $envfile: $(cut -d= -f1 "$envfile" | tr '\n' ' ')"
+
+    - name: vercel build --standalone
+      shell: bash
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        IN_TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        prod=()
+        [ "$IN_TARGET" = production ] && prod=(--prod)
+        inicio=$(date +%s)
+        # --standalone copies the function files (includeFiles too) into the
+        # output, so the deploy job does not need the repo.
+        npx --yes vercel@59.26.0 build --standalone "${prod[@]}" --yes
+        echo "build: $(( $(date +%s) - inicio ))s"
+        echo "tamaño de .vercel/output: $(du -sh .vercel/output | cut -f1)"
+
+    - name: Verificar la salida
+      if: inputs.verificar != ''
+      shell: bash
+      env:
+        IN_VERIFICAR: ${{ inputs.verificar }}
+      run: bash -euo pipefail -c "$IN_VERIFICAR"
+
+    - name: Empaquetar
+      shell: bash
+      run: |
+        set -euo pipefail
+        links=$(find .vercel/output -type l)
+        if [ -n "$links" ]; then
+          echo "::error::la salida tiene symlinks, no se empaqueta:"
+          echo "$links"
+          exit 1
+        fi
+        tar -C .vercel -cf "$RUNNER_TEMP/salida.tar" output
+        echo "salida.tar: $(du -h "$RUNNER_TEMP/salida.tar" | cut -f1), $(tar -tf "$RUNNER_TEMP/salida.tar" | wc -l) entradas"
+
+    - name: Subir
+      id: subir
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ runner.temp }}/salida.tar
+        if-no-files-found: error
+        retention-days: 1
+        compression-level: 1

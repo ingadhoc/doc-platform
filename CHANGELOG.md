@@ -14,6 +14,26 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.24.0 — 2026-10-05
+
+- **[seguridad] prebuilt: el token de Vercel no convive con el código del
+  repo.** Tres composite actions, para dos jobs. `.github/actions/prebuilt-build`
+  corre sin token: escribe `.vercel/project.json` y `.vercel/.env.<target>.local`
+  desde inputs (sin `vercel pull`), corre `vercel build --standalone`, el
+  chequeo del sitio, rechaza symlinks y sube la
+  salida como artifact de un día. `.github/actions/prebuilt-deploy` corre en
+  otro job, sin checkout ni npm del repo: baja el artifact por id con el
+  digest verificado, instala el CLI de Vercel desde un lockfile propio con
+  `--ignore-scripts`, sube con `vercel deploy --prebuilt` y las metas
+  `commitSha`, `commitRef` y `prId`, comenta la URL en el PR, corre el
+  centinela en production y borra el artifact. `.github/actions/centinela`
+  corre el centinela sin checkout. Se consumen por ref de GitHub, no por npm.
+- **centinela: `--desde=<fecha>`** mide la antigüedad del commit esperado sin
+  repo. Las actions lo usan con la fecha que da la API de GitHub.
+- **centinela: lee el deployment que sirve el dominio** (`targets.production`
+  del proyecto) y no el último deployment de producción READY. Después de un
+  rollback o de un deployment sin dominio, el último no es el que se sirve.
+
 ## v0.23.0 — 2026-10-02
 
 - **login-odoo: los previews de PR se abren con la sesión de producción.** Con

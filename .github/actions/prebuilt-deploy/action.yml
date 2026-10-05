@@ -1,0 +1,221 @@
+name: prebuilt-deploy
+description: >-
+  Sube con `vercel deploy --prebuilt` el artifact que dejó `prebuilt-build` en
+  otro job. Es el único lugar que ve el token: no hay checkout ni código del
+  repo, y el CLI de Vercel se instala con versión y lockfile fijos.
+
+inputs:
+  artifact-id:
+    description: El output `artifact-id` de `prebuilt-build`.
+    required: true
+  vercel-token:
+    description: Token de Vercel. Solo lo reciben `vercel deploy` y el centinela, por entorno.
+    required: true
+  project-id:
+    description: Id del proyecto de Vercel (prj_…). Literal del workflow, nunca un output del build.
+    required: true
+  org-id:
+    description: Id del team de Vercel.
+    required: false
+    default: team_rjcdQb3W3oISVDmQtFDjY6zH
+  target:
+    description: preview | production. El mismo del build.
+    required: true
+  commit-sha:
+    description: Commit que se publica. Va como meta `commitSha`.
+    required: true
+  commit-ref:
+    description: Rama que se publica. Va como meta `commitRef`.
+    required: true
+  pr-id:
+    description: Número de PR, si lo hay. Va como meta `prId` y se comenta la URL en el PR.
+    required: false
+    default: ''
+  comentario:
+    description: Texto del comentario en el PR. `{url}` se reemplaza por la URL del deployment.
+    required: false
+    default: '**Preview:** {url}'
+  github-token:
+    description: Token de GitHub para el chequeo de HEAD, el comentario y borrar el artifact.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  url:
+    description: URL del deployment. Vacía si no se publicó porque `main` ya avanzó.
+    value: ${{ steps.deploy.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validar inputs
+      shell: bash
+      env:
+        IN_ARTIFACT: ${{ inputs.artifact-id }}
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_ORG: ${{ inputs.org-id }}
+        IN_TARGET: ${{ inputs.target }}
+        IN_SHA: ${{ inputs.commit-sha }}
+        IN_REF: ${{ inputs.commit-ref }}
+        IN_PR: ${{ inputs.pr-id }}
+      run: |
+        set -euo pipefail
+        [[ "$IN_ARTIFACT" =~ ^[0-9]{1,20}$ ]] || { echo "::error::artifact-id inválido: '$IN_ARTIFACT'"; exit 1; }
+        [ -n "$IN_TOKEN" ] || { echo "::error::falta vercel-token"; exit 1; }
+        [[ "$IN_PROJECT" =~ ^prj_[A-Za-z0-9]+$ ]] || { echo "::error::project-id inválido: '$IN_PROJECT'"; exit 1; }
+        [[ "$IN_ORG" =~ ^team_[A-Za-z0-9]+$ ]] || { echo "::error::org-id inválido: '$IN_ORG'"; exit 1; }
+        case "$IN_TARGET" in preview|production) ;; *) echo "::error::target tiene que ser preview o production, no '$IN_TARGET'"; exit 1 ;; esac
+        [[ "$IN_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::commit-sha inválido: '$IN_SHA'"; exit 1; }
+        [[ "$IN_REF" =~ ^[A-Za-z0-9._/-]{1,200}$ ]] || { echo "::error::commit-ref inválido: '$IN_REF'"; exit 1; }
+        [[ "$IN_PR" =~ ^[0-9]{0,10}$ ]] || { echo "::error::pr-id inválido: '$IN_PR'"; exit 1; }
+        echo "artifact $IN_ARTIFACT → $IN_PROJECT ($IN_TARGET), commit ${IN_SHA:0:8} en $IN_REF${IN_PR:+, PR $IN_PR}"
+
+    # If main moved on, the newer run publishes; this one exits green.
+    - name: Este commit sigue siendo el HEAD de main
+      id: vigente
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        IN_TARGET: ${{ inputs.target }}
+        IN_SHA: ${{ inputs.commit-sha }}
+        IN_REF: ${{ inputs.commit-ref }}
+      run: |
+        set -euo pipefail
+        if [ "$IN_TARGET" != production ]; then echo "vigente=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+        head=$(gh api "repos/$GITHUB_REPOSITORY/commits/$IN_REF" --jq .sha)
+        if [ "$head" = "$IN_SHA" ]; then
+          echo "vigente=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::notice::$IN_REF ya está en ${head:0:8}; ${IN_SHA:0:8} no se publica, lo publica el run más nuevo."
+          echo "vigente=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Bajar el artifact
+      if: steps.vigente.outputs.vigente == 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        artifact-ids: ${{ inputs.artifact-id }}
+        path: ${{ runner.temp }}/artifact
+        digest-mismatch: error
+
+    - name: Extraer la salida
+      if: steps.vigente.outputs.vigente == 'true'
+      shell: bash
+      env:
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_ORG: ${{ inputs.org-id }}
+      run: |
+        set -euo pipefail
+        tarfile=$(find "$RUNNER_TEMP/artifact" -type f -name salida.tar)
+        [ "$(printf '%s\n' "$tarfile" | grep -c .)" = 1 ] || { echo "::error::el artifact no tiene un único salida.tar"; exit 1; }
+        # Only regular files and directories under output/: no links, no
+        # absolute paths, no `..`.
+        if tar -tvf "$tarfile" | grep -qv '^[-d]'; then
+          echo "::error::el tar trae entradas que no son archivos ni directorios:"
+          tar -tvf "$tarfile" | grep -v '^[-d]' | head -20
+          exit 1
+        fi
+        if tar -tf "$tarfile" | grep -qvE '^output(/|$)' || tar -tf "$tarfile" | grep -qE '(^|/)\.\.(/|$)'; then
+          echo "::error::el tar trae rutas fuera de output/"
+          exit 1
+        fi
+        d="$RUNNER_TEMP/d"
+        mkdir -p "$d/.vercel"
+        tar --no-same-owner --no-same-permissions -xf "$tarfile" -C "$d/.vercel"
+        [ -z "$(find "$d" -type l)" ] || { echo "::error::la salida extraída tiene symlinks"; exit 1; }
+        [ -f "$d/.vercel/output/config.json" ] || { echo "::error::falta output/config.json"; exit 1; }
+        # The project comes from the workflow literal, never from the build job.
+        jq -n --arg p "$IN_PROJECT" --arg o "$IN_ORG" '{projectId: $p, orgId: $o}' > "$d/.vercel/project.json"
+        echo "salida: $(find "$d/.vercel/output" -type f | wc -l) archivos, $(du -sh "$d/.vercel/output" | cut -f1)"
+
+    - name: Instalar el CLI de Vercel
+      if: steps.vigente.outputs.vigente == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        cli="$RUNNER_TEMP/cli"
+        mkdir -p "$cli"
+        cp "$GITHUB_ACTION_PATH/cli/package.json" "$GITHUB_ACTION_PATH/cli/package-lock.json" "$cli/"
+        : > "$RUNNER_TEMP/npmrc-vacio"
+        cd "$cli"
+        npm_config_cache="$RUNNER_TEMP/npm-cache" npm_config_userconfig="$RUNNER_TEMP/npmrc-vacio" \
+          npm ci --ignore-scripts --no-audit --no-fund
+        node "$cli/node_modules/vercel/dist/index.js" --version
+
+    - name: vercel deploy --prebuilt
+      id: deploy
+      if: steps.vigente.outputs.vigente == 'true'
+      shell: bash
+      env:
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_TARGET: ${{ inputs.target }}
+        IN_SHA: ${{ inputs.commit-sha }}
+        IN_REF: ${{ inputs.commit-ref }}
+        IN_PR: ${{ inputs.pr-id }}
+      run: |
+        set -euo pipefail
+        args=(deploy --prebuilt --yes --archive=tgz --cwd "$RUNNER_TEMP/d" -m "commitSha=$IN_SHA" -m "commitRef=$IN_REF")
+        [ -n "$IN_PR" ] && args+=(-m "prId=$IN_PR")
+        [ "$IN_TARGET" = production ] && args+=(--prod)
+        echo "metas: commitSha=$IN_SHA commitRef=$IN_REF${IN_PR:+ prId=$IN_PR}"
+        # No .git in the deploy dir: the CLI cannot infer githubCommit* metas,
+        # which make Vercel block deploys from authors without a team seat.
+        cd "$RUNNER_TEMP/cli"
+        inicio=$(date +%s)
+        url=$(VERCEL_TOKEN="$IN_TOKEN" node "$RUNNER_TEMP/cli/node_modules/vercel/dist/index.js" "${args[@]}")
+        echo "deploy: $(( $(date +%s) - inicio ))s"
+        echo "url: $url"
+        echo "url=$url" >> "$GITHUB_OUTPUT"
+
+    # One comment rewritten on each push, not one per commit.
+    - name: Publicar la URL en el PR
+      if: steps.vigente.outputs.vigente == 'true' && inputs.pr-id != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        URL: ${{ steps.deploy.outputs.url }}
+        PR: ${{ inputs.pr-id }}
+        IN_COMENTARIO: ${{ inputs.comentario }}
+      run: |
+        set -euo pipefail
+        MARCA='<!-- preview-vercel -->'
+        BODY=$(printf '%s\n%s\n' "$MARCA" "${IN_COMENTARIO//\{url\}/$URL}")
+        ID=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+          --jq "[.[] | select(.body | startswith(\"$MARCA\")) | .id] | first // empty" | head -1)
+        if [ -n "$ID" ]; then
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$ID" -f body="$BODY" >/dev/null
+        else
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$BODY" >/dev/null
+        fi
+        echo "comentario en el PR $PR: $URL"
+
+    # "Green job" and "published" are different things. Tolerance 0: the
+    # deploy already finished. Also fails if githubCommit* metas come back.
+    - name: Producción quedó en este commit
+      if: steps.vigente.outputs.vigente == 'true' && inputs.target == 'production'
+      shell: bash
+      env:
+        IN_TOKEN: ${{ inputs.vercel-token }}
+        IN_PROJECT: ${{ inputs.project-id }}
+        IN_ORG: ${{ inputs.org-id }}
+        IN_SHA: ${{ inputs.commit-sha }}
+      run: |
+        set -euo pipefail
+        cd "$RUNNER_TEMP"
+        VERCEL_TOKEN="$IN_TOKEN" node "$GITHUB_ACTION_PATH/../../../bin/centinela-produccion.mjs" \
+          --proyecto="$IN_PROJECT" --team="$IN_ORG" --sha="$IN_SHA" --tolerancia=0
+
+    - name: Borrar el artifact
+      if: always()
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        IN_ARTIFACT: ${{ inputs.artifact-id }}
+      run: |
+        [[ "$IN_ARTIFACT" =~ ^[0-9]{1,20}$ ]] || exit 0
+        if gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$IN_ARTIFACT" >/dev/null; then
+          echo "artifact $IN_ARTIFACT borrado"
+        else
+          echo "::warning::no se pudo borrar el artifact $IN_ARTIFACT (vence solo en un día)"
+        fi
