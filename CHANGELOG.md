@@ -14,6 +14,22 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.25.0 — 2026-10-05
+
+- **motor: el motor corre sin node (`@ingadhoc/docs-platform/motor`).**
+  `crearMotor(crudo, { origin, audiencia })` recibe el `index.json` ya leído
+  y devuelve `buscar`, `leer`, `mapa` y `seccionesConComodin` con la misma
+  firma y la misma respuesta que el MCP. No importa `node:*` ni lee
+  `process.env`, así que lo puede correr el buscador del sitio en el
+  navegador: un solo criterio de búsqueda para el agente y la persona. Sin
+  `origin`, las URLs quedan relativas al sitio.
+- **indice: sólo la carga desde disco.** Lee el índice, toma `DOCS_URL` y
+  `DOCS_AUDIENCE` del entorno y reexporta el motor: lo que exportaba antes
+  sigue igual, más `crearMotor` y `construirIndice`. Cambio de detalle:
+  `DOCS_URL` se lee al construir el índice y no en cada respuesta. Verificado
+  sin diferencias con el golden set de oba-docs y con un test que compara
+  `crearMotor` contra el MCP sobre los fixtures.
+
 ## v0.24.0 — 2026-10-05
 
 - **[seguridad] prebuilt: el token de Vercel no convive con el código del
