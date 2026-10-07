@@ -14,6 +14,21 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.26.0 — 2026-10-07
+
+- **sondas: el cálculo de las sondas del guard de fuga pasa a la plataforma.**
+  Vivía copiado en el `tools/build.mjs` de cada repo de contenido, y las copias
+  ya habían divergido: `odumbo-docs` no tenía los dos dominios de texto
+  (oba-docs#166), ni el filtro de sondas que no discriminan, ni el fail-closed
+  de las líneas internas sin sonda. `@ingadhoc/docs-platform/sondas` exporta
+  `trigramas()` para juntar lo publicado y `escribirManifiesto()`, que calcula
+  las sondas y escribe `.guard/removido.json` con el mismo formato de hoy. Con
+  líneas sin cobertura no escribe nada y devuelve `ok: false`, y
+  `explicarSinCobertura()` arma el error. El repo sigue juntando el material en
+  su `applyBlocks()`. Adoptarlo es borrar la copia e importar: en `oba-docs` el
+  manifiesto sale igual; en `odumbo-docs` cambian las sondas, por los tres
+  arreglos que no tenía.
+
 ## v0.24.0 — 2026-10-05
 
 - **[seguridad] prebuilt: el token de Vercel no convive con el código del

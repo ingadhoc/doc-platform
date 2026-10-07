@@ -155,6 +155,7 @@ directorio antes de subirlo.
 | `@ingadhoc/docs-platform/feedback` | `crearFeedback(config)`: la tool que abre el issue de `docs-feedback` |
 | `@ingadhoc/docs-platform/config` | `cargarConfig()` / `validarConfig()`: el validador del `docs.config.json` |
 | `@ingadhoc/docs-platform/guard-fuga` | `correrGuard()`, si querés llamarlo desde tu build en vez del bin |
+| `@ingadhoc/docs-platform/sondas` | `trigramas()` / `escribirManifiesto()`: el cálculo de las sondas del guard y el `.guard/removido.json` que lee. El build junta lo que borró y lo que publicó; la plataforma decide qué es una sonda |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
 | `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
 | `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema()`: la configuración del buscador del sitio, una sola vez para los tres repos (ver *El buscador del sitio*) |
