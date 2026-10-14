@@ -206,8 +206,9 @@ runs:
         VERCEL_TOKEN="$IN_TOKEN" node "$GITHUB_ACTION_PATH/../../../bin/centinela-produccion.mjs" \
           --proyecto="$IN_PROJECT" --team="$IN_ORG" --sha="$IN_SHA" --tolerancia=0
 
+    # Only on success: a failed deploy keeps the artifact for "Re-run failed jobs".
     - name: Borrar el artifact
-      if: always()
+      if: success()
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}

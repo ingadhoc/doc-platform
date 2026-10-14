@@ -62,8 +62,9 @@ proyecto y la audiencia salen de la misma fila en los dos.
 En los jobs con token, la action va fijada por SHA (`@<sha> # vX.Y.Z`), no por
 tag: ese código corre con el token del team y un tag se puede mover.
 
-Para relanzar una corrida, **re-run all jobs**. «Re-run failed jobs» relanza
-solo `deploy`, y falla porque el artifact del build ya se borró.
+Si falla el deploy, «Re-run failed jobs» relanza solo `deploy` con el mismo
+artifact, sin rehacer el build: el artifact se borra solo cuando la
+publicación sale bien, y si no, vence solo en un día.
 
 ## Modelo de amenaza
 
@@ -135,7 +136,8 @@ Output: `url`.
 4. `vercel deploy --prebuilt --archive=tgz` con las metas, el token por
    entorno y sin `.git`.
 5. Comenta la URL en el PR, o en production corre el centinela con tolerancia
-   0. Siempre borra el artifact.
+   0. Si todo salió bien, borra el artifact; si algo falló, lo deja para
+   relanzar el job.
 
 `tests/actions.test.mjs` falla si esta action o `centinela` vuelven a usar
 `npx`, `npm ci`, `cache:`, `actions/checkout` o una action sin SHA.
