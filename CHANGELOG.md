@@ -14,6 +14,13 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.24.1 — 2026-10-14
+
+- prebuilt: **`prebuilt-deploy` borra el artifact solo si la publicación salió
+  bien.** Antes lo borraba siempre, y si Vercel fallaba por algo pasajero,
+  «Re-run failed jobs» no encontraba el artifact y había que rehacer el build.
+  Si falla, el artifact queda y vence solo en un día.
+
 ## v0.24.0 — 2026-10-05
 
 - **[seguridad] prebuilt: el token de Vercel no convive con el código del
