@@ -14,7 +14,7 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
-## v0.25.0 — 2026-10-05
+## v0.25.0 — 2026-10-15
 
 - **motor: el motor corre sin node (`@ingadhoc/docs-platform/motor`).**
   `crearMotor(crudo, { origin, audiencia })` recibe el `index.json` ya leído

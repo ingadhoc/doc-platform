@@ -25,10 +25,23 @@ function delMcp(nombre) {
 }
 
 describe('motor.mjs no depende de node', () => {
-  it('no importa módulos de node ni lee process', () => {
+  // Bundling for the browser catches every import form: multi-line,
+  // `export … from` and `import()`, which a regex over the source misses.
+  it('se empaqueta para el navegador', async () => {
+    const { build } = await import('esbuild');
+    const resultado = await build({
+      entryPoints: [fileURLToPath(new URL('../lib/mcp/motor.mjs', import.meta.url))],
+      bundle: true,
+      platform: 'browser',
+      format: 'esm',
+      write: false,
+      logLevel: 'silent',
+    });
+    assert.deepEqual(resultado.errors, []);
+  });
+
+  it('no lee process', () => {
     const fuente = readFileSync(new URL('../lib/mcp/motor.mjs', import.meta.url), 'utf8');
-    const imports = [...fuente.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]);
-    assert.deepEqual(imports, ['minisearch']);
     assert.doesNotMatch(fuente, /\bprocess\./);
   });
 });
