@@ -17,7 +17,7 @@
  *   set antes de que llegue al repo.
  *
  * No inventa casos: sólo traduce o copia los que ya existen. Un repo sin un set
- * no genera el archivo, y la corrida que lo usa queda salteada.
+ * —o sin clon— no genera el archivo, y la corrida que lo usa queda salteada.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -41,6 +41,16 @@ const git = (repo, ...a) =>
   execFileSync('git', ['-C', join(CLONES, repo), ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 const leer = (repo, ruta) => git(repo, 'show', `${REF}:${ruta}`);
 const sha = (repo) => git(repo, 'rev-parse', '--short', REF).trim();
+// Un golden set que el repo ya no tiene, o un repo sin clon, se saltea como un
+// set a ciegas que falta. Sólo eso: un set que está y no se puede leer sí falla.
+const existe = (repo, ruta) => {
+  try {
+    git(repo, 'cat-file', '-e', `${REF}:${ruta}`);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 // Declarar = cero resultados, relleno OR o nota de pobreza. Cada repo acepta
 // un subconjunto distinto; se conserva el de su runner.
@@ -49,6 +59,7 @@ const ACEPTA_TUQUI = ['cero', 'or-fallback']; // tuqui: `total === 0 || modo ===
 
 function oba() {
   const ruta = 'scripts/golden/consultas.json';
+  if (!existe('oba-docs', ruta)) return null;
   const set = JSON.parse(leer('oba-docs', ruta));
   // El runner (`scripts/busqueda-ranking.mjs`) filtra todo por la 19.
   const filtros = { version: '19' };
@@ -78,6 +89,7 @@ function oba() {
 
 async function adhoc() {
   const ruta = 'golden/consultas.mjs';
+  if (!existe('adhoc-docs', ruta)) return null;
   const src = leer('adhoc-docs', ruta);
   const { CONSULTAS } = await import(`data:text/javascript,${encodeURIComponent(src)}`);
   // El golden set de adhoc-docs es de regresión: no afirma qué slug es el
@@ -98,6 +110,7 @@ async function adhoc() {
 
 function tuqui() {
   const ruta = 'evals/casos.json';
+  if (!existe('tuqui-docs', ruta)) return null;
   const set = JSON.parse(leer('tuqui-docs', ruta));
   const tope = { top1: 1, top3: 3, alguno: 3 };
   const casos = set.map((c) => {
@@ -111,8 +124,13 @@ function tuqui() {
 }
 
 mkdirSync(join(AQUI, 'casos'), { recursive: true });
-for (const set of [oba(), await adhoc(), tuqui()]) {
-  const destino = join(AQUI, 'casos', `${set.sitio}.json`);
+for (const [sitio, set] of [['oba-docs', oba()], ['adhoc-docs', await adhoc()], ['tuqui-docs', tuqui()]]) {
+  const destino = join(AQUI, 'casos', `${sitio}.json`);
+  if (!set) {
+    rmSync(destino, { force: true });
+    console.log(`${sitio}: sin golden set en ${REF} o sin clon (no se genera archivo)`);
+    continue;
+  }
   writeFileSync(destino, JSON.stringify(set, null, 2) + '\n');
   const porTipo = Object.groupBy(set.casos, (c) => c.tipo);
   const detalle = Object.entries(porTipo).map(([t, l]) => `${t} ${l.length}`).join(', ');

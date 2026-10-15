@@ -7,7 +7,7 @@
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -43,20 +43,54 @@ function clonFalso(clones, nombre, archivos) {
   git(clones, 'clone', '-q', fuente, nombre);
 }
 
+/** Los cuatro clones falsos; oba-docs sólo con `publico`, como hoy. `sin` deja uno afuera. */
+function clones(base, { sin } = {}) {
+  const dir = join(base, 'clones');
+  mkdirSync(dir);
+  const audiencias = { 'oba-docs': ['publico'], 'odumbo-docs': ['publico', 'interno'], 'adhoc-docs': ['interno'] };
+  for (const [r, audiences] of Object.entries(audiencias)) {
+    if (r !== sin) clonFalso(dir, r, { 'tools/build.mjs': BUILD, 'docs.config.json': JSON.stringify({ audiences }) });
+  }
+  if (sin !== 'tuqui-docs') clonFalso(dir, 'tuqui-docs', { 'tools/emitir-indice.mjs': EMITIR });
+  mkdirSync(join(dir, 'oba-docs/node_modules/alguna-dep'), { recursive: true });
+  if (sin !== 'adhoc-docs') {
+    mkdirSync(join(dir, 'adhoc-docs/content'), { recursive: true });
+    writeFileSync(join(dir, 'adhoc-docs/docs.config.json'), '{}');
+  }
+  return dir;
+}
+
+const indices = (base) => readdirSync(join(base, 'trabajo/indices')).sort();
+
 describe('bench/indices.sh', () => {
   it('acepta un directorio de trabajo relativo', () => {
     const base = mkdtempSync(join(tmpdir(), 'indices-sh-'));
-    const clones = join(base, 'clones');
-    mkdirSync(clones);
-    for (const r of ['oba-docs', 'odumbo-docs', 'adhoc-docs']) clonFalso(clones, r, { 'tools/build.mjs': BUILD });
-    clonFalso(clones, 'tuqui-docs', { 'tools/emitir-indice.mjs': EMITIR, 'tools/keywords-es.json': '{}' });
-    mkdirSync(join(clones, 'oba-docs/node_modules/alguna-dep'), { recursive: true });
-    mkdirSync(join(clones, 'adhoc-docs/content'), { recursive: true });
-    writeFileSync(join(clones, 'adhoc-docs/docs.config.json'), '{}');
-
-    execFileSync('bash', [SCRIPT, 'trabajo'], { cwd: base, env: { ...process.env, CLONES: clones }, stdio: 'pipe' });
-    for (const indice of ['oba-docs-publico', 'odumbo-docs-interno', 'adhoc-docs-interno', 'tuqui-docs-es', 'tuqui-docs-en', 'tuqui-docs-es-sin-keywords']) {
+    execFileSync('bash', [SCRIPT, 'trabajo'], { cwd: base, env: { ...process.env, CLONES: clones(base) }, stdio: 'pipe' });
+    for (const indice of ['oba-docs-publico', 'odumbo-docs-interno', 'adhoc-docs-interno', 'tuqui-docs-es', 'tuqui-docs-en', 'tuqui-docs-bilingue']) {
       assert.ok(existsSync(join(base, 'trabajo/indices', `${indice}.json`)), indice);
     }
+  });
+
+  it('arma un índice por cada audiencia que declara el sitio, y ninguno más', () => {
+    const base = mkdtempSync(join(tmpdir(), 'indices-sh-'));
+    execFileSync('bash', [SCRIPT, 'trabajo'], { cwd: base, env: { ...process.env, CLONES: clones(base) }, stdio: 'pipe' });
+    assert.deepEqual(indices(base).filter((i) => /^(oba|odumbo)-docs-/.test(i)), [
+      'oba-docs-publico.json', 'odumbo-docs-interno.json', 'odumbo-docs-publico.json',
+    ]);
+  });
+
+  it('un sitio sin clon se saltea y el resto se arma', () => {
+    const base = mkdtempSync(join(tmpdir(), 'indices-sh-'));
+    const salida = execFileSync('bash', [SCRIPT, 'trabajo'], { cwd: base, env: { ...process.env, CLONES: clones(base, { sin: 'tuqui-docs' }) }, encoding: 'utf8' });
+    assert.match(salida, /tuqui-docs: sin clon/);
+    assert.deepEqual(indices(base), ['adhoc-docs-interno.json', 'oba-docs-publico.json', 'odumbo-docs-interno.json', 'odumbo-docs-publico.json']);
+  });
+
+  it('no deja índices de otra corrida', () => {
+    const base = mkdtempSync(join(tmpdir(), 'indices-sh-'));
+    mkdirSync(join(base, 'trabajo/indices'), { recursive: true });
+    writeFileSync(join(base, 'trabajo/indices/oba-docs-interno.json'), '{}');
+    execFileSync('bash', [SCRIPT, 'trabajo'], { cwd: base, env: { ...process.env, CLONES: clones(base) }, stdio: 'pipe' });
+    assert.equal(indices(base).includes('oba-docs-interno.json'), false);
   });
 });
