@@ -58,6 +58,13 @@ describe('actions con token', () => {
     assert.doesNotMatch(texto, /\bnpm\s+install\b/);
   });
 
+  it('el deploy borra el artifact solo si salió bien, para poder relanzar el job', () => {
+    const texto = sinComentarios(fs.readFileSync(path.join(ROOT, '.github/actions/prebuilt-deploy/action.yml'), 'utf8'));
+    const paso = texto.slice(texto.indexOf('- name: Borrar el artifact'));
+    assert.match(paso, /^\s*if:\s*success\(\)\s*$/m);
+    assert.doesNotMatch(texto, /\balways\(\)/);
+  });
+
   it('el ejemplo del README pone concurrency al job deploy', () => {
     const readme = fs.readFileSync(path.join(ROOT, '.github/actions/README.md'), 'utf8');
     const deploy = readme.slice(readme.indexOf('  deploy:'));

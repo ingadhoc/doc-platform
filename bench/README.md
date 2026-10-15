@@ -20,7 +20,7 @@ Otras opciones de `correr.mjs`:
 - `--md=reporte.md`: el reporte en Markdown.
 - `--verboso`: todos los casos, no sólo los fallos.
 
-En la suite, una corrida puede llevar `idioma` para los índices con idiomas: un código (`"es"`) se pasa en cada consulta, `"caso"` pasa el `idioma` de cada caso, `"mezcla"` busca en todos los idiomas y junta por score relativo (sólo para medir esa alternativa), y sin el campo no se pasa nada (el motor detecta). `tuqui-docs-bilingue.json` lo genera `indices.sh` con `tools/emitir-indice-bilingue.mjs` de tuqui-docs, si el repo lo trae.
+En la suite, una corrida puede llevar `idioma` para los índices con idiomas: un código (`"es"`) se pasa en cada consulta, `"caso"` pasa el `idioma` de cada caso, `"mezcla"` busca en todos los idiomas y junta por score relativo (sólo para medir esa alternativa), y sin el campo no se pasa nada (el motor detecta). `indices.sh` arma con el emisor de tuqui-docs (`--idiomas`) un índice por idioma (`tuqui-docs-es.json`, `tuqui-docs-en.json`) y el bilingüe (`tuqui-docs-bilingue.json`), que es el que publica el sitio.
 
 El motor se importa por path (`--motor`) y se le cambia el índice con `DOCS_INDICE_PATH` + `_resetIndice()`. Un motor anterior a `PERFIL` (< v0.14.0) sólo corre el perfil `agente`. Una corrida cuyo índice o archivo de casos no existe se saltea y lo dice.
 
@@ -41,12 +41,12 @@ El motor se importa por path (`--motor`) y se le cambia el índice con `DOCS_IND
 
 ## De dónde salen los casos
 
-`normalizar.mjs` lee de cada clon (`--clones=~/repositorios`, un directorio por repo: `oba-docs`, `odumbo-docs`, `adhoc-docs` y `tuqui-docs`, que es `Tuqui-AI/docs`) la rama `--ref` (por defecto `origin/main`) con `git show`, sin cambiar de rama ni tocar el árbol de trabajo. No agrega ni quita casos.
+`normalizar.mjs` lee de cada clon (`--clones=~/repositorios`, un directorio por repo: `oba-docs`, `odumbo-docs`, `adhoc-docs` y `tuqui-docs`, que es `Tuqui-AI/docs`) la rama `--ref` (por defecto `origin/main`) con `git show`, sin cambiar de rama ni tocar el árbol de trabajo. No agrega ni quita casos. Un repo sin clon se saltea: `indices.sh` no arma sus índices y `normalizar.mjs` no genera sus casos, así que sus corridas quedan salteadas. `indices.sh` arma un índice por cada audiencia que declara el `docs.config.json` del sitio.
 
 Los golden sets que cada repo ya tenía, cada uno en su formato, se traducen a `bench/casos/<sitio>.json`:
 
 - **oba-docs**: `scripts/golden/consultas.json`. `casos` pasa a `ranking` y `sinRespuesta` a `declinar`, todo con `version: 19` como en su runner.
-- **adhoc-docs**: las consultas `buscar` del corpus real de `golden/consultas.mjs`. 06 y 11 pasan a `declinar` (su README dice qué se espera de ellas) y el resto a `regresion`, porque el set no afirma slugs. Las del fixture quedan afuera.
+- **adhoc-docs**: las consultas `buscar` del corpus real de `golden/consultas.mjs`, si el repo lo tiene (su `origin/main` hoy no lo trae). 06 y 11 pasan a `declinar` (su README dice qué se espera de ellas) y el resto a `regresion`, porque el set no afirma slugs. Las del fixture quedan afuera.
 - **tuqui-docs**: `evals/casos.json`. `top1`, `top3` y `alguno` pasan a `ranking` con tope 1, 3 y 3; `declina` pasa a `declinar` con su oráculo (cero u or-fallback).
 - **odumbo-docs**: no tiene casos de búsqueda.
 
@@ -59,7 +59,7 @@ Los sets a ciegas ya vienen en el formato del banco y se copian tal cual, despu�
 
 Nombran el archivo fuente (`esperadoArchivo`), no el slug, y tienen tope 3. `ciegos` es el set de **ajuste**: con él se eligen las variantes del motor. `validacion` se escribe después, sobre otros artículos, y **no se usa para ajustar**: se corre al final para confirmar; si una variante se elige mirándolo, deja de servir. Cada repo explica sus sets en `evals/busqueda/README.md`.
 
-Un repo sin un set no genera el archivo (y si había uno de otra corrida, lo borra). Para medir un set antes de que llegue al repo, `--evals=<dir>` lo lee de `<dir>/<sitio>/evals/busqueda/` en disco; los golden sets siguen saliendo de los clones.
+Un repo sin un set no genera el archivo (y si había uno de otra corrida, lo borra); lo mismo con un golden set. Para medir un set antes de que llegue al repo, `--evals=<dir>` lo lee de `<dir>/<sitio>/evals/busqueda/` en disco; los golden sets siguen saliendo de los clones.
 
 ## Métricas
 

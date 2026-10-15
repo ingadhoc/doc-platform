@@ -7,7 +7,6 @@
     { "nombre": "odumbo-docs/interno", "indice": "odumbo-docs-interno.json", "casos": "casos/ciegos/odumbo-docs.json", "archivoASlug": "content" },
     { "nombre": "adhoc-docs/interno", "indice": "adhoc-docs-interno.json", "casos": "casos/ciegos/adhoc-docs.json", "archivoASlug": "content-readme" },
     { "nombre": "tuqui-docs/es", "indice": "tuqui-docs-es.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url" },
-    { "nombre": "tuqui-docs/es-sin-keywords", "indice": "tuqui-docs-es-sin-keywords.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url" },
     { "nombre": "tuqui-docs/en", "indice": "tuqui-docs-en.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url", "familias": ["ingles"] },
     { "nombre": "tuqui-docs/bilingue-es", "indice": "tuqui-docs-bilingue.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url", "idioma": "es" },
     { "nombre": "tuqui-docs/bilingue-en", "indice": "tuqui-docs-bilingue.json", "casos": "casos/ciegos/tuqui-docs.json", "archivoASlug": "url", "idioma": "en", "familias": ["ingles"] },
