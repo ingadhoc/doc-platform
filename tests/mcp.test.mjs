@@ -566,6 +566,20 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.deepEqual(props(r2.tools, 'leer'), ['ancla', 'page', 'slug', 'version']);
   });
 
+  it('con `paisPorDefecto` en el índice, la description de `paises` lo dice', async () => {
+    const base = crearIndiceFake({ tipo: 'version' });
+    const conDefecto = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'], paisPorDefecto: 'AR' } }) };
+    const sinDefecto = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'] } }) };
+    const desc = async (indice) => {
+      const { handler } = montar(CONFIG_OBA, { indice });
+      const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+      return describeParam(result.tools, 'buscar', 'paises');
+    };
+    assert.match(await desc(conDefecto), /`AR`, el del sitio/);
+    assert.match(await desc(conDefecto), /`paisesAplicados` y `paisElegidoPor`/);
+    assert.doesNotMatch(await desc(sinDefecto), /paisesAplicados/);
+  });
+
   it('`idioma` lo enciende el ÍNDICE: sin idiomas no aparece, con idiomas llega al motor', async () => {
     const sin = montar(CONFIG_OBA);
     const { result: r1 } = await leerRpc(await sin.handler(rpc('tools/list', {}, 'tok-tuqui')));

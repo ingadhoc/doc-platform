@@ -14,6 +14,42 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.26.0 — 2026-10-15
+
+- **motor: el sitio declara su país por defecto y la búsqueda sin país lo
+  prefiere.** `metadata.paisPorDefecto` (opcional, uno de `metadata.paises`)
+  viaja al índice. Sin `paises` en los filtros, los artículos de otro país
+  bajan a la mitad del puntaje (no se excluyen): los que no son del país que
+  nombra la consulta o, si no nombra ninguno, del país por defecto. Las páginas
+  universales no se tocan, y con `paises` explícito todo sigue igual. Qué
+  término nombra un país sale del corpus, no de una lista del motor: uno que
+  está en al menos la mitad de los artículos de ese país y cuyos artículos son
+  al menos en la mitad de ese país (en oba-docs: «chile», «sii», «dte», «caf»,
+  «uruguay», «dgi», «cfe», «argentina», «arca», «afip»…), o uno raro en el
+  sitio (en no más del 1,5 % de los artículos) que, contando sólo título y
+  keywords, está únicamente en artículos de ese país y en no más universales
+  que de país: marcas y conceptos locales, aunque estén en un solo artículo
+  («abitab», «sistarbanc», «boleta», «timbraje», «sifere»). Las tres
+  condiciones dejan afuera a las palabras comunes que por azar sólo aparecen
+  en páginas de un país: sin título y keywords nombraban un país más de mil
+  palabras del cuerpo («realice», «idealmente»), y sin la rareza, «casa», «red»
+  o «instancia». Cada término se prueba exacto, después por las otras formas
+  de su raíz («chileno» y «uruguayo» llegan como «chilena» y «uruguaya») y, si
+  no está en ningún artículo, con la tolerancia del rescate de tipeo
+  («Abitap»).
+  La respuesta trae `paisesAplicados` y `paisElegidoPor` (`consulta` |
+  `defecto`), y la description del parámetro `paises` lo explica cuando el
+  índice declara el país. **Sin la declaración, nada cambia**: medido con el
+  banco, 0 casos se mueven en las tres suites. Con `AR` en oba-docs,
+  «facturación electrónica» (con y sin tilde) sube la página argentina del
+  puesto 5 al 4, el set de ajuste pasa de 83 % a 87 % en el top 3 y el de
+  validación queda igual (78 %), con «la pasarela de Abitap» en el puesto 2.
+  Costo: una palabra rara que sólo está en el título o las keywords de páginas
+  de un país lo nombra aunque sea común en el idioma («gratuita», «agua»: unas
+  pocas decenas en oba-docs); en las suites no movió ningún caso.
+- **config: `metadata.paisPorDefecto`** en el schema, y tiene que ser uno de
+  `metadata.paises`.
+
 ## v0.25.0 — 2026-10-15
 
 - **motor: el motor corre sin node (`@ingadhoc/docs-platform/motor`).**
