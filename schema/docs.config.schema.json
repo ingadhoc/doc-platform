@@ -4,7 +4,7 @@
   "title": "docs.config.json — contrato config ↔ plataforma de documentación",
   "description": "Etapa A de la spec arquitectura-plataforma-docs. Un solo vocabulario de ejes para los tres corpus (oba-docs, odumbo-docs, adhoc-docs). El diseño y la evidencia de cada campo están en diseno-eje.md. REGLA DEL LECTOR: si `schemaVersion` es mayor que la versión que la plataforma sabe leer, el lector TIRA (no ignora campos desconocidos). Un config sin `schemaVersion` es pre-unificación y también falla: las tres formas anteriores son incompatibles entre sí y adivinar cuál es sería el bug que este campo previene.",
   "type": "object",
-  "required": ["schemaVersion", "eje", "audiences", "deploy"],
+  "required": ["schemaVersion", "eje", "audiences"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {
@@ -63,10 +63,10 @@
       ]
     },
     "audiences": {
-      "description": "Las audiencias que este corpus sabe emitir. La audiencia NO es el eje: es un build entero distinto (ADR 0005). Cada valor es un build, un proyecto de Vercel y un corte del índice.",
+      "description": "La audiencia de este sitio: UNA. `publico` se sirve sin login; `interno` va detrás del gate (login con Odoo y Bearer para máquinas). Desde v0.27.0 un sitio no emite dos audiencias: lo interno de un producto va a la wiki, no a un segundo build del manual (ADR 0022 de knowledge-management). Sigue siendo una lista para no cambiar la forma del contrato ni la API del gate y del MCP, que la reciben tal cual.",
       "type": "array",
       "minItems": 1,
-      "uniqueItems": true,
+      "maxItems": 1,
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
     },
     "docSets": {
@@ -102,36 +102,6 @@
           "description": "OPCIONAL: el país de la mayoría de los lectores, uno de `paises`. Viaja al índice y, sin `paises` en los filtros, la búsqueda baja (no excluye) los artículos de otro país, salvo que la consulta nombre uno. Ausente ⇒ la búsqueda no reordena por país.",
           "type": "string",
           "pattern": "^[A-Z]{2}$"
-        }
-      }
-    },
-    "deploy": {
-      "description": "Cómo se publica este corpus. No describe el contenido: describe el despliegue y sus guardas.",
-      "type": "object",
-      "required": ["guardDeFuga"],
-      "additionalProperties": false,
-      "properties": {
-        "proyectos": {
-          "description": "Mapa VERCEL_PROJECT_ID → audiencia. Es la fuente INDEPENDIENTE de DOCS_AUDIENCE que usa el guard de fuga: hace falta equivocarse en dos lugares distintos para publicar contenido interno en el sitio público. Un proyecto no mapeado hace fallar el guard (fail-closed), no lo deja pasar.",
-          "type": "object",
-          "propertyNames": { "pattern": "^prj_[A-Za-z0-9]+$" },
-          "additionalProperties": { "type": "string" }
-        },
-        "guardDeFuga": {
-          "description": "Obligatorio: la ausencia del guard deja de poder ser silenciosa (spec, Fase 0 punto 4). O está activo, o se declara apagado con motivo escrito.",
-          "type": "object",
-          "required": ["activo"],
-          "additionalProperties": false,
-          "properties": {
-            "activo": { "type": "boolean" },
-            "motivo": { "type": "string", "minLength": 20 }
-          },
-          "allOf": [
-            {
-              "if": { "properties": { "activo": { "const": false } }, "required": ["activo"] },
-              "then": { "required": ["motivo"] }
-            }
-          ]
         }
       }
     }
@@ -244,15 +214,8 @@
           { "id": "18", "label": "18.0" }
         ]
       },
-      "audiences": ["publico", "interno"],
-      "metadata": { "modules": true },
-      "deploy": {
-        "proyectos": {
-          "prj_TKfHZIDS1PZoy85bduKO89gugXBb": "publico",
-          "prj_ig447DB9ZQXbfhCWjXg9JCUYHQzy": "interno"
-        },
-        "guardDeFuga": { "activo": true }
-      }
+      "audiences": ["publico"],
+      "metadata": { "modules": true }
     }
   ]
 }

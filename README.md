@@ -1,7 +1,7 @@
 # @ingadhoc/docs-platform
 
 La plataforma de la documentación de Adhoc: **un** motor de búsqueda, **un**
-núcleo de MCP, **un** gate de acceso y **un** guard de fuga, consumidos
+núcleo de MCP y **un** gate de acceso, consumidos
 pineados por los repos de contenido (`oba-docs`, `odumbo-docs`, `adhoc-docs`).
 
 Antes de esto, las cuatro piezas vivían forkeadas en los tres repos: el mismo
@@ -68,25 +68,20 @@ import { next } from '@vercel/functions';
 // middleware (la ausencia silenciosa del gate). Hallazgo del piloto
 // odumbo-docs, deployment 3mXWLwPHPgcwasEji49pGEg7Lyuv.
 import { decidir } from './node_modules/@ingadhoc/docs-platform/lib/mcp/gate.mjs';
-const AUDIENCIAS = ['publico', 'interno']; // adhoc-docs: ['interno']
+const AUDIENCIAS = ['publico']; // una por sitio; adhoc-docs: ['interno']
 export default function middleware(request) {
   return decidir(request, process.env, { audiencias: AUDIENCIAS }) ?? next();
 }
 ```
 
-```jsonc
-// package.json del consumidor — el guard, dentro del buildCommand
-"build:publico": "node tools/build.mjs --audience=publico && npm --prefix site run build && npx docs-guard-fuga --salida=dist/publico"
-```
-
-El `&&` no es cosmético: es lo que aborta el deploy cuando el guard sale con 1.
-No lo cambies por `;`.
+Un sitio sirve **una** audiencia (desde v0.27.0): `publico` sin login, o
+`interno` detrás del gate. No hay build interno de un manual ni guard de fuga.
+Lo interno de un producto va a la wiki (ADR 0022 de knowledge-management).
 
 ## Deploy desde Actions
 
 `.github/actions/prebuilt-build` construye el sitio en el runner con
-`vercel build --standalone` (el guard de fuga corre adentro, en el
-`buildCommand`), corre los chequeos del sitio y sube la salida como artifact,
+`vercel build --standalone`, corre los chequeos del sitio y sube la salida como artifact,
 sin token. `.github/actions/prebuilt-deploy`, en otro job, baja ese artifact y
 lo sube con `vercel deploy --prebuilt`, sin checkout ni código del repo: el
 token de Vercel nunca convive con el código del repo. Vercel no vuelve a
@@ -154,13 +149,11 @@ directorio antes de subirlo.
 | `@ingadhoc/docs-platform/tokens` | la gramática de `DOCS_MCP_TOKENS`, una sola vez, compartida entre el edge y la función |
 | `@ingadhoc/docs-platform/feedback` | `crearFeedback(config)`: la tool que abre el issue de `docs-feedback` |
 | `@ingadhoc/docs-platform/config` | `cargarConfig()` / `validarConfig()`: el validador del `docs.config.json` |
-| `@ingadhoc/docs-platform/guard-fuga` | `correrGuard()`, si querés llamarlo desde tu build en vez del bin |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
 | `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
 | `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema()`: la configuración del buscador del sitio, una sola vez para los tres repos (ver *El buscador del sitio*) |
 | `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
 | `@ingadhoc/docs-platform/tuqui-embed` | `tuquiEmbedScripts(env)`: el campo `scripts` que embebe el widget de chat de Tuqui, activado por `TUQUI_EMBED_ID` (ver *Widget de Tuqui*) |
-| bin `docs-guard-fuga` | el guard de fuga, para el `buildCommand` |
 | bin `docs-drift-check` | el drift-check, para el CI del consumidor |
 
 ## El buscador del sitio
@@ -447,13 +440,6 @@ un `default` a un corpus con eje `project`.
 npm install && npm test        # 440 casos
 ```
 
-`bloques` necesita un repo de contenido (corre su `tools/build.mjs` de verdad
-sobre los fixtures de incidentes) y se **skipea con motivo** si no hay:
-
-```bash
-DOCS_REPO=~/repositorios/oba-docs node --test tests/bloques.test.mjs
-```
-
 La franja del handler HTTP de `mcp.test.mjs` (18 casos) también se skipea con
 motivo si el checkout no tiene `mcp-handler`/`zod`, que son dependencias del
 consumidor y no de este paquete. Con las dos instaladas, `mcp` da 59; sin
@@ -486,20 +472,10 @@ config de cada repo: va en el paquete, y el config sólo dice si lo exige. Es un
 decisión de gobernanza de contenido, no de schema; mientras no se lauda, el
 schema lo deja como lista por corpus (compatible con las dos salidas).
 
-### 3. El opt-out del guard de fuga en `adhoc-docs`: ¿lo firmás?
+### 3. El opt-out del guard de fuga en `adhoc-docs`
 
-El schema **obliga** a declarar `deploy.guardDeFuga`, así que la omisión
-silenciosa ya no es posible. Quedan las dos salidas, las dos defendibles:
-`{"activo": false, "motivo": "…"}` (ese repo no tiene build público: su gate es
-incondicional, y el guard protege contra la fuga *al build público*), o entra el
-guard igual, como cinturón. El `motivo` que hoy está en `mapeo-configs.md` dice
-literal **"PENDIENTE DE FIRMA (jjs)"**.
-
-Y hay una parte técnica que no se arregla copiando el archivo (DUDA 1 de
-`analisis-04-seguridad.md`): `adhoc-docs` no tiene bloques `:::interno`, no
-emite `site/generated.json` con audiencia y no tiene mapa `deploy.proyectos`.
-Con el guard activo tal cual, su build falla de arranque por "no existe
-site/generated.json". La estricta es que emita esas dos cosas.
+Cerrada en v0.27.0: el guard de fuga se fue con el doble build, y
+`deploy.guardDeFuga` con él.
 
 ### 4. La lista de audiencias sigue duplicada, y el drift-check todavía no la compara
 
@@ -509,35 +485,18 @@ filesystem. Es exactamente el tipo de drift silencioso donde empezó el fork.
 Falta un caso del CI que las compare (el `docs-drift-check` de hoy mide el pin,
 no esa coherencia).
 
-### 5. Tres cosas que hay que mirar en los repos antes de taggear
+### 5. Dos cosas que hay que mirar en los repos antes de taggear
 
 - **`DOCS_AUDIENCE` en los tres environments de cada proyecto de Vercel**
   (Production, Preview y Development) **antes** del merge que adopta el
   paquete. Con el fail-closed, un proyecto sin la variable devuelve 503. Es la
   dirección segura, pero no es gratis.
-- **`--esperada` en los `buildCommand` actuales**: ahora el guard lo *rechaza*
-  corriendo en Vercel. Si algún buildCommand lo pasa hoy, ese deploy empieza a
-  fallar. No se pudo verificar desde los snapshots.
 - **El GET del MCP devuelve 503** si el deployment no declara audiencia
   servible. Es un cambio observable para el consumidor: el preflight de Claude
   Code recibe 503 en vez del cartel cuando el deployment está mal configurado.
 
 ### 6. Deuda medida que este paquete no puede cerrar
 
-- **El fail-closed del preprocesador emite y después falla.** Con una directiva
-  mal escrita (`::: interno`), `build.mjs` escribe `site/docs/**` con la línea
-  interna adentro y *después* sale con 1. Hoy no fuga porque el `buildCommand`
-  encadena con `&&`: la protección está en el operador, no en el programa. Está
-  como `todo` declarado en `tests/bloques.test.mjs`, y lo arregla la
-  unificación de `build.mjs` — que **no** entró en esta etapa.
-- **`tests/bloques.test.mjs` escribe en `<repo>/site/`** porque en oba y odumbo
-  la salida del build está hardcodeada. Después de correr la suite hay que
-  regenerar con `npm run gen`.
-- **Límites del enfoque léxico del guard**: números y strings de menos de 5
-  caracteres nunca tienen sonda (una clave `4821`, una sigla), las imágenes no
-  se escanean, y una fuga dentro de `applyBlocks` no genera sonda. Está en el
-  header del guard; lo repito acá porque es la parte que se puede confundir con
-  cobertura.
 - **`serverInfo.version` sigue hardcodeada en `'1.0.0'`** en el handler.
   Debería salir del `package.json` del paquete pineado, así un cliente MCP
   puede reportar contra qué versión de la plataforma habló. No se cambió: sería
