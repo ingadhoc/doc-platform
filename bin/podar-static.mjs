@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
  * CLI de la poda de `static/` (`docs-podar-static`). Corre DENTRO del
- * buildCommand del repo consumidor, después del build y ANTES del guard:
+ * buildCommand del repo consumidor, después del build:
  *
- *   … && npx docs-podar-static --salida=site/build && npx docs-guard-fuga …
+ *   … && npm --prefix site run build && npx docs-podar-static --salida=site/build
  *
- * Wrapper a propósito, igual que `docs-guard-fuga`: la lógica vive en
+ * Wrapper a propósito: la lógica vive en
  * `lib/podar-static.mjs` (testeable, sin `process.exit`) y acá está lo único
  * que un bin tiene que hacer.
  *
  * EXIT CODE: 0 salvo que la salida no exista. Podar de más o de menos NO es un
  * error del build —el objetivo es que el sitio deje de publicar archivos que
  * nadie muestra, no bloquear un deploy—, así que el resultado se REPORTA y se
- * sigue. Lo que bloquea sigue siendo el guard, que corre después.
+ * sigue.
  */
 
 import { podarStatic } from '../lib/podar-static.mjs';

@@ -14,6 +14,34 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.27.0 — 2026-10-20
+
+**Rompe el config de los tres consumidores**: al subir el pin hay que tocar
+`docs.config.json` y el `buildCommand`. Un sitio sirve una sola audiencia y lo
+interno de un producto va a la wiki (ADR 0022 de knowledge-management).
+
+- **config: `audiences` lleva un solo valor** (`maxItems: 1`). Sigue siendo una
+  lista para no cambiar la API del gate ni del MCP. Con dos, el validador
+  falla y dice a dónde va lo interno. El validador suma `maxItems`.
+- **config: `deploy` se fue** (`proyectos` y `guardDeFuga`). Un config que lo
+  declare falla con «clave desconocida» y el mensaje dice qué sacar.
+- **guard-fuga: se fue** (`lib/guard-fuga.mjs`, el export `./guard-fuga` y el
+  bin `docs-guard-fuga`). Comparaba el build público contra lo que el
+  preprocesador borraba del interno; sin dos builds del mismo repo no hay qué
+  comparar. Hay que sacar `&& npx docs-guard-fuga …` del `buildCommand` y del
+  script `guard`, y el preprocesador puede dejar de emitir
+  `.guard/removido.json`.
+- **bloques: la suite se fue**, con sus fixtures. Probaba el parseo de
+  `:::interno` y el manifiesto de sondas del guard, que ya no existen. No se
+  reemplaza por un chequeo que rechace `:::interno`: el estándar dejó de
+  enseñarlo y un bloque nuevo lo frena la revisión de la página.
+- **middleware: la referencia declara `['publico']`.** El gate no cambia: con
+  una lista de un valor se comporta igual que antes.
+
+Al subir el pin, `oba-docs` y `odumbo-docs` quedan con `audiences:
+["publico"]`, sin `deploy` y sin `docs-guard-fuga`. `adhoc-docs` saca `deploy`
+y `docs-guard-fuga` (buildCommand y script `guard`).
+
 ## v0.26.0 — 2026-10-15
 
 - **motor: el sitio declara su país por defecto y la búsqueda sin país lo

@@ -182,8 +182,8 @@ describe('gate', () => {
   });
 
   it('un repo de una sola audiencia interna NO tiene apagado: `publico` corta en 503', async () => {
-    // adhoc-docs no tiene guard de fuga: el día que alguien ponga `publico`,
-    // mejor 503 que una fuga silenciosa.
+    // Ningún sitio tiene guard de fuga desde v0.27.0: el día que alguien ponga
+    // `publico` en adhoc-docs, mejor 503 que una fuga silenciosa.
     for (const audiencia of ['publico', undefined]) {
       const r = await soloInterno(req('https://d/api/mcp', { method: 'POST', headers: { authorization: 'Bearer tok-tuqui' } }), {
         ...ENV,

@@ -5,7 +5,7 @@
  * Los casos NO se inventaron acá: son los que enumera
  * `docs/unificacion/mapeo-configs.md` — los tres configs de oba-docs,
  * odumbo-docs y adhoc-docs traducidos al schema unificado (que tienen que
- * validar) y los ocho inválidos a propósito con los que se verificó el schema
+ * validar) y los inválidos a propósito con los que se verificó el schema
  * (que tienen que ser rechazados, y nombrando el campo).
  *
  * Los tres configs válidos son, además, la prueba de que el vocabulario
@@ -33,26 +33,15 @@ const OBA = {
       { id: '18', label: '18.0' },
     ],
   },
-  audiences: ['publico', 'interno'],
+  audiences: ['publico'],
   metadata: { modules: true },
-  deploy: {
-    proyectos: {
-      prj_TKfHZIDS1PZoy85bduKO89gugXBb: 'publico',
-      prj_ig447DB9ZQXbfhCWjXg9JCUYHQzy: 'interno',
-    },
-    guardDeFuga: { activo: true },
-  },
 };
 
 const ODUMBO = {
   schemaVersion: 1,
   eje: { tipo: 'none' },
-  audiences: ['publico', 'interno'],
+  audiences: ['publico'],
   metadata: { modules: false },
-  deploy: {
-    proyectos: { prj_uwm1uHEaZPf6K7EkvbVD6VTqzUxI: 'publico' },
-    guardDeFuga: { activo: true },
-  },
 };
 
 const ADHOC = {
@@ -89,14 +78,6 @@ const ADHOC = {
   metadata: {
     types: ['concepto', 'referencia', 'procedimiento', 'troubleshooting', 'guia', 'indice'],
   },
-  deploy: {
-    guardDeFuga: {
-      activo: false,
-      motivo:
-        'PENDIENTE DE FIRMA (jjs) — este repo no tiene build público: su gate es incondicional ' +
-        'y el guard de fuga protege contra la fuga de bloques internos AL build público.',
-    },
-  },
 };
 
 const clonar = (o) => JSON.parse(JSON.stringify(o));
@@ -115,7 +96,7 @@ describe('los tres corpus validan (si alguno no, la unificación es falsa)', () 
   }
 });
 
-describe('los ocho inválidos a propósito, y el campo que nombran', () => {
+describe('los siete inválidos a propósito, y el campo que nombran', () => {
   /** Cada caso: qué se rompe, y qué tiene que decir el mensaje. */
   const casos = [
     [
@@ -153,15 +134,6 @@ describe('los ocho inválidos a propósito, y el campo que nombran', () => {
         return c;
       },
       /eje\.valores\[3\]\.motivo: falta el campo obligatorio/,
-    ],
-    [
-      'guard de fuga apagado sin motivo (la omisión silenciosa deja de ser posible)',
-      () => {
-        const c = clonar(ADHOC);
-        delete c.deploy.guardDeFuga.motivo;
-        return c;
-      },
-      /deploy\.guardDeFuga\.motivo: falta el campo obligatorio/,
     ],
     [
       'clave desconocida (ahí empezó el fork)',
@@ -214,6 +186,23 @@ describe('lo que se fue del contrato', () => {
     assert.equal(ok, false);
     assert.match(errores.join(' '), /secciones/);
   });
+
+  it('dos audiencias: un sitio sirve una sola, y el mensaje dice a dónde va lo interno', () => {
+    const { ok, errores } = validarConfig({ ...OBA, audiences: ['publico', 'interno'] });
+    assert.equal(ok, false);
+    assert.ok(errores.some((e) => /audiences: tiene 2 elemento\(s\) y el máximo es 1/.test(e)), errores.join('\n'));
+    assert.ok(errores.some((e) => /va a la wiki/.test(e)), errores.join('\n'));
+  });
+
+  it('`deploy` (guard de fuga y mapa de proyectos) ya no existe: el mensaje dice qué sacar', () => {
+    const { ok, errores } = validarConfig({
+      ...OBA,
+      deploy: { proyectos: { prj_TKfHZIDS1PZoy85bduKO89gugXBb: 'publico' }, guardDeFuga: { activo: true } },
+    });
+    assert.equal(ok, false);
+    assert.ok(errores.some((e) => /deploy: clave desconocida/.test(e)), errores.join('\n'));
+    assert.ok(errores.some((e) => /docs-guard-fuga/.test(e)), errores.join('\n'));
+  });
 });
 
 describe('la regla del lector: schemaVersion', () => {
@@ -234,13 +223,6 @@ describe('la regla del lector: schemaVersion', () => {
 });
 
 describe('coherencia entre campos (lo que un JSON Schema no puede expresar)', () => {
-  it('un proyecto de Vercel mapeado a una audiencia que el repo no declara', () => {
-    const c = clonar(OBA);
-    c.deploy.proyectos.prj_TKfHZIDS1PZoy85bduKO89gugXBb = 'semipublico';
-    const { errores } = validarConfig(c);
-    assert.ok(errores.some((e) => /no está en `audiences`/.test(e)), errores.join('\n'));
-  });
-
   it('`eje.default` que no es ningún valor del eje', () => {
     const c = clonar(OBA);
     c.eje.default = '20';
@@ -276,7 +258,7 @@ describe('cargarConfig', () => {
     const cwd = conArchivo(JSON.stringify(OBA));
     const cfg = cargarConfig({ cwd });
     assert.equal(cfg.eje.tipo, 'version');
-    assert.equal(cfg.deploy.guardDeFuga.activo, true);
+    assert.deepEqual(cfg.audiences, ['publico']);
   });
 
   it('archivo ausente: falla con el nombre del archivo', () => {

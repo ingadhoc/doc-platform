@@ -77,7 +77,7 @@ publicación sale bien, y si no, vence solo en un día.
 - **Protege** la salida en tránsito: el artifact se baja por id y con el digest
   verificado, sin symlinks ni rutas fuera de `output/`.
 - **No protege** el contenido que se publica: lo produce el build, que corre
-  código del repo. Lo cuidan el guard de fuga y los chequeos, como antes.
+  código del repo. Lo cuidan el lint del preprocesador y los chequeos, como antes.
 - **No protege** la función en runtime: corre en Vercel con las variables del
   proyecto, igual que antes.
 
@@ -99,9 +99,7 @@ Output: `artifact-id`.
    inputs, sin `vercel pull` ni token. Agrega `VERCEL=1`, `VERCEL_ENV` y
    `VERCEL_TARGET_ENV`.
 2. `vercel build --standalone` (`--prod` en production), con
-   `VERCEL_PROJECT_ID` del input. El guard de fuga corre en el
-   `buildCommand` y cruza `DOCS_AUDIENCE` contra la audiencia que
-   `docs.config.json` asigna a ese proyecto. `--standalone` copia a la salida
+   `VERCEL_PROJECT_ID` del input. `--standalone` copia a la salida
    los archivos de las funciones, `includeFiles` incluido.
 3. Corre `verificar`.
 4. Falla si hay symlinks en `.vercel/output`, la empaqueta en un tar y la sube

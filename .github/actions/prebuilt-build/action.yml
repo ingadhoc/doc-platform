@@ -1,14 +1,13 @@
 name: prebuilt-build
 description: >-
-  Construye el sitio en el runner con `vercel build --standalone` (el guard de
-  fuga corre adentro), corre los chequeos del sitio sobre la salida, la
-  empaqueta y la sube como artifact. Sin token: la configuración del proyecto
-  sale de los inputs. No publica nada: eso lo hace `prebuilt-deploy`, en otro
+  Construye el sitio en el runner con `vercel build --standalone`, corre los
+  chequeos del sitio sobre la salida, la empaqueta y la sube como artifact.
+  Sin token: la configuración del proyecto sale de los inputs. No publica nada: eso lo hace `prebuilt-deploy`, en otro
   job.
 
 inputs:
   project-id:
-    description: Id del proyecto de Vercel (prj_…). El guard de fuga resuelve la audiencia esperada por este id.
+    description: Id del proyecto de Vercel (prj_…).
     required: true
   org-id:
     description: Id del team de Vercel.
