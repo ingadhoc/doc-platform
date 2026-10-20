@@ -1,8 +1,8 @@
 name: prebuilt-build
 description: >-
   Construye el sitio en el runner con `vercel build --standalone`, corre los
-  chequeos del sitio sobre la salida, la empaqueta y la sube como artifact. Sin token: la configuración del proyecto
-  sale de los inputs. No publica nada: eso lo hace `prebuilt-deploy`, en otro
+  chequeos del sitio sobre la salida, la empaqueta y la sube como artifact.
+  Sin token: la configuración del proyecto sale de los inputs. No publica nada: eso lo hace `prebuilt-deploy`, en otro
   job.
 
 inputs:
