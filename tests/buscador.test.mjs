@@ -5,6 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -134,5 +135,20 @@ describe('logica: sin React ni DOM', () => {
 
   it('mientras se compone un acento o un ideograma, las teclas son del navegador', () => {
     assert.equal(accionDeTecla({ key: 'Enter', isComposing: true }, { abierto: true, activo: 0, total: 1 }), null);
+  });
+});
+
+describe('la capa de theme resuelve en el build', () => {
+  it('los imports relativos llevan extensión: el paquete es ESM y el bundler no la completa', () => {
+    const raiz = fileURLToPath(new URL('../lib/docusaurus-theme/', import.meta.url));
+    const sinExtension = [];
+    for (const archivo of readdirSync(raiz, { recursive: true })) {
+      if (!/\.m?js$/.test(archivo)) continue;
+      const fuente = readFileSync(join(raiz, archivo), 'utf8');
+      for (const [, ruta] of fuente.matchAll(/(?:from|import\()\s*'(\.{1,2}\/[^']+)'/g)) {
+        if (!/\.m?js$/.test(ruta)) sinExtension.push(`${archivo}: ${ruta}`);
+      }
+    }
+    assert.deepEqual(sinExtension, []);
   });
 });
