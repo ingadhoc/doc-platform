@@ -150,50 +150,38 @@ directorio antes de subirlo.
 | `@ingadhoc/docs-platform/feedback` | `crearFeedback(config)`: la tool que abre el issue de `docs-feedback` |
 | `@ingadhoc/docs-platform/config` | `cargarConfig()` / `validarConfig()`: el validador del `docs.config.json` |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
-| `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX y el CSS del theme (ver *La capa de theme*) |
-| `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema()`: la configuración del buscador del sitio, una sola vez para los tres repos (ver *El buscador del sitio*) |
+| `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX, el CSS del theme y el buscador del sitio (ver *La capa de theme* y *El buscador del sitio*) |
+| `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema()`: la configuración del tema de easyops, mientras quede algún sitio sin migrar al buscador propio (ver *El buscador del sitio*) |
 | `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
 | `@ingadhoc/docs-platform/tuqui-embed` | `tuquiEmbedScripts(env)`: el campo `scripts` que embebe el widget de chat de Tuqui, activado por `TUQUI_EMBED_ID` (ver *Widget de Tuqui*) |
 | bin `docs-drift-check` | el drift-check, para el CI del consumidor |
 
 ## El buscador del sitio
 
-El motor de búsqueda es de la plataforma (ADR 0006), pero su configuración
-vivía copiada en el `docusaurus.config.js` de cada repo — y una config copiada
-diverge igual que el código copiado. Divergió, así que ahora vive en
-`lib/busqueda.cjs` y el consumidor la pide entera:
+Desde v0.29.0 el buscador que ve el lector corre **el mismo motor que el MCP**,
+con el perfil de la persona (`PERFIL.persona`): sin tildes, plurales, rescate
+de tipeo, país por defecto, y cero resultados para lo que no documentamos. Lo
+trae el plugin de la plataforma, sin configuración en el consumidor:
 
-```js
-const { opcionesDelTema } = require('@ingadhoc/docs-platform/busqueda');
-// themes: [ ['@easyops-cn/docusaurus-search-local', opcionesDelTema()] ]
-```
+- **el índice:** en `postBuild`, el plugin toma el `api/_generated/index.json`
+  que lee el MCP y escribe `buscador/<versión>.json` (uno por valor de un eje
+  de versión) y `buscador/indice.json` (la versión por defecto, o todo el
+  sitio si el eje no es de versión) en la salida del sitio
+  (`lib/buscador.mjs`). Si el índice está en otro lugar, el plugin acepta la
+  opción `indice`, relativa a `site/`.
+- **el `SearchBar`** (`lib/docusaurus-theme/SearchBar/`): baja el índice de la
+  versión en la que está el lector cuando el navegador queda libre o al entrar
+  al buscador, lo arma en un worker con `crearMotor` y marca en cada resultado
+  lo que encontró el motor (`ubicarTerminos`). Filtra por el doc set activo.
+- **la página `/search`** con todos los resultados.
+- **el resaltado en la página de destino**: viaja en el estado del historial y
+  no en la URL, así que no queda pegado a un link compartido, y se va al vaciar
+  el buscador o con «Quitar».
 
-`docsRouteBasePath` es un parámetro con default `['/']`, que es lo que tienen
-los tres repos: una instancia de docs montada en la raíz. Sólo hay que pasarlo
-si el sitio monta un segundo plugin de docs.
-
-**Sin `searchContextByPaths`, a propósito y para los tres repos.** Partir el
-índice por valor del eje suena a "scope por versión", pero ese scope ya lo da
-Docusaurus: las versiones que no son la última se emiten como `versioned_docs`
-y el plugin escribe un índice por versión, en el subdirectorio de cada una. Los
-contextos duplican ese scope, y encima cualquier documento que no caiga en
-ninguno queda afuera del índice desde el que se busca. Medido en producción
-antes de sacarlo, con la sección que entonces vivía fuera del eje: el índice
-del contexto `19` tenía 503 URLs del manual y CERO de `relacion`.
-
-Dos cosas para el que lo lea de nuevo dentro de un año:
-
-- Hasta v0.7.1 esa decisión tenía un control automático: el bin
-  `docs-indice-fuera-del-eje` fallaba el build si encontraba el índice partido
-  por contexto. Ese bin **se borró en v0.8.0** junto con el contenido fuera del
-  eje que lo justificaba, así que hoy la decisión se sostiene sólo en que
-  `opcionesDelTema()` es la única fuente de las opciones del tema. Si vuelve
-  `searchContextByPaths`, tiene que volver acá.
-- El plugin asocia el contenido SIN versionar a la versión última, y eso no se
-  arregla con configuración. Un corpus que vuelva a poner contenido fuera del
-  eje lo va a tener invisible en el buscador del sitio parado en una versión
-  vieja — el MCP no tiene ese problema, porque el comodín del motor es del
-  índice y no del artefacto de Docusaurus.
+El consumidor sólo saca `@easyops-cn/docusaurus-search-local` de `themes` y de
+su `package.json`, y deja el item `{ type: 'search' }` del navbar.
+`@ingadhoc/docs-platform/busqueda` (`opcionesDelTema()`) queda hasta que los
+tres sitios migren y después se borra.
 
 ## La capa de theme
 

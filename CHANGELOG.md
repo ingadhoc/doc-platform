@@ -14,6 +14,28 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.29.0 — 2026-10-21
+
+**El buscador del sitio pasa al motor propio.** Al subir el pin, el consumidor
+saca `@easyops-cn/docusaurus-search-local` de `themes` y de `site/package.json`;
+el item `{ type: 'search' }` del navbar queda como está.
+
+- **buscador: el `SearchBar` del sitio corre el motor del MCP** con
+  `PERFIL.persona`, en un worker. Baja el índice de la versión en la que está
+  el lector cuando el navegador queda libre o al entrar al buscador, filtra por
+  el doc set activo y marca en cada resultado lo que encontró el motor. El
+  combobox es propio: sale `@easyops-cn/autocomplete.js`, sin mantenimiento
+  desde 2020.
+- **buscador: la página `/search`** con todos los resultados, paginada.
+- **buscador: el resaltado de la página de destino viaja en el historial** y no
+  en `?_highlight=`: se va al vaciar el buscador o con «Quitar», y un link
+  compartido no lo arrastra. Arriba del artículo se ve el término resaltado.
+- **plugin: `postBuild` escribe `buscador/*.json`** desde
+  `api/_generated/index.json`, uno por versión. Acepta la opción `indice` si el
+  índice está en otro lugar.
+- **busqueda: `opcionesDelTema()` queda sólo para los sitios sin migrar** y se
+  borra cuando migren los tres.
+
 ## v0.28.0 — 2026-10-21
 
 - **motor: el hit de la persona dice qué resaltar.** Con `PERFIL.persona`,
