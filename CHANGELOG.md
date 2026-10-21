@@ -14,6 +14,17 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.28.0 — 2026-10-21
+
+- **motor: el hit de la persona dice qué resaltar.** Con `PERFIL.persona`,
+  cada hit trae `resaltar: { idioma, terminos, raices }`: los términos del
+  índice que matchearon, con el prefijo y el tipeo ya resueltos. La nueva
+  `ubicarTerminos(texto, resaltar)` los encuentra en un texto con el mismo
+  analizador, así que el buscador del sitio resalta lo que encontró el motor:
+  `costo de merc` marca «Costo» y «mercadería», y no «de» ni «Mercado». El
+  perfil suma la capacidad `resaltado`, apagada para el agente: su respuesta
+  sólo cambia en el eco de `perfil`.
+
 ## v0.27.0 — 2026-10-20
 
 **Rompe el config de los tres consumidores**: al subir el pin hay que tocar
