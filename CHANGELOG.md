@@ -14,6 +14,17 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.30.0 — 2026-10-21
+
+- **motor: los compuestos de una letra con guion son una sola palabra.**
+  `e-ticket`, `e-factura`, `e-remito` y `e-resguardo` se indexan, se buscan y
+  se marcan enteros (`eticket`), con guion o sin él. Antes se partían en «e» +
+  «ticket», y `e-ticket` llevaba al servicio de asistencia en vez de a la
+  factura electrónica de Uruguay; ahora el término es propio de Uruguay y el
+  país se detecta solo. La palabra suelta (`ticket`, `remito`) deja de traer
+  las páginas que sólo tienen el compuesto. Cambia el tokenizer del índice, así
+  que vale para el agente y para el sitio.
+
 ## v0.29.0 — 2026-10-21
 
 **El buscador del sitio pasa al motor propio.** Al subir el pin, el consumidor
