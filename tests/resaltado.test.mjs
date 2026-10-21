@@ -62,6 +62,7 @@ describe('ubicarTerminos: marca lo que matcheó el motor y nada más', () => {
     const hit = primero('costo de merc');
     assert.equal(marcar(hit.title, hit.resaltar), '[Costo] de [mercadería] vendida');
     assert.equal(marcar('Mercado Pago', hit.resaltar), 'Mercado Pago');
+    assert.equal(marcar('Un costo costoso', hit.resaltar), 'Un [costo] costoso');
   });
 
   it('nunca marca una palabra vacía, ni adentro de otra palabra', () => {
@@ -91,6 +92,18 @@ describe('ubicarTerminos: marca lo que matcheó el motor y nada más', () => {
     );
   });
 
+  it('un término que es su propia raíz marca también sus otras formas', () => {
+    const conBorrador = crearMotor({
+      ...base,
+      build: { ...base.build, articulos: 1 },
+      articulos: [articulo('borrador', 'Facturas en borrador', '# Facturas en borrador\n\nLos borradores se validan después.\n')],
+    });
+    for (const q of ['borrador', 'borradores']) {
+      const hit = conBorrador.buscar({ q, perfil: PERFIL.persona }).resultados[0];
+      assert.equal(marcar('Los borradores y un borrador', hit.resaltar), 'Los [borradores] y un [borrador]', q);
+    }
+  });
+
   it('sin términos no marca nada', () => {
     assert.deepEqual(ubicarTerminos('Costo de mercadería', {}), []);
     assert.deepEqual(ubicarTerminos(null, { terminos: ['costo'] }), []);
@@ -101,5 +114,19 @@ describe('ubicarTerminos: marca lo que matcheó el motor y nada más', () => {
     const hit = bilingue.buscar({ q: 'customer debt', idioma: 'en', perfil: PERFIL.persona }).resultados[0];
     assert.equal(hit.resaltar.idioma, 'en');
     assert.equal(marcar('The debts of a customer', hit.resaltar), 'The [debts] of a [customer]');
+    // the Spanish analyzer would leave «companie»
+    assert.equal(marcar('The companies of a company', { idioma: 'en', terminos: ['company'] }), 'The [companies] of a [company]');
+  });
+
+  it('en la página 2 cada hit trae lo que matcheó su propio artículo', () => {
+    const letras = 'abcdefghijkl';
+    const paginado = crearMotor({
+      ...base,
+      build: { ...base.build, articulos: letras.length },
+      articulos: [...letras].map((l) => articulo(`fact${l}`, `Fact${l}z`, `# Fact${l}z\n\nTexto.\n`)),
+    });
+    const { resultados } = paginado.buscar({ q: 'fact', page: 2, perfil: PERFIL.persona });
+    assert.ok(resultados.length > 0);
+    for (const hit of resultados) assert.equal(marcar(hit.title, hit.resaltar), `[${hit.title}]`, hit.slug);
   });
 });
