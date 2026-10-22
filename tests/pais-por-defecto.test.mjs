@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 
-const { _resetIndice, buscar, politicaDeEje } = await import('../lib/mcp/indice.mjs');
+const { _resetIndice, buscar, leer, politicaDeEje } = await import('../lib/mcp/indice.mjs');
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/pais-por-defecto.json', import.meta.url));
 
@@ -90,6 +90,15 @@ describe('buscar() con país por defecto', () => {
     assert.deepEqual([...slugs(r)].sort(), [...slugs(antes)].sort());
     assert.deepEqual(r.paisesAplicados, ['AR']);
     assert.equal(r.paisElegidoPor, 'defecto');
+    // El agente lee texto: lo que asumió va también en prosa, no solo en el campo.
+    assert.match(r.mensajePais, /^No pasaste `paises` y la consulta no nombra un país: asumí AR, el país por defecto del sitio\./);
+    assert.match(r.mensajePais, /repetí con `paises`/);
+  });
+
+  it('con el país en la consulta, el mensaje dice que salió de ahí; con `paises`, no hay mensaje', () => {
+    usar(FIXTURE);
+    assert.match(buscar({ q: 'factura electronica chile', version: '19' }).mensajePais, /prioricé CL porque la consulta lo nombra/);
+    assert.equal('mensajePais' in buscar({ q: 'factura electronica', version: '19', paises: 'UY' }), false);
   });
 
   it('las páginas universales no se tocan', () => {
@@ -175,5 +184,33 @@ describe('buscar() con país por defecto', () => {
     assert.deepEqual(slugs(r), slugs(antes));
     assert.equal(slugs(r).includes(AR), false);
     assert.equal('paisesAplicados' in r, false);
+  });
+});
+
+describe('una versión sin documentación', () => {
+  it('`buscar` lo dice en vez de sugerir sacar el filtro', () => {
+    usar(FIXTURE);
+    const r = buscar({ q: 'factura electronica', version: '17' });
+    assert.equal(r.total, 0);
+    assert.equal(r.motivo, 'valor-del-eje-sin-docu');
+    assert.equal(r.versionPedida, '17');
+    assert.deepEqual(r.versionesDisponibles, ['19']);
+    assert.match(r.mensaje, /^No hay documentación para la versión 17 de Odoo: solo para 19\./);
+    assert.equal('sugerencias' in r, false);
+  });
+
+  it('con una versión que sí está entre las pedidas, busca en esa y avisa de la otra', () => {
+    usar(FIXTURE);
+    const r = buscar({ q: 'factura electronica', version: ['17', '19'] });
+    assert.ok(r.total > 0);
+    assert.match(r.mensajeEje, /versión 17/);
+  });
+
+  it('`leer` tampoco devuelve un artículo para una versión sin docu', () => {
+    usar(FIXTURE);
+    const r = leer({ slug: AR, version: '17' });
+    assert.equal(r.encontrado, false);
+    assert.equal(r.motivo, 'valor-del-eje-sin-docu');
+    assert.equal(leer({ slug: AR, version: '19' }).encontrado, true);
   });
 });
