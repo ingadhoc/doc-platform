@@ -234,6 +234,12 @@ describe('buscar() — casos límite del fragmento', () => {
     assert.match(fragmento, /Caso Costo Entregada El costo de la entrega Más costo/);
   });
 
+  it('una línea larga de guiones seguida de texto no cuelga el motor (< 200 ms)', () => {
+    usarIndice([{ slug: 'm/c/a', body: `${'-'.repeat(5000)} fin\n\ncosto` }]);
+    const { ms } = cronometrar(() => buscar({ q: 'costo' }));
+    assert.ok(ms < 200, `tardó ${ms.toFixed(0)} ms`);
+  });
+
   it('los bloques de un artículo se calculan una vez por índice', () => {
     usarIndice([{ slug: 'm/c/a', body: '## Uno\n\nfactura' }]);
     const articulo = indice().porId.get('*::m/c/a');
