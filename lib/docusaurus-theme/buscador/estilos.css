@@ -125,9 +125,20 @@
 }
 
 .buscador__ver-todos {
-  display: block;
-  padding: 0.5rem 0.75rem 0.25rem;
   font-size: 0.85rem;
+}
+
+.buscador__ver-todos a {
+  color: var(--ifm-color-primary);
+}
+
+.buscador__lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 @media (max-width: 576px) {

@@ -110,6 +110,12 @@ describe('logica: sin React ni DOM', () => {
     assert.equal(rutaDelHit({ url: '/19/x', urlAncla: null }, '/docs/'), '/docs/19/x');
   });
 
+  it('rutaDelHit no sale del sitio', () => {
+    for (const url of ['javascript:alert(1)', '//otro.host/x', 'https://otro.host/x', '']) {
+      assert.equal(rutaDelHit({ url, urlAncla: null }, '/'), '/', url);
+    }
+  });
+
   it('el primer resultado queda activo y las flechas dan la vuelta', () => {
     let e = combobox(COMBOBOX_INICIAL, { tipo: 'resultados', total: 3, abrir: true });
     assert.deepEqual(e, { abierto: true, activo: 0, total: 3 });
