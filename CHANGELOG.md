@@ -14,6 +14,29 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.30.0 — 2026-10-21
+
+- **motor: los compuestos con `e-` son una sola palabra.** `e-ticket`,
+  `e-factura`, `e-remito` y `e-resguardo` se indexan, se buscan y se marcan
+  enteros (`eticket`), con guion o sin él. Sólo `e-` seguido de una letra:
+  otras letras con guion (`X-Forwarded-For`, `A-0001`) y los slugs de los links
+  (`facturar-y-cobrar`) se parten como siempre. Antes se partían en «e» +
+  «ticket», y `e-ticket` llevaba al servicio de asistencia en vez de a la
+  factura electrónica de Uruguay; ahora el término es propio de Uruguay y el
+  país se detecta solo. La palabra suelta (`ticket`, `remito`) deja de traer
+  las páginas que sólo tienen el compuesto. Cambia el tokenizer del índice, así
+  que vale para el agente y para el sitio.
+- **motor: el fragmento no trae la fila separadora de las tablas.** `| --- |`
+  y las líneas horizontales (`---`) llegaban como «--- ---» en medio del texto.
+  Se detecta con dos chequeos lineales: una sola expresión con cuantificadores
+  anidados tardaba exponencialmente en una línea de guiones seguida de texto.
+- **motor: un término que coincide en el cuerpo y en `raices` conserva el
+  cuerpo.** El OR de MiniSearch se quedaba sólo con la segunda lista de campos
+  de un término encontrado por las dos búsquedas, así que `e-ticket` perdía el
+  cuerpo y el hit llegaba sin fragmento y sin `resaltar.terminos`. Las dos
+  búsquedas se juntan ahora en el motor, con el mismo puntaje: el orden no
+  cambia en ningún caso del banco.
+
 ## v0.29.0 — 2026-10-21
 
 **El buscador del sitio pasa al motor propio.** Al subir el pin, el consumidor
