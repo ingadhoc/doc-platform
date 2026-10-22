@@ -227,6 +227,13 @@ describe('buscar() — casos límite del fragmento', () => {
     assert.match(r.resultados[0].fragmento, /factura cliente/);
   });
 
+  it('la fila separadora de una tabla y una línea horizontal no llegan al fragmento', () => {
+    usarIndice([{ slug: 'm/c/a', body: '| Caso | Costo |\n| --- | :---: |\n| Entregada | El costo de la entrega |\n\n---\n\nMás costo.' }]);
+    const { fragmento } = buscar({ q: 'costo' }).resultados[0];
+    assert.doesNotMatch(fragmento, /-{3}/);
+    assert.match(fragmento, /Caso Costo Entregada El costo de la entrega Más costo/);
+  });
+
   it('los bloques de un artículo se calculan una vez por índice', () => {
     usarIndice([{ slug: 'm/c/a', body: '## Uno\n\nfactura' }]);
     const articulo = indice().porId.get('*::m/c/a');

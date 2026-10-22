@@ -24,6 +24,8 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
   país se detecta solo. La palabra suelta (`ticket`, `remito`) deja de traer
   las páginas que sólo tienen el compuesto. Cambia el tokenizer del índice, así
   que vale para el agente y para el sitio.
+- **motor: el fragmento no trae la fila separadora de las tablas.** `| --- |`
+  y las líneas horizontales (`---`) llegaban como «--- ---» en medio del texto.
 
 ## v0.29.0 — 2026-10-21
 
