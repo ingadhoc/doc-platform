@@ -23,7 +23,8 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
   relaja si algún término no está en el corpus: eso sigue siendo un tipeo (va
   al rescate) o algo que no documentamos (da cero). Va antes del rescate de
   tipeo, así que una palabra que existe («mitad») ya no se corrige como error.
-  Es `PERFIL.persona.andRelajado`; el agente no cambia. Medido con el banco
+  Es `PERFIL.persona.andRelajado`; el agente busca igual que antes, y su respuesta
+  sólo cambia en el eco de `perfil` (`andRelajado: false`). Medido con el banco
   sobre oba-docs: casos a ciegas @3 36 % → 62 %, validación @3 57 % → 74 %,
   respuestas en cero 35 % → 15 %. El costo: un caso de validación que debía
   declinar («sincronizo publicaciones con Amazon») ahora trae 3 resultados.

@@ -59,6 +59,16 @@ describe('and relajado: sólo la persona, sólo con pocas coincidencias completa
     assert.equal(r.total, 3);
   });
 
+  it('los parciales publican una cobertura menor a 1', () => {
+    const r = buscar('¿Cómo cargo un cheque rechazado?');
+    assert.ok(r.resultados.some((h) => h.cobertura < 1), JSON.stringify(r.resultados.map((h) => h.cobertura)));
+  });
+
+  it('el agente no relaja aunque haya pocas coincidencias completas', () => {
+    const r = buscar('entregar mitad pedido', PERFIL.agente);
+    assert.notEqual(r.modo, 'and-relajado');
+  });
+
   it('el agente no cambia: sigue con su relleno or', () => {
     assert.equal(buscar('¿Cómo cargo un cheque rechazado?', PERFIL.agente).modo, 'or-fallback');
   });
