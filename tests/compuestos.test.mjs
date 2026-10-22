@@ -37,6 +37,12 @@ describe('compuestos de una letra con guion', () => {
     assert.deepEqual(slugs('ticket'), ['tickets']);
   });
 
+  it('un término que también es su raíz conserva el cuerpo: hay fragmento y se marca', () => {
+    const hit = motor.buscar({ q: 'e-ticket', perfil: PERFIL.persona }).resultados[0];
+    assert.match(hit.fragmento, /e-ticket se envía/);
+    assert.ok(hit.resaltar.terminos.includes('eticket'), JSON.stringify(hit.resaltar));
+  });
+
   it('el resaltado marca el compuesto entero', () => {
     const { resaltar } = motor.buscar({ q: 'e-ticket', perfil: PERFIL.persona }).resultados[0];
     assert.deepEqual(ubicarTerminos('Un e-ticket, no un ticket.', resaltar), [{ pos: 3, largo: 8 }]);

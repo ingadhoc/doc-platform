@@ -26,6 +26,12 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
   que vale para el agente y para el sitio.
 - **motor: el fragmento no trae la fila separadora de las tablas.** `| --- |`
   y las líneas horizontales (`---`) llegaban como «--- ---» en medio del texto.
+- **motor: un término que coincide en el cuerpo y en `raices` conserva el
+  cuerpo.** El OR de MiniSearch se quedaba sólo con la segunda lista de campos
+  de un término encontrado por las dos búsquedas, así que `e-ticket` perdía el
+  cuerpo y el hit llegaba sin fragmento y sin `resaltar.terminos`. Las dos
+  búsquedas se juntan ahora en el motor, con el mismo puntaje: el orden no
+  cambia en ningún caso del banco.
 
 ## v0.29.0 — 2026-10-21
 
