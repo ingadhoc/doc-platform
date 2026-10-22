@@ -176,7 +176,7 @@ trae el plugin de la plataforma, sin configuración en el consumidor:
 - **la página `/search`** con todos los resultados.
 - **el resaltado en la página de destino**: viaja en el estado del historial y
   no en la URL, así que no queda pegado a un link compartido, y se va al vaciar
-  el buscador o con «Quitar».
+  o cambiar la búsqueda.
 
 El consumidor sólo saca `@easyops-cn/docusaurus-search-local` de `themes` y de
 su `package.json`, y deja el item `{ type: 'search' }` del navbar.

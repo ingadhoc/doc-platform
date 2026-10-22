@@ -28,8 +28,8 @@ el item `{ type: 'search' }` del navbar queda como está.
   desde 2020.
 - **buscador: la página `/search`** con todos los resultados, paginada.
 - **buscador: el resaltado de la página de destino viaja en el historial** y no
-  en `?_highlight=`: se va al vaciar el buscador o con «Quitar», y un link
-  compartido no lo arrastra. Arriba del artículo se ve el término resaltado.
+  en `?_highlight=`: se va al vaciar o cambiar la búsqueda, y un link
+  compartido no lo arrastra.
 - **plugin: `postBuild` escribe `buscador/*.json`** desde
   `api/_generated/index.json`, uno por versión. Acepta la opción `indice` si el
   índice está en otro lugar.
