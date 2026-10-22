@@ -14,6 +14,27 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.32.0 — 2026-10-22
+
+- **motor: una versión sin documentación se dice, no se sugiere sacar el
+  filtro.** `buscar({ version: "17" })` devolvía cero con el hint «sacando el
+  filtro `version` hay N»; el agente lo sacaba y le citaba la 19 a quien usa la
+  17. Ahora `buscar` y `leer` responden `motivo: "valor-del-eje-sin-docu"`, las
+  versiones que sí hay y un `mensaje` que pide decirle al usuario que su versión
+  no está documentada. Si se pidieron varias y alguna existe, busca en esa y
+  avisa de la otra en `mensajeEje`. Vale igual para un `project` que no existe.
+- **motor: lo que `buscar` asumió del país va en texto.** Con país por defecto y
+  sin `paises`, la respuesta suma `mensajePais`: qué país priorizó, si salió de
+  la consulta o del sitio, y que los de otros países bajan sin excluirse.
+  `paisesAplicados` y `paisElegidoPor` no cambian.
+- **mcp: la description dice que `version` y `paises` son del usuario.** Lo
+  esencial de `buscar` pide pasar siempre la versión del Odoo del usuario (con
+  las que hay) y su país (con el que se asume sin él), y decir de dónde
+  salieron; el de `leer`, la misma versión. El parámetro `version` lista las
+  versiones con docu. Cada tool arranca con una frase en inglés («Search the
+  docs…»), porque hay clientes que buscan las tools en inglés. Lo esencial
+  sigue entrando en `LARGO_ESENCIAL`.
+
 ## v0.31.0 — 2026-10-21
 
 - **motor: la persona busca con un `and` relajado cuando la consulta es

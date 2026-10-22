@@ -462,7 +462,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     // El string entero, no un `doesNotMatch`: fija la costura además de la
     // ausencia —la frase se va sin dejar espacio colgado— y no da un falso
     // rojo el día que la prosa base mencione `null` por otro motivo.
-    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo (p. ej. "19"). Filtro exacto y duro.');
+    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo del usuario (p. ej. "19"). Filtro exacto y duro. Hay documentación para: a, b; con otro valor, la respuesta lo dice en `mensaje`.');
     assert.match(describeParam(result.tools, 'leer', 'version'), /en `otrosDelEje`\.$/);
     assert.doesNotMatch(describeParam(result.tools, 'leer', 'version'), /todas las versiones/);
   });
@@ -483,7 +483,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     const buscar = result.tools.find((t) => t.name === 'buscar');
     assert.doesNotMatch(buscar.description, /CROSS/);
     assert.doesNotMatch(buscar.description, /`relacion\/`/);
-    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo (p. ej. "19"). Filtro exacto y duro.');
+    assert.equal(describeParam(result.tools, 'buscar', 'version'), 'Versión de Odoo del usuario (p. ej. "19"). Filtro exacto y duro. Hay documentación para: a, b; con otro valor, la respuesta lo dice en `mensaje`.');
     // Y al revés: el corpus que SÍ tiene el artículo enciende la prosa aunque
     // el config no declare nada. La declaración dejó de participar.
     const { handler: h2 } = montar(CONFIG_OBA, { indice: crearIndiceFake({ tipo: 'version', comodin: true }) });
@@ -665,7 +665,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
         }
         // Lo esencial nombra filtros que el schema ofrece, nunca uno que no está.
         const params = Object.keys(result.tools.find((t) => t.name === tool).inputSchema.properties);
-        for (const [, nombrado] of frases.join(' ').matchAll(/filtrá por ((?:`\w+`(?: o )?)+)/g)) {
+        for (const [, nombrado] of frases.join(' ').matchAll(/(?:filtrá por|Pasá siempre) ((?:`\w+`[^`.]*(?: [oy] )?)+)/g)) {
           for (const [, p] of nombrado.matchAll(/`(\w+)`/g)) assert.ok(params.includes(p), `${nombre}/${tool}: filtro ${p}`);
         }
       }
@@ -676,7 +676,14 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     const base = crearIndiceFake({ tipo: 'version' });
     const conPaises = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'] } }) };
     const esencial = async (config, indice) => montar(config, { indice }).esenciales.buscar.join(' ');
-    assert.match(await esencial(CONFIG_OBA, conPaises), /filtrá por `version` o `paises`/);
+    // `version` es la del usuario: se pasa siempre, no solo cuando la pregunta la nombra.
+    assert.match(await esencial(CONFIG_OBA, conPaises), /Pasá siempre `version` \(la del Odoo del usuario: a o b\)\./);
+    assert.match(await esencial(CONFIG_OBA, conPaises), /filtrá por `paises`\./);
+    assert.match(await esencial(CONFIG_OBA, conPaises), /Decí qué versión y país usaste y de dónde salieron\./);
+    // Con país por defecto, lo esencial dice cuál se asume sin `paises`.
+    const conDefecto = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'], paisPorDefecto: 'AR' } }) };
+    assert.match(await esencial(CONFIG_OBA, conDefecto), /y `paises` \(su país; sin él se asume AR\)\./);
+    assert.doesNotMatch(await esencial(CONFIG_OBA, conDefecto), /filtrá por/);
     assert.match(await esencial(CONFIG_ADHOC), /filtrá por `project`\./);
     assert.doesNotMatch(await esencial(CONFIG_ODUMBO), /filtrá por/);
     for (const senal of ['or-fallback', 'resultadosDebiles', '`leer`', 'declinar es correcto']) {
