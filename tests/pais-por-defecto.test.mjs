@@ -215,3 +215,32 @@ describe('una versión sin documentación', () => {
     assert.equal(leer({ slug: AR, version: '19' }).encontrado, true);
   });
 });
+
+describe('un país sin documentación', () => {
+  it('`buscar` lo dice en vez de devolver cero en silencio', () => {
+    usar(FIXTURE);
+    const r = buscar({ q: 'factura electronica', version: '19', paises: 'ES' });
+    assert.equal(r.total, 0);
+    assert.equal(r.motivo, 'pais-sin-docu');
+    assert.deepEqual(r.paisesPedidos, ['ES']);
+    assert.deepEqual(r.paisesDisponibles, ['AR', 'CL', 'UY']);
+    assert.match(r.mensaje, /^No hay documentación para ES: solo para AR, CL, UY\. `paises` es el país del Odoo del usuario/);
+  });
+
+  it('mezclado con uno que sí está, busca con ese y avisa del otro', () => {
+    usar(FIXTURE);
+    const r = buscar({ q: 'factura electronica', version: '19', paises: ['ES', 'UY'] });
+    assert.deepEqual(r.filtros.paises, ['UY']);
+    assert.ok(r.total > 0);
+    assert.equal('motivo' in r, false);
+    assert.match(r.mensajePais, /No hay documentación para ES.*Busqué con UY\.$/);
+  });
+
+  it('el código en minúsculas es el mismo país', () => {
+    usar(FIXTURE);
+    const r = buscar({ q: 'factura electronica', version: '19', paises: 'uy' });
+    assert.deepEqual(r.filtros.paises, ['UY']);
+    assert.deepEqual(r.resultados.map((h) => h.slug), buscar({ q: 'factura electronica', version: '19', paises: 'UY' }).resultados.map((h) => h.slug));
+    assert.equal('mensajePais' in r, false);
+  });
+});
