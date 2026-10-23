@@ -98,6 +98,7 @@ describe('buscar() con país por defecto', () => {
   it('con el país en la consulta, el mensaje dice que salió de ahí; con `paises`, no hay mensaje', () => {
     usar(FIXTURE);
     assert.match(buscar({ q: 'factura electronica chile', version: '19' }).mensajePais, /prioricé CL porque la consulta lo nombra/);
+    assert.match(buscar({ q: 'factura electronica chile argentina', version: '19' }).mensajePais, /porque la consulta los nombra/);
     assert.equal('mensajePais' in buscar({ q: 'factura electronica', version: '19', paises: 'UY' }), false);
   });
 

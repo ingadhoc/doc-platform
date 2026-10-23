@@ -665,7 +665,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
         }
         // Lo esencial nombra filtros que el schema ofrece, nunca uno que no está.
         const params = Object.keys(result.tools.find((t) => t.name === tool).inputSchema.properties);
-        for (const [, nombrado] of frases.join(' ').matchAll(/(?:filtrá por|Pasá siempre) ((?:`\w+`[^`.]*(?: [oy] )?)+)/g)) {
+        for (const [, nombrado] of frases.join(' ').matchAll(/(?:filtrá por|Pasá(?: siempre)?) ((?:`\w+`[^`.]*(?: [oy] )?)+)/g)) {
           for (const [, p] of nombrado.matchAll(/`(\w+)`/g)) assert.ok(params.includes(p), `${nombre}/${tool}: filtro ${p}`);
         }
       }
@@ -682,7 +682,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.match(await esencial(CONFIG_OBA, conPaises), /Decí qué versión y país usaste y de dónde salieron\./);
     // Con país por defecto, lo esencial dice cuál se asume sin `paises`.
     const conDefecto = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'], paisPorDefecto: 'AR' } }) };
-    assert.match(await esencial(CONFIG_OBA, conDefecto), /y `paises` \(su país; sin él se asume AR\)\./);
+    assert.match(await esencial(CONFIG_OBA, conDefecto), /, y `paises` si sabés su país \(sin él se prioriza AR\)\./);
     assert.doesNotMatch(await esencial(CONFIG_OBA, conDefecto), /filtrá por/);
     assert.match(await esencial(CONFIG_ADHOC), /filtrá por `project`\./);
     assert.doesNotMatch(await esencial(CONFIG_ODUMBO), /filtrá por/);
