@@ -14,6 +14,16 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.32.1 — 2026-10-23
+
+- **mcp: los avisos para el agente van antes de los datos.** En la respuesta de
+  las tools, `motivo`, `mensaje`, `mensajeEje`, `mensajePais`,
+  `paisesAplicados`, `paisElegidoPor`, `aviso`, `nota` y los demás de
+  `AVISOS` pasan adelante, y `resultados` (de `buscar`) y `body` (de `leer`)
+  quedan después. Antes, `mensajePais` llegaba detrás de los 10 hits (unos
+  15 KB), y en el chat de un cliente de Tuqui el modelo no lo vio. El contenido
+  no cambia, solo el orden. El motor tampoco cambia, así que el sitio sigue igual.
+
 ## v0.32.0 — 2026-10-22
 
 - **motor: una versión sin documentación se dice, no se sugiere sacar el

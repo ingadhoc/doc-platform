@@ -716,6 +716,31 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.deepEqual(sin.fake.llamadas.filter((l) => l[0] === 'mapa').at(-1)[1], {});
   });
 
+  it('los avisos para el agente van antes de los datos, en `buscar` y en `leer`', async () => {
+    const base = crearIndiceFake({ tipo: 'version' });
+    const pesado = 'x'.repeat(20000);
+    const indice = {
+      ...base,
+      buscar: () => ({
+        buildId: 'b', total: 1, resultados: [{ slug: 'a', body: pesado }],
+        paisesAplicados: ['AR'], paisElegidoPor: 'defecto', mensajePais: 'asumí AR', nota: 'leé antes',
+      }),
+      leer: () => ({ buildId: 'b', encontrado: true, body: pesado, elegidoPor: 'default', mensaje: 'te devuelvo la 19' }),
+    };
+    const { handler } = montar(CONFIG_OBA, { indice });
+    for (const [name, avisos] of [
+      ['buscar', ['mensajePais', 'paisesAplicados', 'paisElegidoPor', 'nota']],
+      ['leer', ['mensaje', 'elegidoPor']],
+    ]) {
+      const { result } = await leerRpc(await handler(rpc('tools/call', { name, arguments: { q: 'x', slug: 'a' } }, 'tok-tuqui')));
+      const crudo = result.content[0].text;
+      // Un cliente que corta el resultado largo tiene que ver los avisos igual.
+      for (const aviso of avisos) assert.ok(crudo.indexOf(`"${aviso}"`) < 500, `${name}: ${aviso} está en los primeros bytes`);
+      // Mismo contenido: solo cambia el orden.
+      assert.deepEqual(Object.keys(JSON.parse(crudo)).sort(), Object.keys(indice[name]()).sort());
+    }
+  });
+
   it('tools/call leer pasa el `ancla` al motor', async () => {
     const { handler, fake } = montar(CONFIG_ODUMBO);
     await leerRpc(await handler(rpc('tools/call', { name: 'leer', arguments: { slug: 'index', ancla: 'entorno' } }, 'tok-tuqui')));
