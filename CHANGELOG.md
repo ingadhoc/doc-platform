@@ -17,16 +17,20 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 ## v0.32.2 — 2026-10-23
 
 - **motor: un país sin documentación se dice, igual que una versión.**
-  `buscar({ paises: "ES" })` se aplicaba en silencio y daba cero: el agente lo
-  había pasado por «español». Ahora responde `motivo: "pais-sin-docu"`,
-  `paisesDisponibles` (los del vocabulario del corpus) y un `mensaje` que
-  aclara que `paises` es el país del Odoo del usuario, no el idioma. Mezclado
-  con uno que existe (`["ES","UY"]`), busca con UY y avisa de ES en
-  `mensajePais`. Los códigos se comparan en mayúsculas: `uy` es UY (antes
-  también excluía todo).
-- **mcp: `versionesDisponibles` y `paisesDisponibles` van con los avisos**,
-  antes de los datos. La description de `paises` dice que es el país del Odoo
-  del usuario, no el idioma.
+  `buscar({ paises: "ES" })` se aplicaba en silencio: el agente lo había pasado
+  por «español», y solo volvían páginas sin país, sin explicación. Ahora la
+  búsqueda sigue igual, pero la respuesta suma `motivo: "pais-sin-docu"`,
+  `paisesPedidos`, `paisesDisponibles` (los del vocabulario del corpus) y un
+  `mensaje` con qué contestar: que `paises` es el país del Odoo del usuario y no
+  el idioma, y que si el usuario es de ese país, lo propio de su país no está
+  documentado y las páginas sin país aplican igual. Mezclado con uno que existe
+  (`["ES","UY"]`), busca solo con UY y lo dice en `mensajePais`. Con una versión
+  sin docu, avisa primero la versión y suma el país en `mensajePais`. Los
+  códigos se comparan en mayúsculas y un string con comas se parte (`"UY, ar"`
+  es UY y AR): antes los dos casos también excluían todo.
+- **mcp: `versionesDisponibles`, `paisesDisponibles` y `paisesPedidos` van con
+  los avisos**, antes de los datos. La description de `paises` dice que es el
+  país del Odoo del usuario, no el idioma.
 
 ## v0.32.1 — 2026-10-23
 
