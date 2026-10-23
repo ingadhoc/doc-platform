@@ -29,11 +29,12 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
   `paisesAplicados` y `paisElegidoPor` no cambian.
 - **mcp: la description dice que `version` y `paises` son del usuario.** Lo
   esencial de `buscar` pide pasar siempre la versión del Odoo del usuario (con
-  las que hay) y su país (con el que se asume sin él), y decir de dónde
-  salieron; el de `leer`, la misma versión. El parámetro `version` lista las
-  versiones con docu. Cada tool arranca con una frase en inglés («Search the
-  docs…»), porque hay clientes que buscan las tools en inglés. Lo esencial
-  sigue entrando en `LARGO_ESENCIAL`.
+  las que hay) y, si se sabe, su país (sin él se prioriza el del sitio, sin
+  excluir: `paises` es un filtro duro y un país adivinado esconde la página
+  correcta), y decir de dónde salieron; el de `leer`, la misma versión. El
+  parámetro `version` lista las versiones con docu. Cada tool arranca con una
+  frase en inglés («Search the docs…»), porque hay clientes que buscan las
+  tools en inglés. Lo esencial sigue entrando en `LARGO_ESENCIAL`.
 
 ## v0.31.0 — 2026-10-21
 
