@@ -14,6 +14,20 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.32.2 — 2026-10-23
+
+- **motor: un país sin documentación se dice, igual que una versión.**
+  `buscar({ paises: "ES" })` se aplicaba en silencio y daba cero: el agente lo
+  había pasado por «español». Ahora responde `motivo: "pais-sin-docu"`,
+  `paisesDisponibles` (los del vocabulario del corpus) y un `mensaje` que
+  aclara que `paises` es el país del Odoo del usuario, no el idioma. Mezclado
+  con uno que existe (`["ES","UY"]`), busca con UY y avisa de ES en
+  `mensajePais`. Los códigos se comparan en mayúsculas: `uy` es UY (antes
+  también excluía todo).
+- **mcp: `versionesDisponibles` y `paisesDisponibles` van con los avisos**,
+  antes de los datos. La description de `paises` dice que es el país del Odoo
+  del usuario, no el idioma.
+
 ## v0.32.1 — 2026-10-23
 
 - **mcp: los avisos para el agente van antes de los datos.** En la respuesta de
