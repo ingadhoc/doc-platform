@@ -40,7 +40,8 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 - **mcp: `versionesDisponibles`, `paisesDisponibles` y `paisesPedidos` van con
   los avisos**, antes de los datos. La description de `paises` lo ancla en la
   localización de Odoo (`l10n_ar → AR`…) y dice que no es la sede ni el
-  idioma. No es parte de lo esencial: su largo no cambia.
+  idioma. Lo esencial de `buscar` pide «`paises` si sabés su localización (sin
+  ella, AR)» en vez de «si sabés su país»: 589 de 600.
 
 ## v0.32.1 — 2026-10-23
 
