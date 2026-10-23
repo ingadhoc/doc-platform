@@ -95,6 +95,14 @@ describe('buscar() con país por defecto', () => {
     assert.match(r.mensajePais, /repetí con `paises`/);
   });
 
+  it('el mensaje por defecto nombra los otros países del vocabulario y cierra el loop', () => {
+    usar(FIXTURE);
+    const r = buscar({ q: 'factura electronica', version: '19' });
+    assert.match(r.mensajePais, /Si la localización de Odoo del usuario es otra \(CL o UY\), repetí con `paises`; si no la sabés, dejalo así\./);
+    const chile = buscar({ q: 'factura electronica chile', version: '19' });
+    assert.match(chile.mensajePais, /es otra \(AR o UY\)/);
+  });
+
   it('con el país en la consulta, el mensaje dice que salió de ahí; con `paises`, no hay mensaje', () => {
     usar(FIXTURE);
     assert.match(buscar({ q: 'factura electronica chile', version: '19' }).mensajePais, /prioricé CL porque la consulta lo nombra/);
@@ -228,7 +236,8 @@ describe('un país sin documentación', () => {
     assert.deepEqual(r.filtros.paises, ['ES']);
     assert.ok(r.total > 0);
     for (const hit of r.resultados) assert.ok(universales.includes(hit.slug), hit.slug);
-    assert.match(r.mensaje, /^No hay documentación específica para ES: solo para AR, CL, UY\. `paises` es el país del Odoo del usuario/);
+    assert.match(r.mensaje, /^No hay documentación específica para ES: solo para AR, CL, UY\. `paises` es la localización de Odoo de la base \(l10n_ar → AR, l10n_cl → CL, l10n_uy → UY\), no la sede de la empresa ni el idioma\./);
+    assert.match(r.mensaje, /Si no sabés su localización, repetí sin `paises`\.$/);
     assert.match(r.mensaje, /decile que lo propio de su país no está documentado/);
   });
 
@@ -246,7 +255,16 @@ describe('un país sin documentación', () => {
     const r = buscar({ q: 'factura electronica', version: '17', paises: 'ES' });
     assert.equal(r.motivo, 'valor-del-eje-sin-docu');
     assert.match(r.mensaje, /versión 17/);
-    assert.match(r.mensajePais, /^Además, no hay documentación para ES/);
+    assert.match(r.mensajePais, /^Además, no hay documentación para ES.*l10n_ar → AR.*no la sede de la empresa ni el idioma\.$/);
+  });
+
+  it('`paises` vacío después de normalizar es no haberlo pasado', () => {
+    usar(FIXTURE);
+    for (const vacio of [' ', ',', ' , ']) {
+      const r = buscar({ q: 'factura electronica', version: '19', paises: vacio });
+      assert.equal(r.filtros.paises, null, JSON.stringify(vacio));
+      assert.equal(r.paisElegidoPor, 'defecto');
+    }
   });
 
   it('el código en minúsculas o en un string con comas es el mismo país', () => {
