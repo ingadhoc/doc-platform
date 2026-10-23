@@ -682,7 +682,7 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.match(await esencial(CONFIG_OBA, conPaises), /Decí qué versión y país usaste y de dónde salieron\./);
     // Con país por defecto, lo esencial dice cuál se asume sin `paises`.
     const conDefecto = { ...base, mapa: () => ({ ...base.mapa(), metadata: { paises: ['AR', 'CL'], paisPorDefecto: 'AR' } }) };
-    assert.match(await esencial(CONFIG_OBA, conDefecto), /, y `paises` si sabés su país \(sin él se prioriza AR\)\./);
+    assert.match(await esencial(CONFIG_OBA, conDefecto), /, y `paises` si sabés su localización \(sin ella, AR\)\./);
     assert.doesNotMatch(await esencial(CONFIG_OBA, conDefecto), /filtrá por/);
     assert.match(await esencial(CONFIG_ADHOC), /filtrá por `project`\./);
     assert.doesNotMatch(await esencial(CONFIG_ODUMBO), /filtrá por/);
