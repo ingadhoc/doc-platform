@@ -17,20 +17,30 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 ## v0.32.2 — 2026-10-23
 
 - **motor: un país sin documentación se dice, igual que una versión.**
-  `buscar({ paises: "ES" })` se aplicaba en silencio: el agente lo había pasado
-  por «español», y solo volvían páginas sin país, sin explicación. Ahora la
-  búsqueda sigue igual, pero la respuesta suma `motivo: "pais-sin-docu"`,
+  En el chat de un cliente, el agente pasó `paises: "ES"` porque el texto de la
+  empresa decía «sede en España»: el `mensajePais` le había dicho «si el
+  usuario es de otro país, repetí con `paises`» sin nombrar los valores
+  válidos. El MCP lo aplicó en silencio y volvían solo páginas sin país. Ahora
+  la búsqueda sigue igual, pero la respuesta suma `motivo: "pais-sin-docu"`,
   `paisesPedidos`, `paisesDisponibles` (los del vocabulario del corpus) y un
-  `mensaje` con qué contestar: que `paises` es el país del Odoo del usuario y no
-  el idioma, y que si el usuario es de ese país, lo propio de su país no está
-  documentado y las páginas sin país aplican igual. Mezclado con uno que existe
-  (`["ES","UY"]`), busca solo con UY y lo dice en `mensajePais`. Con una versión
-  sin docu, avisa primero la versión y suma el país en `mensajePais`. Los
-  códigos se comparan en mayúsculas y un string con comas se parte (`"UY, ar"`
-  es UY y AR): antes los dos casos también excluían todo.
+  `mensaje` con qué contestar: `paises` es la localización de Odoo de la base
+  (`l10n_ar → AR`…), no la sede de la empresa ni el idioma; si el usuario es de
+  ese país, lo propio de su país no está documentado y las páginas sin país
+  aplican igual; si no se sabe la localización, repetir sin `paises`.
+  Mezclado con uno que existe (`["ES","UY"]`), busca solo con UY y lo dice en
+  `mensajePais`. Con una versión sin docu, avisa primero la versión y suma el
+  país en `mensajePais`.
+- **motor: el `mensajePais` por defecto nombra los otros países y cierra el
+  loop**: «Si la localización de Odoo del usuario es otra (CL o UY), repetí con
+  `paises`; si no la sabés, dejalo así.». Los valores salen del vocabulario.
+- **motor: `paises` se normaliza.** Los códigos se comparan en mayúsculas y un
+  string con comas se parte (`"UY, ar"` es UY y AR); antes los dos casos
+  excluían todo. Vacío después de normalizar (`" "`, `","`) es no haberlo
+  pasado: vuelve el país por defecto, en vez de excluir las páginas de país.
 - **mcp: `versionesDisponibles`, `paisesDisponibles` y `paisesPedidos` van con
-  los avisos**, antes de los datos. La description de `paises` dice que es el
-  país del Odoo del usuario, no el idioma.
+  los avisos**, antes de los datos. La description de `paises` lo ancla en la
+  localización de Odoo (`l10n_ar → AR`…) y dice que no es la sede ni el
+  idioma. No es parte de lo esencial: su largo no cambia.
 
 ## v0.32.1 — 2026-10-23
 
