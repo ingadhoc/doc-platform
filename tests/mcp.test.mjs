@@ -433,6 +433,16 @@ describe('handler HTTP', { skip: crearMcp ? false : 'faltan mcp-handler / zod' }
     assert.match(describeParam(result.tools, 'leer', 'version'), /aplica a todas las versiones/);
   });
 
+  it('mapa, buscar y leer se declaran de solo lectura; feedback no', async () => {
+    const { handler } = montar(CONFIG_OBA);
+    const { result } = await leerRpc(await handler(rpc('tools/list', {}, 'tok-tuqui')));
+    const anotaciones = (nombre) => result.tools.find((t) => t.name === nombre).annotations;
+    for (const nombre of ['mapa', 'buscar', 'leer']) {
+      assert.deepEqual(anotaciones(nombre), { readOnlyHint: true, openWorldHint: false }, nombre);
+    }
+    assert.deepEqual(anotaciones('feedback'), { readOnlyHint: false, destructiveHint: false });
+  });
+
   it('eje version SIN artículos bajo el comodín: la prosa CROSS-VERSION no sale', async () => {
     // Mismo eje `version` que el test de arriba. Lo único que cambia es el
     // CONTENIDO: el índice ya no tiene un artículo sin valor de eje. El comodín
