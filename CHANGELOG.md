@@ -14,6 +14,16 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.33.0 — 2026-10-29
+
+- **mcp: `mapa`, `buscar` y `leer` se declaran de solo lectura.** Las tres
+  tools llevan `annotations: { readOnlyHint: true, openWorldHint: false }`
+  en `tools/list`; `feedback`, que crea un issue, lleva
+  `{ readOnlyHint: false, destructiveHint: false }`. Sin la anotación, un
+  cliente que frena las escrituras (las Pruebas de Tuqui) trataba las tres
+  como escritura y no dejaba leer la documentación. El contenido de las
+  respuestas no cambia.
+
 ## v0.32.2 — 2026-10-23
 
 - **motor: un país sin documentación se dice, igual que una versión.**
