@@ -14,6 +14,19 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.34.0 — 2026-11-03
+
+- **theme: una sección vacía en una versión ya no tira el build de esa
+  versión.** El item `docSidebar` del navbar no se dibuja si su sidebar está
+  vacía en la versión que se muestra. Antes, theme-classic tiraba
+  `DocSidebarNavbarItem: Sidebar with ID "guias" doesn't have anything to be
+  linked to.` y, como el navbar está en todas las páginas, se caía el build
+  entero de esa versión (en oba-docs, 510 páginas de la 18 al dejar `guias`
+  solo en 19). La búsqueda de la sidebar es la misma que hace Docusaurus; una
+  sidebar que no declara ninguna versión sigue fallando con su mensaje, porque
+  es un error de configuración. Sin cambios para el consumidor: alcanza con
+  subir el pin.
+
 ## v0.33.0 — 2026-10-29
 
 - **mcp: `mapa`, `buscar` y `leer` se declaran de solo lectura.** Las tres
