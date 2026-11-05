@@ -150,7 +150,7 @@ directorio antes de subirlo.
 | `@ingadhoc/docs-platform/feedback` | `crearFeedback(config)`: la tool que abre el issue de `docs-feedback` |
 | `@ingadhoc/docs-platform/config` | `cargarConfig()` / `validarConfig()`: el validador del `docs.config.json` |
 | `@ingadhoc/docs-platform/middleware` | el `middleware.js` de referencia (el que va en la raíz del consumidor) |
-| `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX, el CSS del theme y el buscador del sitio (ver *La capa de theme* y *El buscador del sitio*) |
+| `@ingadhoc/docs-platform/docusaurus-plugin` | el plugin de Docusaurus: registra los componentes MDX, el CSS del theme, el buscador del sitio y la página de cambios de los previews (ver *La capa de theme*, *El buscador del sitio* y *La página de cambios del preview*) |
 | `@ingadhoc/docs-platform/busqueda` | `opcionesDelTema()`: la configuración del tema de easyops, mientras quede algún sitio sin migrar al buscador propio (ver *El buscador del sitio*) |
 | `@ingadhoc/docs-platform/video-url` | `parsearUrlVideo()` / `idDeYoutube()`: el parseo que decide si una URL rinde embed o botón |
 | `@ingadhoc/docs-platform/tuqui-embed` | `tuquiEmbedScripts(env)`: el campo `scripts` que embebe el widget de chat de Tuqui, activado por `TUQUI_EMBED_ID` (ver *Widget de Tuqui*) |
@@ -182,6 +182,37 @@ El consumidor sólo saca `@easyops-cn/docusaurus-search-local` de `themes` y de
 su `package.json`, y deja el item `{ type: 'search' }` del navbar.
 `@ingadhoc/docs-platform/busqueda` (`opcionesDelTema()`) queda hasta que los
 tres sitios migren y después se borra.
+
+## La página de cambios del preview
+
+Desde v0.35.0, un preview de PR puede tener la página `/changes`: las páginas
+que cambia el PR, con un link a cada una en el preview y el diff de su texto.
+Sirve para revisar un cambio sin entrar a GitHub, que es lo que no puede hacer
+quien edita desde Tuqui Work sin cuenta.
+
+- **de dónde sale:** el plugin compara el índice para agentes del commit base
+  del PR contra el `api/_generated/index.json` del build (`lib/cambios.mjs`).
+  Compara lo que se publica —título, descripción y cuerpo de cada página por
+  versión, ya procesados— y no los archivos de `content/`. Por eso no necesita
+  git ni saber cómo trabaja el preprocesador de cada repo. Una página que
+  cambia igual en varias versiones sale una sola vez, con un link por versión.
+- **cómo se prende:** el build recibe la ruta del índice base en
+  `DOCS_INDICE_BASE`, o en la opción `indiceBase` del plugin, relativa a
+  `site/`. Sin ella no hay página, así que producción no cambia. Si está
+  configurada y el archivo no existe, el build falla: un preview sin su página
+  de cambios parecería un PR que no cambia nada.
+- **qué hace el consumidor:** en el job `build` de un PR, antes de
+  `prebuilt-build`, arma el índice del commit base con su propio preprocesador
+  (por ejemplo, un `git worktree` en el commit base y el mismo comando de build
+  con la misma audiencia), lo copia fuera de `api/_generated/` y pasa la ruta
+  en el input `env` de `prebuilt-build`. El comentario del PR apunta a la
+  página con el input `comentario` de `prebuilt-deploy`:
+  `'**Cambios:** {url}/changes'`. El workflow exacto se valida con el primer
+  sitio que lo adopte.
+- **lo que no muestra:** un cambio fuera del título, la descripción y el
+  cuerpo (una imagen reemplazada con el mismo nombre, el orden del sidebar,
+  otro campo del frontmatter). De una página nueva muestra el link, no el
+  texto.
 
 ## La capa de theme
 
