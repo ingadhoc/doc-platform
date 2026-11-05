@@ -14,6 +14,18 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.35.0 — 2026-11-05
+
+- **plugin: la página `/changes` en los previews de PR.** Lista las páginas
+  que cambia el PR (modificadas, nuevas y borradas), con un link a cada una en
+  el preview y el diff por palabra de su texto. Compara el índice para agentes
+  del commit base contra el del build, así que muestra lo que se publica y no
+  necesita git. Se prende pasando la ruta del índice base en
+  `DOCS_INDICE_BASE` (o la opción `indiceBase`); sin ella nada cambia. Para el
+  consumidor: armar el índice del commit base en el job `build` del PR y
+  apuntar el comentario del preview a `{url}/changes` (ver *La página de
+  cambios del preview* en el README). Suma la dependencia `diff`.
+
 ## v0.34.0 — 2026-11-03
 
 - **theme: una sección vacía en una versión ya no tira el build de esa

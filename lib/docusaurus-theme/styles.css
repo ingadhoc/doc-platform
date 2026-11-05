@@ -312,3 +312,74 @@ mark[data-markjs] {
   padding: 0 0.1em;
   box-shadow: inset 0 -0.18em 0 var(--ifm-color-primary);
 }
+
+/* ── 5. La página de cambios del preview ────────────────────────────────────
+   `/changes`, sólo en los previews de PR (`lib/cambios.mjs`). Los colores son
+   los de las alertas de infima, que ya cambian con el modo oscuro. */
+
+.cambios__pagina {
+  margin-top: calc(var(--ifm-spacing-vertical) * 2);
+}
+
+.cambios__pagina h2 {
+  font-size: 1.25rem;
+}
+
+.cambios__estado {
+  margin-right: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--ifm-global-radius);
+  background: var(--ifm-color-emphasis-200);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.cambios__estado--nueva {
+  background: var(--ifm-color-success-contrast-background);
+  color: var(--ifm-color-success-contrast-foreground);
+}
+
+.cambios__estado--borrada {
+  background: var(--ifm-color-danger-contrast-background);
+  color: var(--ifm-color-danger-contrast-foreground);
+}
+
+.cambios__versiones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.cambios__diff {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cambios__contexto {
+  color: var(--ifm-color-emphasis-700);
+}
+
+.cambios__omitido {
+  padding: 0.25rem 0;
+  color: var(--ifm-color-emphasis-600);
+  font-family: var(--ifm-font-family-base);
+  font-style: italic;
+}
+
+.cambios ins {
+  background: var(--ifm-color-success-contrast-background);
+  text-decoration: none;
+}
+
+.cambios del {
+  background: var(--ifm-color-danger-contrast-background);
+}

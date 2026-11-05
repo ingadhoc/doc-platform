@@ -1,6 +1,6 @@
 {
   "name": "@ingadhoc/docs-platform",
-  "version": "0.34.0",
+  "version": "0.35.0",
   "description": "Plataforma de documentación de Adhoc: motor de búsqueda, MCP, gate de audiencia y middleware — consumida pineada por los repos de contenido (ADR 0006 de knowledge-management)",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
@@ -32,6 +32,7 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
+    "diff": "^9.0.0",
     "minisearch": "^7.2.0"
   },
   "files": [
