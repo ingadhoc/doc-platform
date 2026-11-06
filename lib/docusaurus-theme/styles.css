@@ -315,7 +315,8 @@ mark[data-markjs] {
 
 /* ── 5. La página de cambios del preview ────────────────────────────────────
    `/changes`, sólo en los previews de PR (`lib/cambios.mjs`). Los colores son
-   los de las alertas de infima, que ya cambian con el modo oscuro. */
+   los de las alertas de infima, que ya cambian con el modo oscuro. El diff va
+   con la letra del sitio: lo lee un PO, y casi siempre es prosa. */
 
 .cambios__pagina {
   margin-top: calc(var(--ifm-spacing-vertical) * 2);
@@ -358,8 +359,8 @@ mark[data-markjs] {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--ifm-color-emphasis-300);
   border-radius: var(--ifm-global-radius);
-  font-family: var(--ifm-font-family-monospace);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -371,8 +372,13 @@ mark[data-markjs] {
 .cambios__omitido {
   padding: 0.25rem 0;
   color: var(--ifm-color-emphasis-600);
-  font-family: var(--ifm-font-family-base);
   font-style: italic;
+}
+
+.cambios ins,
+.cambios del {
+  padding: 0 0.15em;
+  border-radius: 2px;
 }
 
 .cambios ins {
@@ -382,4 +388,9 @@ mark[data-markjs] {
 
 .cambios del {
   background: var(--ifm-color-danger-contrast-background);
+}
+
+/* Lo que sale y lo que entra, uno al lado del otro, se leen como dos palabras. */
+.cambios del + ins {
+  margin-left: 0.25em;
 }
