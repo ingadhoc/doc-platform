@@ -14,6 +14,14 @@ archivo es el que dice qué se están perdiendo mientras no suben el pin.
 
 ---
 
+## v0.35.1 — 2026-11-06
+
+- **theme: la página `/changes` se lee mejor.** El diff va con la letra del
+  sitio y no en monoespaciada, porque lo lee un PO y casi siempre es prosa. Lo
+  que sale y lo que entra, uno al lado del otro, ya no quedan pegados
+  («septiembreagosto»): llevan un margen entre los dos. Sin cambios para el
+  consumidor: alcanza con subir el pin.
+
 ## v0.35.0 — 2026-11-05
 
 - **plugin: la página `/changes` en los previews de PR.** Lista las páginas
