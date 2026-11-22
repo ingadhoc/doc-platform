@@ -1,6 +1,6 @@
 # El eje unificado — diseño
 
-Etapa A de la spec `arquitectura-plataforma-docs`, mitigación
+Etapa A de la spec [`arquitectura-plataforma-docs`](https://github.com/adhoc-way/knowledge-management-project/blob/becefdcc5dee688127423e924f47464fe83fe5db/specs/10_draft/arquitectura-plataforma-docs.md), mitigación
 "`schemaVersion` en los DOS contratos" (spec:76-78). Este documento decide el
 **vocabulario de ejes** del `docs.config.json` unificado. El schema está en
 [`docs.config.schema.json`](./docs.config.schema.json), la traducción de los
@@ -61,7 +61,6 @@ Dos observaciones que ordenan el diseño:
     ]
   },
   "audiences": ["publico", "interno"],
-  "secciones": { "fueraDelEje": ["relacion"] },
   "metadata": { "modules": true },
   "deploy": {
     "proyectos": { "prj_…": "publico" },
@@ -159,6 +158,13 @@ de `leer()` (§3), y hoy adhoc lo ejerce por ausencia.
 aparece en el label de las tools, no en la clave del config.
 
 ### 1.4 `secciones.fueraDelEje` — sobrevive `crossVersionSections`, muere `versionedSections`
+
+> **Reemplazado.** Desde la v0.9.0, `secciones.fueraDelEje` no existe en el
+> contrato y un config que la declare no valida: lo que declaraba lo mide
+> `indice.seccionesConComodin()` sobre los artículos. Y `relacion` entró al eje
+> ([ADR 0010 de knowledge-management](https://github.com/adhoc-way/knowledge-management-project/blob/59049eecb9e4939ac9656fe62397ee533287cc7f/decisions/0010-toda-seccion-vive-dentro-de-una-version.md)): en un cuerpo con eje
+> de versión no hay secciones fuera del eje. Lo que sigue es la decisión de la
+> Etapa A, tal como se tomó.
 
 **Decisión.** Queda `secciones.fueraDelEje: ["relacion"]`. `versionedSections`
 **se borra**.
@@ -419,7 +425,7 @@ gobernar. **Ahí empezó el fork**" (spec:25-27).
 | `versionado: false` | odumbo | `eje.tipo: "none"` | §1.1 |
 | `versionLabel`, `versionPath` | oba | **se borran** → `valores[].label` / `.path` | §1.2 (crash latente en odumbo:91) |
 | `versionedSections` | oba, odumbo | **se borra** | código muerto; nav derivada (ADR 0004 §6) |
-| `crossVersionSections` | oba, odumbo | `secciones.fueraDelEje` | §1.4 |
+| `crossVersionSections` | oba, odumbo | ~~`secciones.fueraDelEje`~~ — **fuera del contrato desde v0.9.0** | §1.4 |
 | `audiences` | los tres | `audiences` (igual) | §1.6 |
 | `proyectos` | oba, odumbo | `deploy.proyectos` | §1.6 |
 | `types` | adhoc | `metadata.types` | §1.5 |
